@@ -20,18 +20,20 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Heart, Check, ArrowLeft } from "lucide-react";
+import { CalendarIcon, Heart, Check, ArrowLeft, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useRecipients } from "@/hooks/useRecipients";
+import { useCreateTransaction } from "@/hooks/useTransactions";
 
 const categories = ["Alimentação", "Moradia", "Transporte", "Lazer", "Assinaturas", "Saúde", "Trabalho"];
 const subcategories = ["Supermercado", "Restaurante", "Delivery", "Conta de Luz", "Aluguel", "Streaming"];
 const persons = ["Huana", "Douglas"];
 const incomeOrigins = ["Salário", "Freelance", "Investimentos", "Outros"];
+const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
 
 export default function NewTransaction() {
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ export default function NewTransaction() {
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
+  const createTransaction = useCreateTransaction();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
@@ -56,26 +59,74 @@ export default function NewTransaction() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  // Installment fields
+  const [isInstallment, setIsInstallment] = useState(false);
+  const [totalInstallments, setTotalInstallments] = useState<number>(2);
+
   const numericValue = parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
   const valuePerPerson = isCouple ? numericValue / 2 : numericValue;
+  const installmentValue = isInstallment && totalInstallments > 1 ? numericValue / totalInstallments : numericValue;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!date || !description || numericValue <= 0) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha a data, descrição e valor.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
-    // Simulate saving
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const selectedBank = banks.find((b) => b.name === bank);
+      const selectedPaymentMethod = paymentMethods.find((p) => p.name === paymentMethod);
+      const selectedRecipient = recipients.find((r) => r.name === forWho);
+      const selectedReceivingBank = banks.find((b) => b.name === receivingBank);
+
+      await createTransaction.mutateAsync({
+        date: format(date, "yyyy-MM-dd"),
+        description,
+        type,
+        category: category || undefined,
+        subcategory: subcategory || undefined,
+        total_value: numericValue,
+        value_per_person: valuePerPerson,
+        is_couple: isCouple,
+        paid_by: paidBy || undefined,
+        for_who: forWho || undefined,
+        bank_id: selectedBank?.id,
+        payment_method_id: selectedPaymentMethod?.id,
+        recipient_id: selectedRecipient?.id,
+        receiving_bank_id: selectedReceivingBank?.id,
+        income_origin: incomeOrigin || undefined,
+        is_installment: isInstallment && totalInstallments > 1,
+        total_installments: isInstallment ? totalInstallments : undefined,
+        installment_value: isInstallment ? installmentValue : undefined,
+      });
+
       setShowSuccess(true);
       
       setTimeout(() => {
         toast({
           title: "Lançamento salvo!",
-          description: "O lançamento foi registrado com sucesso.",
+          description: isInstallment && totalInstallments > 1
+            ? `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`
+            : "O lançamento foi registrado com sucesso.",
         });
         navigate("/lancamentos");
-      }, 1500);
-    }, 1000);
+      }, 1000);
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o lançamento.",
+        variant: "destructive",
+      });
+      setIsSaving(false);
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -86,6 +137,24 @@ export default function NewTransaction() {
   };
 
   const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading;
+
+  // Generate installment preview
+  const installmentPreview = () => {
+    if (!isInstallment || totalInstallments <= 1 || !date || numericValue <= 0) return null;
+    
+    const previews = [];
+    for (let i = 1; i <= totalInstallments; i++) {
+      const installmentDate = addMonths(date, i - 1);
+      previews.push({
+        number: i,
+        date: format(installmentDate, "dd/MM/yyyy"),
+        value: installmentValue,
+      });
+    }
+    return previews;
+  };
+
+  const preview = installmentPreview();
 
   return (
     <div className="min-h-screen bg-background">
@@ -278,7 +347,7 @@ export default function NewTransaction() {
               </div>
 
               {/* Value Preview */}
-              {isCouple && numericValue > 0 && (
+              {isCouple && numericValue > 0 && !isInstallment && (
                 <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">
@@ -288,6 +357,82 @@ export default function NewTransaction() {
                       {formatCurrency(valuePerPerson)}
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* Installment Section - Only for Expenses */}
+              {type === "expense" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className={cn("w-5 h-5", isInstallment ? "text-primary" : "text-muted-foreground")} />
+                      <div>
+                        <Label className="text-foreground">Parcelado?</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Dividir em múltiplas parcelas
+                        </p>
+                      </div>
+                    </div>
+                    <Switch checked={isInstallment} onCheckedChange={setIsInstallment} />
+                  </div>
+
+                  {isInstallment && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Número de Parcelas</Label>
+                        <Select
+                          value={totalInstallments.toString()}
+                          onValueChange={(v) => setTotalInstallments(parseInt(v))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {installmentOptions.map((n) => (
+                              <SelectItem key={n} value={n.toString()}>
+                                {n}x de {numericValue > 0 ? formatCurrency(numericValue / n) : "R$ 0,00"}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Installment Preview */}
+                      {preview && preview.length > 0 && (
+                        <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-3">
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <CreditCard className="w-4 h-4" />
+                            Preview das Parcelas
+                          </div>
+                          <div className="max-h-48 overflow-y-auto space-y-2">
+                            {preview.map((p) => (
+                              <div
+                                key={p.number}
+                                className="flex items-center justify-between text-sm p-2 rounded-lg bg-background/50"
+                              >
+                                <span className="text-muted-foreground">
+                                  Parcela {p.number}/{totalInstallments} - {p.date}
+                                </span>
+                                <span className="font-medium text-foreground">
+                                  {formatCurrency(p.value)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          {isCouple && (
+                            <div className="pt-2 border-t border-border">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Valor por pessoa (cada parcela)</span>
+                                <span className="font-medium text-primary">
+                                  {formatCurrency(installmentValue / 2)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

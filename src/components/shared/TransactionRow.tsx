@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
-import { Heart, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Heart, MoreVertical, Pencil, Trash2, CreditCard } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,10 @@ export interface Transaction {
   valuePerPerson: number;
   isCouple: boolean;
   type: "income" | "expense";
+  // Installment fields
+  isInstallment?: boolean;
+  installmentNumber?: number;
+  totalInstallments?: number;
 }
 
 interface TransactionRowProps {
@@ -65,6 +69,19 @@ export function TransactionRow({
       <td className="px-4 py-4 text-sm text-muted-foreground">{transaction.bank}</td>
       <td className="px-4 py-4 text-sm text-muted-foreground">
         {transaction.paymentMethod}
+      </td>
+      {/* Installment Column */}
+      <td className="px-4 py-4">
+        {transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments ? (
+          <div className="flex items-center gap-1.5">
+            <CreditCard className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {transaction.installmentNumber}/{transaction.totalInstallments}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        )}
       </td>
       <td className="px-4 py-4 text-sm font-medium text-foreground whitespace-nowrap">
         {formatCurrency(transaction.totalValue)}
