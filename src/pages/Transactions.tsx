@@ -11,98 +11,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download } from "lucide-react";
+import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    date: "09/12/2024",
-    description: "Supermercado Extra",
-    person: "Huana",
-    category: "Alimentação",
-    bank: "Nubank",
-    paymentMethod: "Débito",
-    totalValue: 320.5,
-    valuePerPerson: 160.25,
-    isCouple: true,
-    type: "expense",
-  },
-  {
-    id: "2",
-    date: "08/12/2024",
-    description: "Conta de Luz",
-    person: "Douglas",
-    category: "Moradia",
-    bank: "Inter",
-    paymentMethod: "Débito",
-    totalValue: 180.0,
-    valuePerPerson: 90.0,
-    isCouple: true,
-    type: "expense",
-  },
-  {
-    id: "3",
-    date: "05/12/2024",
-    description: "Salário Dezembro",
-    person: "Huana",
-    category: "Trabalho",
-    bank: "Nubank",
-    paymentMethod: "Transferência",
-    totalValue: 5500.0,
-    valuePerPerson: 5500.0,
-    isCouple: false,
-    type: "income",
-  },
-  {
-    id: "4",
-    date: "04/12/2024",
-    description: "Restaurante Japonês",
-    person: "Douglas",
-    category: "Lazer",
-    bank: "Nubank",
-    paymentMethod: "Crédito",
-    totalValue: 189.9,
-    valuePerPerson: 94.95,
-    isCouple: true,
-    type: "expense",
-  },
-  {
-    id: "5",
-    date: "03/12/2024",
-    description: "Netflix",
-    person: "Huana",
-    category: "Assinaturas",
-    bank: "Inter",
-    paymentMethod: "Crédito",
-    totalValue: 55.9,
-    valuePerPerson: 27.95,
-    isCouple: true,
-    type: "expense",
-  },
-  {
-    id: "6",
-    date: "01/12/2024",
-    description: "Freelance Website",
-    person: "Douglas",
-    category: "Trabalho",
-    bank: "Inter",
-    paymentMethod: "Pix",
-    totalValue: 2000.0,
-    valuePerPerson: 2000.0,
-    isCouple: false,
-    type: "income",
-  },
-];
+import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
+import { useBanks } from "@/hooks/useBanks";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
+import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const persons = ["Todos", "Huana", "Douglas"];
-const categories = ["Todas", "Alimentação", "Moradia", "Lazer", "Trabalho", "Assinaturas"];
-const banks = ["Todos", "Nubank", "Inter", "Itaú"];
-const paymentMethods = ["Todos", "Débito", "Crédito", "Pix", "Transferência"];
+const categories = ["Todas", "Alimentação", "Moradia", "Lazer", "Trabalho", "Assinaturas", "Transporte", "Saúde"];
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
+const installmentOptions = ["Todos", "Sim", "Não"];
 
 export default function Transactions() {
+  const { toast } = useToast();
+  const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
+  const { data: banksData = [] } = useBanks();
+  const { data: paymentMethodsData = [] } = usePaymentMethods();
+  const deleteTransaction = useDeleteTransaction();
+
   const [search, setSearch] = useState("");
   const [personFilter, setPersonFilter] = useState("Todos");
   const [categoryFilter, setCategoryFilter] = useState("Todas");
@@ -110,8 +49,33 @@ export default function Transactions() {
   const [paymentFilter, setPaymentFilter] = useState("Todos");
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [coupleFilter, setCoupleFilter] = useState("Todos");
+  const [installmentFilter, setInstallmentFilter] = useState("Todos");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
 
-  const filteredTransactions = mockTransactions.filter((t) => {
+  // Transform DB transactions to UI format
+  const transactions: Transaction[] = transactionsData.map((t) => ({
+    id: t.id,
+    date: format(new Date(t.date), "dd/MM/yyyy"),
+    description: t.description,
+    person: t.paid_by || "-",
+    category: t.category || "-",
+    bank: t.bank_name || "-",
+    paymentMethod: t.payment_method_name || "-",
+    totalValue: Number(t.total_value),
+    valuePerPerson: Number(t.value_per_person || t.total_value),
+    isCouple: t.is_couple || false,
+    type: t.type as "income" | "expense",
+    isInstallment: t.is_installment || false,
+    installmentNumber: t.installment_number || undefined,
+    totalInstallments: t.total_installments || undefined,
+  }));
+
+  const banks = ["Todos", ...banksData.map((b) => b.name)];
+  const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
+
+  const filteredTransactions = transactions.filter((t) => {
     if (search && !t.description.toLowerCase().includes(search.toLowerCase())) {
       return false;
     }
@@ -127,8 +91,49 @@ export default function Transactions() {
       const isCouple = coupleFilter === "Sim";
       if (t.isCouple !== isCouple) return false;
     }
+    if (installmentFilter !== "Todos") {
+      const isInstallment = installmentFilter === "Sim";
+      if (t.isInstallment !== isInstallment) return false;
+    }
     return true;
   });
+
+  const handleDeleteClick = (id: string) => {
+    const tx = transactionsData.find((t) => t.id === id);
+    if (tx) {
+      const isParent = tx.is_installment && !tx.is_generated_installment;
+      setTransactionToDeleteInfo({
+        isParent: isParent || false,
+        description: tx.description,
+      });
+    }
+    setTransactionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
+    
+    try {
+      await deleteTransaction.mutateAsync(transactionToDelete);
+      toast({
+        title: "Lançamento excluído",
+        description: transactionToDeleteInfo?.isParent
+          ? "O lançamento e todas as parcelas foram excluídos."
+          : "O lançamento foi excluído com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o lançamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setTransactionToDelete(null);
+      setTransactionToDeleteInfo(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -168,7 +173,7 @@ export default function Transactions() {
               <span className="text-sm font-medium text-foreground">Filtros</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
               <div className="relative lg:col-span-2 xl:col-span-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -256,61 +261,83 @@ export default function Transactions() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Parcelado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {installmentOptions.map((i) => (
+                    <SelectItem key={i} value={i}>
+                      {i}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {/* Table */}
           <div className="rounded-2xl bg-card border border-border shadow-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-secondary/50">
-                  <tr>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Descrição
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Pessoa
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Categoria
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Banco
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Pagamento
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Por Pessoa
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((transaction) => (
-                    <TransactionRow
-                      key={transaction.id}
-                      transaction={transaction}
-                      onEdit={(id) => console.log("Edit", id)}
-                      onDelete={(id) => console.log("Delete", id)}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {transactionsLoading ? (
+              <div className="p-12 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-secondary/50">
+                    <tr>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Data
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Descrição
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Pessoa
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Categoria
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Banco
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Pagamento
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Parcela
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Valor
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Por Pessoa
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Tipo
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map((transaction) => (
+                      <TransactionRow
+                        key={transaction.id}
+                        transaction={transaction}
+                        onEdit={(id) => console.log("Edit", id)}
+                        onDelete={handleDeleteClick}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-            {filteredTransactions.length === 0 && (
+            {!transactionsLoading && filteredTransactions.length === 0 && (
               <div className="p-12 text-center">
                 <p className="text-muted-foreground">
                   Nenhum lançamento encontrado
@@ -322,6 +349,35 @@ export default function Transactions() {
       </main>
 
       <Footer />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lançamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {transactionToDeleteInfo?.isParent ? (
+                <>
+                  Este é um lançamento parcelado. <strong>Todas as parcelas serão excluídas.</strong>
+                  <br /><br />
+                  Deseja continuar?
+                </>
+              ) : (
+                "Esta ação não pode ser desfeita. O lançamento será removido permanentemente."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

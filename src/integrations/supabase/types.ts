@@ -71,6 +71,120 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          bank_id: string | null
+          category: string | null
+          created_at: string | null
+          date: string
+          description: string
+          for_who: string | null
+          id: string
+          income_origin: string | null
+          installment_number: number | null
+          installment_value: number | null
+          is_couple: boolean | null
+          is_generated_installment: boolean | null
+          is_installment: boolean | null
+          paid_by: string | null
+          parent_transaction_id: string | null
+          payment_method_id: string | null
+          receiving_bank_id: string | null
+          recipient_id: string | null
+          subcategory: string | null
+          total_installments: number | null
+          total_value: number
+          type: string
+          value_per_person: number | null
+        }
+        Insert: {
+          bank_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          date: string
+          description: string
+          for_who?: string | null
+          id?: string
+          income_origin?: string | null
+          installment_number?: number | null
+          installment_value?: number | null
+          is_couple?: boolean | null
+          is_generated_installment?: boolean | null
+          is_installment?: boolean | null
+          paid_by?: string | null
+          parent_transaction_id?: string | null
+          payment_method_id?: string | null
+          receiving_bank_id?: string | null
+          recipient_id?: string | null
+          subcategory?: string | null
+          total_installments?: number | null
+          total_value: number
+          type: string
+          value_per_person?: number | null
+        }
+        Update: {
+          bank_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          date?: string
+          description?: string
+          for_who?: string | null
+          id?: string
+          income_origin?: string | null
+          installment_number?: number | null
+          installment_value?: number | null
+          is_couple?: boolean | null
+          is_generated_installment?: boolean | null
+          is_installment?: boolean | null
+          paid_by?: string | null
+          parent_transaction_id?: string | null
+          payment_method_id?: string | null
+          receiving_bank_id?: string | null
+          recipient_id?: string | null
+          subcategory?: string | null
+          total_installments?: number | null
+          total_value?: number
+          type?: string
+          value_per_person?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_bank_id_fkey"
+            columns: ["bank_id"]
+            isOneToOne: false
+            referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_parent_transaction_id_fkey"
+            columns: ["parent_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_receiving_bank_id_fkey"
+            columns: ["receiving_bank_id"]
+            isOneToOne: false
+            referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
