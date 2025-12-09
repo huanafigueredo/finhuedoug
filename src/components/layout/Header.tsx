@@ -15,7 +15,8 @@ const navItems = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { isAuthenticated, logout } = useAuth();
+  const { user, signOut } = useAuth();
+  const isAuthenticated = !!user;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -56,7 +57,7 @@ export function Header() {
                 <Link to="/novo">
                   <Button size="sm">Novo Lançamento</Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={logout}>
+                <Button variant="outline" size="sm" onClick={signOut}>
                   <LogOut className="w-4 h-4 mr-1" />
                   Sair
                 </Button>
@@ -101,7 +102,7 @@ export function Header() {
                   <Link to="/novo" onClick={() => setIsOpen(false)}>
                     <Button className="w-full mt-2">Novo Lançamento</Button>
                   </Link>
-                  <Button variant="outline" className="w-full mt-2" onClick={() => { logout(); setIsOpen(false); }}>
+                  <Button variant="outline" className="w-full mt-2" onClick={() => { signOut(); setIsOpen(false); }}>
                     <LogOut className="w-4 h-4 mr-1" />
                     Sair
                   </Button>

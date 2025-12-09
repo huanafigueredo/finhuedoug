@@ -6,6 +6,7 @@ export interface Bank {
   name: string;
   color: string | null;
   created_at: string;
+  user_id: string | null;
 }
 
 export function useBanks() {
@@ -26,9 +27,12 @@ export function useAddBank() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ name, color }: { name: string; color?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("banks")
-        .insert({ name, color })
+        .insert({ name, color, user_id: user.id })
         .select()
         .single();
       if (error) throw error;
