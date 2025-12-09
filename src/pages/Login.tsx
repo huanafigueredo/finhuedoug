@@ -44,8 +44,10 @@ const Login = () => {
         } else {
           toast({
             title: 'Conta criada! 💕',
-            description: 'Verifique seu email para confirmar o cadastro',
+            description: 'Você já pode fazer login com sua conta',
           });
+          setIsSignUp(false);
+          setPassword('');
         }
       } else {
         const { error } = await signIn(email, password);
