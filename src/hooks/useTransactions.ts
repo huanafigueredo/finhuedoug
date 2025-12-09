@@ -50,6 +50,7 @@ export interface Transaction {
   installment_value: number | null;
   parent_transaction_id: string | null;
   is_generated_installment: boolean;
+  user_id: string | null;
   // Joined fields
   bank_name?: string;
   payment_method_name?: string;
@@ -87,6 +88,9 @@ export function useCreateTransaction() {
 
   return useMutation({
     mutationFn: async (transaction: TransactionInsert) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       // If it's an installment transaction, create multiple records
       if (transaction.is_installment && transaction.total_installments && transaction.total_installments > 1) {
         const installmentValue = transaction.total_value / transaction.total_installments;
@@ -97,6 +101,7 @@ export function useCreateTransaction() {
           .from("transactions")
           .insert({
             ...transaction,
+            user_id: user.id,
             description: `${transaction.description} (Parcela 1/${transaction.total_installments})`,
             total_value: installmentValue,
             installment_number: 1,
@@ -114,6 +119,7 @@ export function useCreateTransaction() {
           const installmentDate = addMonths(baseDate, i - 1);
           childInstallments.push({
             ...transaction,
+            user_id: user.id,
             date: installmentDate.toISOString().split("T")[0],
             description: `${transaction.description} (Parcela ${i}/${transaction.total_installments})`,
             total_value: installmentValue,
@@ -138,7 +144,7 @@ export function useCreateTransaction() {
       // Single transaction (no installments)
       const { data, error } = await supabase
         .from("transactions")
-        .insert(transaction)
+        .insert({ ...transaction, user_id: user.id })
         .select()
         .single();
 

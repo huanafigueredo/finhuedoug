@@ -5,6 +5,7 @@ export interface PaymentMethod {
   id: string;
   name: string;
   created_at: string;
+  user_id: string | null;
 }
 
 export function usePaymentMethods() {
@@ -25,9 +26,12 @@ export function useAddPaymentMethod() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ name }: { name: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("payment_methods")
-        .insert({ name })
+        .insert({ name, user_id: user.id })
         .select()
         .single();
       if (error) throw error;
