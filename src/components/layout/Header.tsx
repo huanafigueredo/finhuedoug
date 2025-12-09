@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, Menu, X } from "lucide-react";
+import { Heart, Menu, X, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navItems = [
-  { label: "Home", path: "/" },
   { label: "Dashboard", path: "/dashboard" },
   { label: "Lançamentos", path: "/lancamentos" },
   { label: "Pessoas", path: "/pessoas" },
@@ -15,6 +15,7 @@ const navItems = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, logout } = useAuth();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
@@ -50,9 +51,21 @@ export function Header() {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/novo">
-              <Button size="sm">Novo Lançamento</Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/novo">
+                  <Button size="sm">Novo Lançamento</Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={logout}>
+                  <LogOut className="w-4 h-4 mr-1" />
+                  Sair
+                </Button>
+              </>
+            ) : (
+              <Link to="/login">
+                <Button size="sm">Entrar</Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -83,9 +96,21 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <Link to="/novo" onClick={() => setIsOpen(false)}>
-                <Button className="w-full mt-2">Novo Lançamento</Button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <Link to="/novo" onClick={() => setIsOpen(false)}>
+                    <Button className="w-full mt-2">Novo Lançamento</Button>
+                  </Link>
+                  <Button variant="outline" className="w-full mt-2" onClick={() => { logout(); setIsOpen(false); }}>
+                    <LogOut className="w-4 h-4 mr-1" />
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <Link to="/login" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full mt-2">Entrar</Button>
+                </Link>
+              )}
             </nav>
           </div>
         )}

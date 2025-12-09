@@ -63,13 +63,13 @@ export default function Index() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up opacity-0 stagger-3">
-              <Link to="/dashboard">
+              <Link to="/login">
                 <Button variant="hero" size="xl">
                   Entrar na Planilha
                   <ArrowRight className="w-5 h-5 ml-1" />
                 </Button>
               </Link>
-              <Link to="/novo">
+              <Link to="/login">
                 <Button variant="hero-outline" size="xl">
                   Adicionar Lançamento
                 </Button>
@@ -132,7 +132,7 @@ export default function Index() {
             <p className="text-lg text-muted-foreground mb-8">
               Junte-se a casais que já estão organizando suas finanças com amor
             </p>
-            <Link to="/dashboard">
+            <Link to="/login">
               <Button variant="hero" size="xl">
                 Acessar o Dashboard
                 <ArrowRight className="w-5 h-5 ml-1" />
