@@ -24,18 +24,22 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Heart, Check, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useBanks } from "@/hooks/useBanks";
+import { usePaymentMethods } from "@/hooks/usePaymentMethods";
+import { useRecipients } from "@/hooks/useRecipients";
 
 const categories = ["Alimentação", "Moradia", "Transporte", "Lazer", "Assinaturas", "Saúde", "Trabalho"];
 const subcategories = ["Supermercado", "Restaurante", "Delivery", "Conta de Luz", "Aluguel", "Streaming"];
 const persons = ["Huana", "Douglas"];
-const forWhom = ["Huana", "Douglas", "Casal"];
-const banks = ["Nubank", "Inter", "Itaú", "Bradesco", "Santander"];
-const paymentMethods = ["Débito", "Crédito", "Pix", "Dinheiro", "Transferência"];
 const incomeOrigins = ["Salário", "Freelance", "Investimentos", "Outros"];
 
 export default function NewTransaction() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { data: banks = [], isLoading: banksLoading } = useBanks();
+  const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
+  const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
+
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"expense" | "income">("expense");
@@ -80,6 +84,8 @@ export default function NewTransaction() {
       currency: "BRL",
     }).format(value);
   };
+
+  const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading;
 
   return (
     <div className="min-h-screen bg-background">
@@ -230,14 +236,14 @@ export default function NewTransaction() {
 
                 <div className="space-y-2">
                   <Label>Para quem</Label>
-                  <Select value={forWho} onValueChange={setForWho}>
+                  <Select value={forWho} onValueChange={setForWho} disabled={recipientsLoading}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={recipientsLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {forWhom.map((f) => (
-                        <SelectItem key={f} value={f}>
-                          {f}
+                      {recipients.map((r) => (
+                        <SelectItem key={r.id} value={r.name}>
+                          {r.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -289,14 +295,22 @@ export default function NewTransaction() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Banco Pagador</Label>
-                  <Select value={bank} onValueChange={setBank}>
+                  <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
                     <SelectContent>
                       {banks.map((b) => (
-                        <SelectItem key={b} value={b}>
-                          {b}
+                        <SelectItem key={b.id} value={b.name}>
+                          <div className="flex items-center gap-2">
+                            {b.color && (
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: b.color }}
+                              />
+                            )}
+                            {b.name}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -305,14 +319,14 @@ export default function NewTransaction() {
 
                 <div className="space-y-2">
                   <Label>Forma de Pagamento</Label>
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={paymentMethodsLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
                     <SelectContent>
                       {paymentMethods.map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {p}
+                        <SelectItem key={p.id} value={p.name}>
+                          {p.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -325,14 +339,22 @@ export default function NewTransaction() {
                 <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-border">
                   <div className="space-y-2">
                     <Label>Banco de Recebimento</Label>
-                    <Select value={receivingBank} onValueChange={setReceivingBank}>
+                    <Select value={receivingBank} onValueChange={setReceivingBank} disabled={banksLoading}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
                       </SelectTrigger>
                       <SelectContent>
                         {banks.map((b) => (
-                          <SelectItem key={b} value={b}>
-                            {b}
+                          <SelectItem key={b.id} value={b.name}>
+                            <div className="flex items-center gap-2">
+                              {b.color && (
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: b.color }}
+                                />
+                              )}
+                              {b.name}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -367,7 +389,7 @@ export default function NewTransaction() {
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isSaving} className="min-w-32">
+                <Button type="submit" disabled={isSaving || isLoading} className="min-w-32">
                   {showSuccess ? (
                     <Check className="w-5 h-5 animate-check" />
                   ) : isSaving ? (

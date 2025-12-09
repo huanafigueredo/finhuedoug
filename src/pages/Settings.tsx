@@ -21,72 +21,22 @@ import {
   Tag,
   CreditCard,
   Wallet,
-  Palette,
   PiggyBank,
   Plus,
   Pencil,
   Trash2,
-  X,
+  Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
+import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
+import { useRecipients, useAddRecipient, useUpdateRecipient, useDeleteRecipient } from "@/hooks/useRecipients";
+import { useToast } from "@/hooks/use-toast";
 
 interface ConfigItem {
   id: string;
   name: string;
-  color?: string;
+  color?: string | null;
 }
-
-interface ConfigSection {
-  title: string;
-  icon: React.ElementType;
-  items: ConfigItem[];
-  allowColor?: boolean;
-}
-
-const initialConfig: Record<string, ConfigSection> = {
-  categories: {
-    title: "Categorias",
-    icon: Folder,
-    items: [
-      { id: "1", name: "Alimentação" },
-      { id: "2", name: "Moradia" },
-      { id: "3", name: "Transporte" },
-      { id: "4", name: "Lazer" },
-      { id: "5", name: "Saúde" },
-    ],
-  },
-  subcategories: {
-    title: "Subcategorias",
-    icon: Tag,
-    items: [
-      { id: "1", name: "Supermercado" },
-      { id: "2", name: "Restaurante" },
-      { id: "3", name: "Delivery" },
-      { id: "4", name: "Aluguel" },
-      { id: "5", name: "Streaming" },
-    ],
-  },
-  banks: {
-    title: "Bancos",
-    icon: CreditCard,
-    allowColor: true,
-    items: [
-      { id: "1", name: "Nubank", color: "#9B59B6" },
-      { id: "2", name: "Inter", color: "#FF7F00" },
-      { id: "3", name: "Itaú", color: "#003399" },
-    ],
-  },
-  paymentMethods: {
-    title: "Formas de Pagamento",
-    icon: Wallet,
-    items: [
-      { id: "1", name: "Débito" },
-      { id: "2", name: "Crédito" },
-      { id: "3", name: "Pix" },
-      { id: "4", name: "Dinheiro" },
-    ],
-  },
-};
 
 const initialBalances = [
   { id: "1", name: "Nubank - Huana", value: "5.000,00" },
@@ -96,13 +46,53 @@ const initialBalances = [
 ];
 
 export default function Settings() {
-  const [config, setConfig] = useState(initialConfig);
+  const { toast } = useToast();
   const [balances, setBalances] = useState(initialBalances);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<ConfigItem | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemColor, setNewItemColor] = useState("#D77A61");
+
+  // Data from Supabase
+  const { data: banks = [], isLoading: banksLoading } = useBanks();
+  const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
+  const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
+
+  // Mutations
+  const addBank = useAddBank();
+  const updateBank = useUpdateBank();
+  const deleteBank = useDeleteBank();
+  const addPaymentMethod = useAddPaymentMethod();
+  const updatePaymentMethod = useUpdatePaymentMethod();
+  const deletePaymentMethod = useDeletePaymentMethod();
+  const addRecipient = useAddRecipient();
+  const updateRecipient = useUpdateRecipient();
+  const deleteRecipient = useDeleteRecipient();
+
+  const sections = {
+    banks: {
+      title: "Bancos",
+      icon: CreditCard,
+      allowColor: true,
+      items: banks.map((b) => ({ id: b.id, name: b.name, color: b.color })),
+      isLoading: banksLoading,
+    },
+    paymentMethods: {
+      title: "Formas de Pagamento",
+      icon: Wallet,
+      allowColor: false,
+      items: paymentMethods.map((p) => ({ id: p.id, name: p.name })),
+      isLoading: paymentMethodsLoading,
+    },
+    recipients: {
+      title: "Para Quem",
+      icon: Users,
+      allowColor: false,
+      items: recipients.map((r) => ({ id: r.id, name: r.name })),
+      isLoading: recipientsLoading,
+    },
+  };
 
   const openAddDialog = (sectionKey: string) => {
     setEditingSection(sectionKey);
@@ -120,57 +110,69 @@ export default function Settings() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editingSection || !newItemName.trim()) return;
 
-    setConfig((prev) => {
-      const section = prev[editingSection];
-      const allowColor = section.allowColor;
-
-      if (editingItem) {
-        // Edit existing
-        return {
-          ...prev,
-          [editingSection]: {
-            ...section,
-            items: section.items.map((item) =>
-              item.id === editingItem.id
-                ? { ...item, name: newItemName, ...(allowColor && { color: newItemColor }) }
-                : item
-            ),
-          },
-        };
-      } else {
-        // Add new
-        return {
-          ...prev,
-          [editingSection]: {
-            ...section,
-            items: [
-              ...section.items,
-              {
-                id: Date.now().toString(),
-                name: newItemName,
-                ...(allowColor && { color: newItemColor }),
-              },
-            ],
-          },
-        };
+    try {
+      if (editingSection === "banks") {
+        if (editingItem) {
+          await updateBank.mutateAsync({ id: editingItem.id, name: newItemName, color: newItemColor });
+        } else {
+          await addBank.mutateAsync({ name: newItemName, color: newItemColor });
+        }
+      } else if (editingSection === "paymentMethods") {
+        if (editingItem) {
+          await updatePaymentMethod.mutateAsync({ id: editingItem.id, name: newItemName });
+        } else {
+          await addPaymentMethod.mutateAsync({ name: newItemName });
+        }
+      } else if (editingSection === "recipients") {
+        if (editingItem) {
+          await updateRecipient.mutateAsync({ id: editingItem.id, name: newItemName });
+        } else {
+          await addRecipient.mutateAsync({ name: newItemName });
+        }
       }
-    });
 
-    setIsDialogOpen(false);
+      toast({
+        title: editingItem ? "Item atualizado!" : "Item adicionado!",
+        description: "As alterações foram salvas com sucesso.",
+      });
+      setIsDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = (sectionKey: string, itemId: string) => {
-    setConfig((prev) => ({
-      ...prev,
-      [sectionKey]: {
-        ...prev[sectionKey],
-        items: prev[sectionKey].items.filter((item) => item.id !== itemId),
-      },
-    }));
+  const handleDelete = async (sectionKey: string, itemId: string) => {
+    try {
+      if (sectionKey === "banks") {
+        await deleteBank.mutateAsync(itemId);
+      } else if (sectionKey === "paymentMethods") {
+        await deletePaymentMethod.mutateAsync(itemId);
+      } else if (sectionKey === "recipients") {
+        await deleteRecipient.mutateAsync(itemId);
+      }
+
+      toast({
+        title: "Item removido!",
+        description: "O item foi excluído com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o item.",
+        variant: "destructive",
+      });
+    }
   };
+
+  const isSaving = addBank.isPending || updateBank.isPending || addPaymentMethod.isPending || 
+                   updatePaymentMethod.isPending || addRecipient.isPending || updateRecipient.isPending;
 
   return (
     <div className="min-h-screen bg-background">
@@ -184,14 +186,14 @@ export default function Settings() {
               Configurações
             </h1>
             <p className="text-muted-foreground">
-              Personalize categorias, bancos e mais
+              Personalize bancos, formas de pagamento e mais
             </p>
           </div>
 
           {/* Config Sections */}
           <div className="space-y-4">
             <Accordion type="multiple" className="space-y-4">
-              {Object.entries(config).map(([key, section]) => (
+              {Object.entries(sections).map(([key, section]) => (
                 <AccordionItem
                   key={key}
                   value={key}
@@ -212,48 +214,56 @@ export default function Settings() {
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
                     <div className="space-y-3">
-                      {section.items.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 group"
-                        >
-                          <div className="flex items-center gap-3">
-                            {item.color && (
-                              <div
-                                className="w-4 h-4 rounded-full"
-                                style={{ backgroundColor: item.color }}
-                              />
-                            )}
-                            <span className="text-sm font-medium text-foreground">
-                              {item.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => openEditDialog(key, item)}
-                              className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
-                            >
-                              <Pencil className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(key, item.id)}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </button>
-                          </div>
+                      {section.isLoading ? (
+                        <div className="text-center py-4 text-muted-foreground">
+                          Carregando...
                         </div>
-                      ))}
+                      ) : (
+                        <>
+                          {section.items.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 group"
+                            >
+                              <div className="flex items-center gap-3">
+                                {item.color && (
+                                  <div
+                                    className="w-4 h-4 rounded-full"
+                                    style={{ backgroundColor: item.color }}
+                                  />
+                                )}
+                                <span className="text-sm font-medium text-foreground">
+                                  {item.name}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => openEditDialog(key, item)}
+                                  className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+                                >
+                                  <Pencil className="w-4 h-4 text-muted-foreground" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(key, item.id)}
+                                  className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openAddDialog(key)}
-                        className="w-full mt-2"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Adicionar {section.title.slice(0, -1)}
-                      </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openAddDialog(key)}
+                            className="w-full mt-2"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Adicionar
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -318,7 +328,7 @@ export default function Settings() {
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
               {editingItem ? "Editar" : "Adicionar"}{" "}
-              {editingSection && config[editingSection]?.title.slice(0, -1)}
+              {editingSection && sections[editingSection as keyof typeof sections]?.title}
             </DialogTitle>
           </DialogHeader>
 
@@ -332,7 +342,7 @@ export default function Settings() {
               />
             </div>
 
-            {editingSection && config[editingSection]?.allowColor && (
+            {editingSection && sections[editingSection as keyof typeof sections]?.allowColor && (
               <div className="space-y-2">
                 <Label>Cor</Label>
                 <div className="flex items-center gap-3">
@@ -355,8 +365,8 @@ export default function Settings() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={!newItemName.trim()}>
-                {editingItem ? "Salvar" : "Adicionar"}
+              <Button onClick={handleSave} disabled={!newItemName.trim() || isSaving}>
+                {isSaving ? "Salvando..." : editingItem ? "Salvar" : "Adicionar"}
               </Button>
             </div>
           </div>
