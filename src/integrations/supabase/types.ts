@@ -20,21 +20,21 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string | null
           created_at?: string | null
           id?: string
           name: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string | null
           created_at?: string | null
           id?: string
           name?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -43,19 +43,19 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -85,19 +85,19 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -125,7 +125,7 @@ export type Database = {
           total_installments: number | null
           total_value: number
           type: string
-          user_id: string | null
+          user_id: string
           value_per_person: number | null
         }
         Insert: {
@@ -151,7 +151,7 @@ export type Database = {
           total_installments?: number | null
           total_value: number
           type: string
-          user_id?: string | null
+          user_id: string
           value_per_person?: number | null
         }
         Update: {
@@ -177,7 +177,7 @@ export type Database = {
           total_installments?: number | null
           total_value?: number
           type?: string
-          user_id?: string | null
+          user_id?: string
           value_per_person?: number | null
         }
         Relationships: [
