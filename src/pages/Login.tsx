@@ -35,6 +35,8 @@ const Login = () => {
           let message = 'Erro ao criar conta';
           if (error.message.includes('already registered')) {
             message = 'Este email já está cadastrado';
+          } else if (error.message.includes('Signups not allowed') || error.message.includes('signup_disabled')) {
+            message = 'Cadastro de novos usuários está desabilitado. Contate o administrador.';
           }
           toast({
             title: 'Erro',
