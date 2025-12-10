@@ -61,7 +61,10 @@ export default function NewTransaction() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
+  const duplicateId = searchParams.get("duplicate");
   const isEditMode = !!editId;
+  const isDuplicateMode = !!duplicateId;
+  const loadId = editId || duplicateId;
   
   const { toast } = useToast();
   const { data: banks = [], isLoading: banksLoading } = useBanks();
@@ -97,10 +100,10 @@ export default function NewTransaction() {
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
 
-  // Load transaction data if editing
+  // Load transaction data if editing or duplicating
   useEffect(() => {
-    if (isEditMode && !transactionsLoading && transactionsData.length > 0 && !isInitialized) {
-      const transaction = transactionsData.find(t => t.id === editId);
+    if ((isEditMode || isDuplicateMode) && !transactionsLoading && transactionsData.length > 0 && !isInitialized) {
+      const transaction = transactionsData.find(t => t.id === loadId);
       if (transaction) {
         setDate(parseISO(transaction.date));
         // Remove installment suffix from description if present
@@ -134,7 +137,7 @@ export default function NewTransaction() {
         setIsInitialized(true);
       }
     }
-  }, [isEditMode, editId, transactionsData, transactionsLoading, banks, paymentMethods, categoriesData, isInitialized]);
+  }, [isEditMode, isDuplicateMode, loadId, transactionsData, transactionsLoading, banks, paymentMethods, categoriesData, isInitialized]);
 
   const numericValue = parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
   const valuePerPerson = isCouple ? numericValue / 2 : numericValue;
@@ -242,7 +245,7 @@ export default function NewTransaction() {
     }).format(value);
   };
 
-  const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading || (isEditMode && transactionsLoading);
+  const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading || ((isEditMode || isDuplicateMode) && transactionsLoading);
 
   // Generate installment preview
   const installmentPreview = () => {
@@ -278,10 +281,10 @@ export default function NewTransaction() {
               Voltar
             </button>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              {isEditMode ? "Editar Lançamento" : "Novo Lançamento"}
+              {isEditMode ? "Editar Lançamento" : isDuplicateMode ? "Duplicar Lançamento" : "Novo Lançamento"}
             </h1>
             <p className="text-muted-foreground">
-              {isEditMode ? "Altere os dados da transação" : "Registre uma nova transação para o casal"}
+              {isEditMode ? "Altere os dados da transação" : isDuplicateMode ? "Crie um novo lançamento baseado no anterior" : "Registre uma nova transação para o casal"}
             </p>
           </div>
 
