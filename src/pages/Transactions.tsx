@@ -11,14 +11,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, Download, Loader2, CalendarIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +58,8 @@ export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [coupleFilter, setCoupleFilter] = useState("Todos");
   const [installmentFilter, setInstallmentFilter] = useState("Todos");
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
@@ -62,9 +68,10 @@ export default function Transactions() {
   const [duplicateIsInstallment, setDuplicateIsInstallment] = useState(false);
 
   // Transform DB transactions to UI format
-  const transactions: Transaction[] = transactionsData.map((t) => ({
+  const transactions: (Transaction & { rawDate: Date })[] = transactionsData.map((t) => ({
     id: t.id,
     date: format(parseISO(t.date), "dd/MM/yyyy"),
+    rawDate: parseISO(t.date),
     description: t.description,
     person: t.paid_by || "-",
     forWho: t.for_who || "-",
@@ -105,6 +112,9 @@ export default function Transactions() {
       const isInstallment = installmentFilter === "Sim";
       if (t.isInstallment !== isInstallment) return false;
     }
+    // Date period filter
+    if (startDate && isBefore(t.rawDate, startOfDay(startDate))) return false;
+    if (endDate && isAfter(t.rawDate, endOfDay(endDate))) return false;
     return true;
   });
 
@@ -203,8 +213,8 @@ export default function Transactions() {
               <span className="text-sm font-medium text-foreground">Filtros</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-9 gap-4">
-              <div className="space-y-1.5 lg:col-span-2 xl:col-span-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-11 gap-4">
+              <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Buscar</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -215,6 +225,62 @@ export default function Transactions() {
                     className="pl-9"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Data Início</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      locale={ptBR}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Data Fim</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "dd/MM/yyyy") : "Selecionar"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      locale={ptBR}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-1.5">
