@@ -80,9 +80,17 @@ export default function Dashboard() {
       .reduce((sum, t) => sum + t.total_value, 0);
 
     const balance = income - expenses;
-    const perPerson = expenses / 2;
 
-    return { expenses, income, balance, perPerson };
+    // Calculate spending per person based on for_who field
+    const huanaExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Huana")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    const douglasExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    return { expenses, income, balance, huanaExpenses, douglasExpenses };
   }, [filteredTransactions]);
 
   // Category breakdown
@@ -232,7 +240,7 @@ export default function Dashboard() {
           </div>
 
           {/* Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <MetricCard
               title="Total de Despesas"
               value={formatCurrency(metrics.expenses)}
@@ -252,9 +260,14 @@ export default function Dashboard() {
               variant="accent"
             />
             <MetricCard
-              title="Gastos por Pessoa"
-              value={formatCurrency(metrics.perPerson)}
-              subtitle="Média por pessoa"
+              title="Gastos Huana"
+              value={formatCurrency(metrics.huanaExpenses)}
+              icon={Users}
+              variant="default"
+            />
+            <MetricCard
+              title="Gastos Douglas"
+              value={formatCurrency(metrics.douglasExpenses)}
               icon={Users}
               variant="default"
             />
