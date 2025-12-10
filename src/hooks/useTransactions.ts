@@ -111,7 +111,10 @@ export function useCreateTransaction() {
           .select()
           .single();
 
-        if (parentError) throw parentError;
+        if (parentError) {
+          console.error("Transaction insert error:", parentError);
+          throw parentError;
+        }
 
         // Create child installments
         const childInstallments = [];
@@ -135,7 +138,10 @@ export function useCreateTransaction() {
             .from("transactions")
             .insert(childInstallments);
 
-          if (childError) throw childError;
+          if (childError) {
+            console.error("Child installments insert error:", childError);
+            throw childError;
+          }
         }
 
         return parentData;
@@ -148,7 +154,10 @@ export function useCreateTransaction() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Transaction insert error:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {

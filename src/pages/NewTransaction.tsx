@@ -124,10 +124,11 @@ export default function NewTransaction() {
         });
         navigate("/lancamentos");
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error saving transaction:", error);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar o lançamento.",
+        description: error?.message || "Não foi possível salvar o lançamento.",
         variant: "destructive",
       });
       setIsSaving(false);
