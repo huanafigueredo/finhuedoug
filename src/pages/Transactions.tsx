@@ -17,7 +17,7 @@ import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -64,7 +64,7 @@ export default function Transactions() {
   // Transform DB transactions to UI format
   const transactions: Transaction[] = transactionsData.map((t) => ({
     id: t.id,
-    date: format(new Date(t.date), "dd/MM/yyyy"),
+    date: format(parseISO(t.date), "dd/MM/yyyy"),
     description: t.description,
     person: t.paid_by || "-",
     forWho: t.for_who || "-",
