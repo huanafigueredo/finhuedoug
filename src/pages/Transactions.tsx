@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
+import { useCategories } from "@/hooks/useCategories";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -31,7 +32,6 @@ import {
 
 const persons = ["Todos", "Huana", "Douglas"];
 const forWhoOptions = ["Todos", "Huana", "Douglas", "Casal", "Empresa"];
-const categories = ["Todas", "Alimentação", "Moradia", "Lazer", "Trabalho", "Assinaturas", "Transporte", "Saúde"];
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];
@@ -41,6 +41,7 @@ export default function Transactions() {
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const { data: banksData = [] } = useBanks();
   const { data: paymentMethodsData = [] } = usePaymentMethods();
+  const { data: categoriesData = [] } = useCategories();
   const deleteTransaction = useDeleteTransaction();
 
   const [search, setSearch] = useState("");
@@ -77,6 +78,7 @@ export default function Transactions() {
 
   const banks = ["Todos", ...banksData.map((b) => b.name)];
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
+  const categories = ["Todas", ...categoriesData.map((c) => c.name)];
 
   const filteredTransactions = transactions.filter((t) => {
     if (search && !t.description.toLowerCase().includes(search.toLowerCase())) {
