@@ -174,106 +174,130 @@ export default function Transactions() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
-              <div className="relative lg:col-span-2 xl:col-span-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
+              <div className="space-y-1.5 lg:col-span-2 xl:col-span-1">
+                <label className="text-xs font-medium text-muted-foreground">Buscar</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
 
-              <Select value={personFilter} onValueChange={setPersonFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pessoa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {persons.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Pessoa</label>
+                <Select value={personFilter} onValueChange={setPersonFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pessoa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {persons.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={coupleFilter} onValueChange={setCoupleFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Casal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {coupleOptions.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Casal</label>
+                <Select value={coupleFilter} onValueChange={setCoupleFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Casal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coupleOptions.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={bankFilter} onValueChange={setBankFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Banco" />
-                </SelectTrigger>
-                <SelectContent>
-                  {banks.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Banco</label>
+                <Select value={bankFilter} onValueChange={setBankFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Banco" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pagamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethods.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {p}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
+                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pagamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {types.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Parcelado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {installmentOptions.map((i) => (
-                    <SelectItem key={i} value={i}>
-                      {i}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Parcelado</label>
+                <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Parcelado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {installmentOptions.map((i) => (
+                      <SelectItem key={i} value={i}>
+                        {i}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
