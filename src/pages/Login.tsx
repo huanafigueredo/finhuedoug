@@ -5,10 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Heart, Mail, Lock, User, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Heart, Mail, Lock, User, ArrowLeft, CheckCircle, AlertCircle, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-type AuthMode = 'login' | 'signup' | 'forgot';
+type AuthMode = 'login' | 'signup' | 'forgot' | 'email-exists';
 
 const Login = () => {
   const [searchParams] = useSearchParams();
@@ -21,6 +21,7 @@ const Login = () => {
     return 'login';
   });
   const [emailSent, setEmailSent] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const { signIn, signUp, user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,20 +36,30 @@ const Login = () => {
   const handleLogin = async () => {
     const { error } = await signIn(email, password);
     if (error) {
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      
+      let title = 'Erro no login';
       let message = 'Email ou senha incorretos';
       
       if (error.message.includes('Invalid login credentials')) {
-        message = 'Email ou senha incorretos. Verifique seus dados e tente novamente.';
+        if (newAttempts >= 2) {
+          message = 'Senha incorreta. Você pode usar "Esqueci minha senha" para recuperar seu acesso.';
+        } else {
+          message = 'Email ou senha incorretos. Verifique seus dados e tente novamente.';
+        }
       } else if (error.message.includes('Email not confirmed')) {
-        message = 'Email não confirmado. Verifique sua caixa de entrada.';
+        title = 'Email não confirmado';
+        message = 'Verifique sua caixa de entrada para confirmar seu email antes de fazer login.';
       }
       
       toast({
-        title: 'Erro no login',
+        title,
         description: message,
         variant: 'destructive',
       });
     } else {
+      setLoginAttempts(0);
       toast({
         title: 'Bem-vindo(a)! 💕',
         description: 'Acesso liberado ao CasalFin',
@@ -71,12 +82,8 @@ const Login = () => {
     
     if (error) {
       if (error.message.includes('already registered') || error.message.includes('User already registered')) {
-        toast({
-          title: 'Email já cadastrado',
-          description: 'Este email já possui uma conta. Use o login para entrar.',
-        });
-        // Auto switch to login mode with the same email
-        setMode('login');
+        // Show intermediate screen instead of auto-switching
+        setMode('email-exists');
         setPassword('');
         return;
       } else if (error.message.includes('Signups not allowed') || error.message.includes('signup_disabled')) {
@@ -172,6 +179,20 @@ const Login = () => {
     setMode(newMode);
     setPassword('');
     setEmailSent(false);
+    if (newMode !== 'email-exists') {
+      setLoginAttempts(0);
+    }
+  };
+
+  const goToLogin = () => {
+    setMode('login');
+    setPassword('');
+    setLoginAttempts(0);
+  };
+
+  const goToForgotPassword = () => {
+    setMode('forgot');
+    setPassword('');
   };
 
   if (authLoading) {
@@ -179,6 +200,62 @@ const Login = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
           <Heart className="w-12 h-12 text-primary fill-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  // Email already exists - intermediate screen
+  if (mode === 'email-exists') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-card rounded-2xl p-8 shadow-soft border border-border/50 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+            
+            <h1 className="font-display text-2xl font-bold text-foreground mb-2">
+              Email já cadastrado
+            </h1>
+            
+            <p className="text-muted-foreground mb-6">
+              O email <strong className="text-foreground">{email}</strong> já possui uma conta no CasalFin.
+            </p>
+            
+            <div className="space-y-3">
+              <Button 
+                onClick={goToLogin}
+                className="w-full h-12 rounded-xl text-lg font-semibold"
+              >
+                <Lock className="w-5 h-5 mr-2" />
+                Fazer Login
+              </Button>
+              
+              <Button 
+                onClick={goToForgotPassword}
+                variant="outline"
+                className="w-full h-12 rounded-xl"
+              >
+                <KeyRound className="w-5 h-5 mr-2" />
+                Esqueci minha senha
+              </Button>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              className="mt-4 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              Usar outro email
+            </button>
+          </div>
+          
+          <p className="text-center text-sm text-muted-foreground mt-4">
+            Gerenciem juntos, cresçam juntos 💕
+          </p>
         </div>
       </div>
     );
@@ -232,14 +309,19 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="bg-card rounded-2xl p-8 shadow-soft border border-border/50 space-y-4">
             {mode === 'forgot' && (
-              <button
-                type="button"
-                onClick={() => switchMode('login')}
-                className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-1" />
-                Voltar para login
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => switchMode('login')}
+                  className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Voltar para login
+                </button>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Digite seu email abaixo e enviaremos um link para você criar uma nova senha.
+                </p>
+              </>
             )}
 
             {mode === 'signup' && (
@@ -304,6 +386,23 @@ const Login = () => {
                 >
                   Esqueci minha senha
                 </button>
+              </div>
+            )}
+
+            {/* Show hint after 2 failed login attempts */}
+            {mode === 'login' && loginAttempts >= 2 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <strong>Dica:</strong> Se você esqueceu sua senha, clique em{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('forgot')}
+                    className="text-primary underline hover:no-underline"
+                  >
+                    "Esqueci minha senha"
+                  </button>
+                  {' '}para recuperar seu acesso.
+                </p>
               </div>
             )}
 
