@@ -99,6 +99,18 @@ export default function NewTransaction() {
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
 
+  // Field validation errors
+  interface FieldErrors {
+    date?: string;
+    description?: string;
+    value?: string;
+    category?: string;
+    paidBy?: string;
+    bank?: string;
+    receivingBank?: string;
+  }
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
   // Load transaction data if editing or duplicating
   useEffect(() => {
     if ((isEditMode || isDuplicateMode) && !transactionsLoading && transactionsData.length > 0 && !isInitialized) {
@@ -145,6 +157,45 @@ export default function NewTransaction() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setFieldErrors({});
+    
+    // Validate required fields
+    const errors: FieldErrors = {};
+    
+    if (!date) {
+      errors.date = "Selecione a data";
+    }
+    if (!description.trim()) {
+      errors.description = type === "income" ? "Informe a descrição da receita" : "Informe a descrição da despesa";
+    }
+    if (numericValue <= 0) {
+      errors.value = type === "income" ? "Informe o valor da receita" : "Informe o valor da despesa";
+    }
+    if (!category) {
+      errors.category = "Selecione uma categoria";
+    }
+    if (!paidBy) {
+      errors.paidBy = type === "income" ? "Selecione quem recebeu" : "Selecione quem pagou";
+    }
+    if (type === "expense" && !bank) {
+      errors.bank = "Selecione o banco pagador";
+    }
+    if (type === "income" && !receivingBank) {
+      errors.receivingBank = "Selecione o banco de recebimento";
+    }
+    
+    // If there are errors, set them and stop submission
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Validate form data with Zod
     const validationResult = transactionSchema.safeParse({
@@ -322,14 +373,15 @@ export default function NewTransaction() {
               {/* Date & Description */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Data</Label>
+                  <Label>Data <span className="text-destructive">*</span></Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !date && "text-muted-foreground"
+                          !date && "text-muted-foreground",
+                          fieldErrors.date && "border-destructive"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -340,43 +392,57 @@ export default function NewTransaction() {
                       <Calendar
                         mode="single"
                         selected={date}
-                        onSelect={setDate}
+                        onSelect={(d) => {
+                          setDate(d);
+                          if (d) setFieldErrors(prev => ({ ...prev, date: undefined }));
+                        }}
                         initialFocus
                         className="pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
+                  {fieldErrors.date && <p className="text-sm text-destructive">{fieldErrors.date}</p>}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
+                  <Label htmlFor="description">Descrição <span className="text-destructive">*</span></Label>
                   <Input
                     id="description"
                     placeholder={type === "income" ? "Ex: Salário, Pix cliente X, Cashback cartão" : "Ex: Supermercado Extra"}
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {
+                      setDescription(e.target.value);
+                      if (e.target.value.trim()) setFieldErrors(prev => ({ ...prev, description: undefined }));
+                    }}
+                    className={cn(fieldErrors.description && "border-destructive")}
                   />
+                  {fieldErrors.description && <p className="text-sm text-destructive">{fieldErrors.description}</p>}
                 </div>
               </div>
 
               {/* Value - For Income (before Category) */}
               {type === "income" && (
                 <div className="space-y-2">
-                  <Label htmlFor="value">Valor Total</Label>
+                  <Label htmlFor="value">Valor Total <span className="text-destructive">*</span></Label>
                   <Input
                     id="value"
                     placeholder="R$ 0,00"
                     value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    className="text-2xl font-semibold h-14"
+                    onChange={(e) => {
+                      setValue(e.target.value);
+                      const num = parseFloat(e.target.value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+                      if (num > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
+                    }}
+                    className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
+                  {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
                 </div>
               )}
 
               {/* Category & Subcategory */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Categoria</Label>
+                  <Label>Categoria <span className="text-destructive">*</span></Label>
                   <Select 
                     value={category} 
                     onValueChange={(value) => {
@@ -384,10 +450,11 @@ export default function NewTransaction() {
                       setCategory(value);
                       setCategoryId(selectedCategory?.id || "");
                       setSubcategory(""); // Reset subcategory when category changes
+                      if (value) setFieldErrors(prev => ({ ...prev, category: undefined }));
                     }}
                     disabled={categoriesLoading}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={cn(fieldErrors.category && "border-destructive")}>
                       <SelectValue placeholder={categoriesLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -398,6 +465,7 @@ export default function NewTransaction() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.category && <p className="text-sm text-destructive">{fieldErrors.category}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -424,9 +492,15 @@ export default function NewTransaction() {
               {/* Who Paid & For Whom */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>{type === "income" ? "Quem recebeu" : "Quem pagou"}</Label>
-                  <Select value={paidBy} onValueChange={setPaidBy}>
-                    <SelectTrigger>
+                  <Label>{type === "income" ? "Quem recebeu" : "Quem pagou"} <span className="text-destructive">*</span></Label>
+                  <Select 
+                    value={paidBy} 
+                    onValueChange={(v) => {
+                      setPaidBy(v);
+                      if (v) setFieldErrors(prev => ({ ...prev, paidBy: undefined }));
+                    }}
+                  >
+                    <SelectTrigger className={cn(fieldErrors.paidBy && "border-destructive")}>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -437,6 +511,7 @@ export default function NewTransaction() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {fieldErrors.paidBy && <p className="text-sm text-destructive">{fieldErrors.paidBy}</p>}
                 </div>
 
                 <div className="space-y-2">
@@ -475,14 +550,19 @@ export default function NewTransaction() {
               {/* Value - For Expense (after Couple Toggle) */}
               {type === "expense" && (
                 <div className="space-y-2">
-                  <Label htmlFor="value">Valor Total</Label>
+                  <Label htmlFor="value">Valor Total <span className="text-destructive">*</span></Label>
                   <Input
                     id="value"
                     placeholder="R$ 0,00"
                     value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    className="text-2xl font-semibold h-14"
+                    onChange={(e) => {
+                      setValue(e.target.value);
+                      const num = parseFloat(e.target.value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+                      if (num > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
+                    }}
+                    className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
+                  {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
                 </div>
               )}
 
@@ -580,9 +660,16 @@ export default function NewTransaction() {
               {type === "expense" && (
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Banco Pagador</Label>
-                    <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
-                      <SelectTrigger>
+                    <Label>Banco Pagador <span className="text-destructive">*</span></Label>
+                    <Select 
+                      value={bank} 
+                      onValueChange={(v) => {
+                        setBank(v);
+                        if (v) setFieldErrors(prev => ({ ...prev, bank: undefined }));
+                      }} 
+                      disabled={banksLoading}
+                    >
+                      <SelectTrigger className={cn(fieldErrors.bank && "border-destructive")}>
                         <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
                       </SelectTrigger>
                       <SelectContent>
@@ -601,6 +688,7 @@ export default function NewTransaction() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.bank && <p className="text-sm text-destructive">{fieldErrors.bank}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -625,9 +713,16 @@ export default function NewTransaction() {
               {type === "income" && (
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Banco de Recebimento</Label>
-                    <Select value={receivingBank} onValueChange={setReceivingBank} disabled={banksLoading}>
-                      <SelectTrigger>
+                    <Label>Banco de Recebimento <span className="text-destructive">*</span></Label>
+                    <Select 
+                      value={receivingBank} 
+                      onValueChange={(v) => {
+                        setReceivingBank(v);
+                        if (v) setFieldErrors(prev => ({ ...prev, receivingBank: undefined }));
+                      }} 
+                      disabled={banksLoading}
+                    >
+                      <SelectTrigger className={cn(fieldErrors.receivingBank && "border-destructive")}>
                         <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
                       </SelectTrigger>
                       <SelectContent>
@@ -646,6 +741,7 @@ export default function NewTransaction() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {fieldErrors.receivingBank && <p className="text-sm text-destructive">{fieldErrors.receivingBank}</p>}
                   </div>
 
                   <div className="space-y-2">
