@@ -105,7 +105,8 @@ export default function NewTransaction() {
     if ((isEditMode || isDuplicateMode) && !transactionsLoading && transactionsData.length > 0 && !isInitialized) {
       const transaction = transactionsData.find(t => t.id === loadId);
       if (transaction) {
-        setDate(parseISO(transaction.date));
+        // Use current date when duplicating, original date when editing
+        setDate(isDuplicateMode ? new Date() : parseISO(transaction.date));
         // Remove installment suffix from description if present
         const cleanDescription = transaction.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
         setDescription(cleanDescription);

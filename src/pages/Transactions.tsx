@@ -57,6 +57,9 @@ export default function Transactions() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [transactionToDuplicate, setTransactionToDuplicate] = useState<string | null>(null);
+  const [duplicateIsInstallment, setDuplicateIsInstallment] = useState(false);
 
   // Transform DB transactions to UI format
   const transactions: Transaction[] = transactionsData.map((t) => ({
@@ -140,6 +143,26 @@ export default function Transactions() {
       setTransactionToDelete(null);
       setTransactionToDeleteInfo(null);
     }
+  };
+
+  const handleDuplicateClick = (id: string) => {
+    const tx = transactionsData.find((t) => t.id === id);
+    if (tx?.is_installment) {
+      setTransactionToDuplicate(id);
+      setDuplicateIsInstallment(true);
+      setDuplicateDialogOpen(true);
+    } else {
+      navigate(`/novo?duplicate=${id}`);
+    }
+  };
+
+  const confirmDuplicate = () => {
+    if (transactionToDuplicate) {
+      navigate(`/novo?duplicate=${transactionToDuplicate}`);
+    }
+    setDuplicateDialogOpen(false);
+    setTransactionToDuplicate(null);
+    setDuplicateIsInstallment(false);
   };
 
   return (
@@ -377,7 +400,7 @@ export default function Transactions() {
                         transaction={transaction}
                         onEdit={(id) => navigate(`/novo?edit=${id}`)}
                         onDelete={handleDeleteClick}
-                        onDuplicate={(id) => navigate(`/novo?duplicate=${id}`)}
+                        onDuplicate={handleDuplicateClick}
                       />
                     ))}
                   </tbody>
@@ -422,6 +445,26 @@ export default function Transactions() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Duplicate Confirmation Dialog */}
+      <AlertDialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Duplicar lançamento parcelado?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este é um lançamento parcelado. Ao duplicar, <strong>todas as parcelas serão recriadas</strong> a partir da data atual.
+              <br /><br />
+              Deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDuplicate}>
+              Duplicar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
