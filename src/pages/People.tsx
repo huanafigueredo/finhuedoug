@@ -73,45 +73,45 @@ export default function People() {
 
   // Calculate expenses per person
   const personExpenses = useMemo(() => {
-    const huanaExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Huana")
+    const person1Expenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 1")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    const douglasExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
+    const person2Expenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 2")
       .reduce((sum, t) => sum + t.total_value, 0);
 
     const totalExpenses = filteredTransactions
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    return { huanaExpenses, douglasExpenses, totalExpenses };
+    return { person1Expenses, person2Expenses, totalExpenses };
   }, [filteredTransactions]);
 
   // Get banks used by each person from transactions
   const personBanks = useMemo(() => {
-    const huanaBankIds = new Set<string>();
-    const douglasBankIds = new Set<string>();
+    const person1BankIds = new Set<string>();
+    const person2BankIds = new Set<string>();
 
     filteredTransactions
       .filter((t) => t.type === "expense" && t.bank_id)
       .forEach((t) => {
-        if (t.for_who === "Huana") {
-          huanaBankIds.add(t.bank_id!);
-        } else if (t.for_who === "Douglas") {
-          douglasBankIds.add(t.bank_id!);
+        if (t.for_who === "Pessoa 1") {
+          person1BankIds.add(t.bank_id!);
+        } else if (t.for_who === "Pessoa 2") {
+          person2BankIds.add(t.bank_id!);
         }
       });
 
-    const huanaBanks = banks
-      .filter((b) => huanaBankIds.has(b.id))
+    const person1Banks = banks
+      .filter((b) => person1BankIds.has(b.id))
       .map((b) => ({ id: b.id, name: b.name, color: b.color || "#6B7280" }));
 
-    const douglasBanks = banks
-      .filter((b) => douglasBankIds.has(b.id))
+    const person2Banks = banks
+      .filter((b) => person2BankIds.has(b.id))
       .map((b) => ({ id: b.id, name: b.name, color: b.color || "#6B7280" }));
 
-    return { huanaBanks, douglasBanks };
+    return { person1Banks, person2Banks };
   }, [filteredTransactions, banks]);
 
   const handleAddBank = (personName: string) => {
@@ -151,17 +151,17 @@ export default function People() {
   const people = [
     {
       id: "1",
-      name: "Huana",
+      name: "Pessoa 1",
       avatar: "",
-      totalExpenses: formatCurrency(personExpenses.huanaExpenses),
-      banks: personBanks.huanaBanks,
+      totalExpenses: formatCurrency(personExpenses.person1Expenses),
+      banks: personBanks.person1Banks,
     },
     {
       id: "2",
-      name: "Douglas",
+      name: "Pessoa 2",
       avatar: "",
-      totalExpenses: formatCurrency(personExpenses.douglasExpenses),
-      banks: personBanks.douglasBanks,
+      totalExpenses: formatCurrency(personExpenses.person2Expenses),
+      banks: personBanks.person2Banks,
     },
   ];
 
@@ -178,7 +178,7 @@ export default function People() {
               <span className="text-sm font-medium text-primary">O Casal</span>
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Huana & Douglas
+              Nosso Casal
             </h1>
             <p className="text-muted-foreground max-w-md mx-auto">
               Gerencie os perfis e bancos de cada pessoa do casal

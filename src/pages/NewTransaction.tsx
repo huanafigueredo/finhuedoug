@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,28 @@ import { useCreateTransaction } from "@/hooks/useTransactions";
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 
-const persons = ["Huana", "Douglas"];
+// Validation schema for transactions
+const transactionSchema = z.object({
+  date: z.date({ required_error: "Data é obrigatória" }),
+  description: z.string()
+    .min(1, "Descrição é obrigatória")
+    .max(200, "Descrição deve ter no máximo 200 caracteres")
+    .trim(),
+  type: z.enum(["expense", "income"], { required_error: "Tipo é obrigatório" }),
+  value: z.number()
+    .positive("Valor deve ser maior que zero")
+    .max(999999999, "Valor máximo excedido"),
+  category: z.string().max(100).optional(),
+  subcategory: z.string().max(100).optional(),
+  paidBy: z.string().max(100).optional(),
+  forWho: z.string().max(100).optional(),
+  isCouple: z.boolean(),
+  isInstallment: z.boolean(),
+  totalInstallments: z.number().min(2).max(48).optional(),
+  incomeOrigin: z.string().max(100).optional(),
+});
+
+const persons = ["Pessoa 1", "Pessoa 2"];
 const incomeOrigins = ["Salário", "Freelance", "Investimentos", "Outros"];
 const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
 
@@ -75,10 +97,27 @@ export default function NewTransaction() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!date || !description || numericValue <= 0) {
+    // Validate form data with Zod
+    const validationResult = transactionSchema.safeParse({
+      date,
+      description: description.trim(),
+      type,
+      value: numericValue,
+      category: category || undefined,
+      subcategory: subcategory || undefined,
+      paidBy: paidBy || undefined,
+      forWho: forWho || undefined,
+      isCouple,
+      isInstallment: isInstallment && totalInstallments > 1,
+      totalInstallments: isInstallment ? totalInstallments : undefined,
+      incomeOrigin: incomeOrigin || undefined,
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha a data, descrição e valor.",
+        title: "Erro de validação",
+        description: firstError.message,
         variant: "destructive",
       });
       return;

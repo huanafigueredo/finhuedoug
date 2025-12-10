@@ -63,10 +63,10 @@ interface ConfigItem {
 }
 
 const initialBalances = [
-  { id: "1", name: "Nubank - Huana", value: "5.000,00" },
-  { id: "2", name: "Inter - Huana", value: "2.500,00" },
-  { id: "3", name: "Nubank - Douglas", value: "3.800,00" },
-  { id: "4", name: "Itaú - Douglas", value: "1.200,00" },
+  { id: "1", name: "Conta 1", value: "5.000,00" },
+  { id: "2", name: "Conta 2", value: "2.500,00" },
+  { id: "3", name: "Conta 3", value: "3.800,00" },
+  { id: "4", name: "Conta 4", value: "1.200,00" },
 ];
 
 export default function Settings() {

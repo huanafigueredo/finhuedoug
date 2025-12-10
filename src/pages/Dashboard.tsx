@@ -82,15 +82,15 @@ export default function Dashboard() {
     const balance = income - expenses;
 
     // Calculate spending per person based on for_who field
-    const huanaExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Huana")
+    const person1Expenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 1")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    const douglasExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
+    const person2Expenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 2")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    return { expenses, income, balance, huanaExpenses, douglasExpenses };
+    return { expenses, income, balance, person1Expenses, person2Expenses };
   }, [filteredTransactions]);
 
   // Category breakdown
@@ -203,7 +203,7 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Olá, Huana & Douglas 💕
+                Olá! 💕
               </h1>
               <p className="text-muted-foreground">
                 Aqui está o resumo financeiro de vocês
@@ -260,14 +260,14 @@ export default function Dashboard() {
               variant="accent"
             />
             <MetricCard
-              title="Gastos Huana"
-              value={formatCurrency(metrics.huanaExpenses)}
+              title="Gastos Pessoa 1"
+              value={formatCurrency(metrics.person1Expenses)}
               icon={Users}
               variant="default"
             />
             <MetricCard
-              title="Gastos Douglas"
-              value={formatCurrency(metrics.douglasExpenses)}
+              title="Gastos Pessoa 2"
+              value={formatCurrency(metrics.person2Expenses)}
               icon={Users}
               variant="default"
             />
