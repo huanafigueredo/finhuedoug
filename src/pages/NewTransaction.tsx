@@ -55,6 +55,12 @@ const transactionSchema = z.object({
 
 const persons = ["Huana", "Douglas"];
 const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
+const recurringDurationOptions = [
+  { value: "indefinite", label: "Sem prazo definido" },
+  { value: "3", label: "3 meses" },
+  { value: "6", label: "6 meses" },
+  { value: "12", label: "12 meses" },
+];
 
 export default function NewTransaction() {
   const navigate = useNavigate();
@@ -99,6 +105,11 @@ export default function NewTransaction() {
   // Installment fields
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
+
+  // Recurring income fields
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDay, setRecurringDay] = useState<number>(1);
+  const [recurringDuration, setRecurringDuration] = useState<string>("indefinite");
 
   // Field validation errors
   interface FieldErrors {
@@ -251,6 +262,10 @@ export default function NewTransaction() {
         is_installment: isInstallment && totalInstallments > 1,
         total_installments: isInstallment ? totalInstallments : undefined,
         installment_value: isInstallment ? installmentValue : undefined,
+        // Recurring fields (only for income)
+        is_recurring: type === "income" && isRecurring,
+        recurring_day: type === "income" && isRecurring ? recurringDay : undefined,
+        recurring_duration: type === "income" && isRecurring ? recurringDuration : undefined,
       };
 
       if (isEditMode && editId) {
@@ -270,11 +285,16 @@ export default function NewTransaction() {
         await createTransaction.mutateAsync(transactionData);
         setShowSuccess(true);
         setTimeout(() => {
+          let toastDescription = "O lançamento foi registrado com sucesso.";
+          if (isInstallment && totalInstallments > 1) {
+            toastDescription = `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`;
+          } else if (type === "income" && isRecurring) {
+            const months = recurringDuration === "indefinite" ? 12 : parseInt(recurringDuration);
+            toastDescription = `Receita recorrente criada! Gerados ${months} lançamentos futuros.`;
+          }
           toast({
             title: "Lançamento salvo!",
-            description: isInstallment && totalInstallments > 1
-              ? `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`
-              : "O lançamento foi registrado com sucesso.",
+            description: toastDescription,
           });
           navigate("/lancamentos");
         }, 1000);
@@ -451,6 +471,67 @@ export default function NewTransaction() {
                     className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
                   {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
+                </div>
+              )}
+
+              {/* Recurring Income Toggle - Only for Income */}
+              {type === "income" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                    <div className="flex items-center gap-3">
+                      <CalendarIcon className={cn("w-5 h-5", isRecurring ? "text-success" : "text-muted-foreground")} />
+                      <div>
+                        <Label className="text-foreground">Receita mensal recorrente</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Gerar automaticamente nos próximos meses
+                        </p>
+                      </div>
+                    </div>
+                    <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
+                  </div>
+
+                  {isRecurring && (
+                    <div className="grid md:grid-cols-2 gap-6 pl-4 border-l-2 border-success/30">
+                      <div className="space-y-2">
+                        <Label>Dia do mês</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={recurringDay}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 1;
+                            setRecurringDay(Math.min(31, Math.max(1, val)));
+                          }}
+                          placeholder="1-31"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          A receita será lançada neste dia todo mês
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Duração</Label>
+                        <Select value={recurringDuration} onValueChange={setRecurringDuration}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {recurringDurationOptions.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          {recurringDuration === "indefinite" 
+                            ? "Serão gerados 12 lançamentos futuros" 
+                            : `Serão gerados ${recurringDuration} lançamentos`}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
