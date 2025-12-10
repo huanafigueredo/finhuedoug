@@ -28,9 +28,9 @@ import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useRecipients } from "@/hooks/useRecipients";
 import { useCreateTransaction } from "@/hooks/useTransactions";
+import { useCategories } from "@/hooks/useCategories";
+import { useSubcategories } from "@/hooks/useSubcategories";
 
-const categories = ["Alimentação", "Moradia", "Transporte", "Lazer", "Assinaturas", "Saúde", "Trabalho"];
-const subcategories = ["Supermercado", "Restaurante", "Delivery", "Conta de Luz", "Aluguel", "Streaming"];
 const persons = ["Huana", "Douglas"];
 const incomeOrigins = ["Salário", "Freelance", "Investimentos", "Outros"];
 const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
@@ -41,13 +41,18 @@ export default function NewTransaction() {
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useCategories();
   const createTransaction = useCreateTransaction();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
   const [type, setType] = useState<"expense" | "income">("expense");
   const [category, setCategory] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const [subcategory, setSubcategory] = useState("");
+
+  // Fetch subcategories based on selected category
+  const { data: subcategoriesData = [], isLoading: subcategoriesLoading } = useSubcategories(categoryId || undefined);
   const [paidBy, setPaidBy] = useState("");
   const [forWho, setForWho] = useState("");
   const [isCouple, setIsCouple] = useState(false);
@@ -254,14 +259,23 @@ export default function NewTransaction() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label>Categoria</Label>
-                  <Select value={category} onValueChange={setCategory}>
+                  <Select 
+                    value={category} 
+                    onValueChange={(value) => {
+                      const selectedCategory = categoriesData.find(c => c.name === value);
+                      setCategory(value);
+                      setCategoryId(selectedCategory?.id || "");
+                      setSubcategory(""); // Reset subcategory when category changes
+                    }}
+                    disabled={categoriesLoading}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={categoriesLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
+                      {categoriesData.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -270,14 +284,18 @@ export default function NewTransaction() {
 
                 <div className="space-y-2">
                   <Label>Subcategoria</Label>
-                  <Select value={subcategory} onValueChange={setSubcategory}>
+                  <Select 
+                    value={subcategory} 
+                    onValueChange={setSubcategory}
+                    disabled={subcategoriesLoading || !categoryId}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={!categoryId ? "Selecione uma categoria" : subcategoriesLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {subcategories.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
+                      {subcategoriesData.map((s) => (
+                        <SelectItem key={s.id} value={s.name}>
+                          {s.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
