@@ -178,11 +178,15 @@ export type Database = {
           is_couple: boolean | null
           is_generated_installment: boolean | null
           is_installment: boolean | null
+          is_recurring: boolean | null
           paid_by: string | null
           parent_transaction_id: string | null
           payment_method_id: string | null
           receiving_bank_id: string | null
           recipient_id: string | null
+          recurring_day: number | null
+          recurring_duration: string | null
+          recurring_end_date: string | null
           subcategory: string | null
           total_installments: number | null
           total_value: number
@@ -204,11 +208,15 @@ export type Database = {
           is_couple?: boolean | null
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
+          is_recurring?: boolean | null
           paid_by?: string | null
           parent_transaction_id?: string | null
           payment_method_id?: string | null
           receiving_bank_id?: string | null
           recipient_id?: string | null
+          recurring_day?: number | null
+          recurring_duration?: string | null
+          recurring_end_date?: string | null
           subcategory?: string | null
           total_installments?: number | null
           total_value: number
@@ -230,11 +238,15 @@ export type Database = {
           is_couple?: boolean | null
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
+          is_recurring?: boolean | null
           paid_by?: string | null
           parent_transaction_id?: string | null
           payment_method_id?: string | null
           receiving_bank_id?: string | null
           recipient_id?: string | null
+          recurring_day?: number | null
+          recurring_duration?: string | null
+          recurring_end_date?: string | null
           subcategory?: string | null
           total_installments?: number | null
           total_value?: number

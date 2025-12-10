@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { addMonths } from "date-fns";
+import { addMonths, setDate as setDateFns } from "date-fns";
 
 export interface TransactionInsert {
   date: string;
@@ -24,6 +24,11 @@ export interface TransactionInsert {
   installment_value?: number;
   parent_transaction_id?: string;
   is_generated_installment?: boolean;
+  // Recurring fields
+  is_recurring?: boolean;
+  recurring_day?: number;
+  recurring_duration?: string;
+  recurring_end_date?: string;
 }
 
 export interface Transaction {
@@ -51,6 +56,11 @@ export interface Transaction {
   parent_transaction_id: string | null;
   is_generated_installment: boolean;
   user_id: string | null;
+  // Recurring fields
+  is_recurring: boolean | null;
+  recurring_day: number | null;
+  recurring_duration: string | null;
+  recurring_end_date: string | null;
   // Joined fields
   bank_name?: string;
   payment_method_name?: string;
@@ -147,7 +157,70 @@ export function useCreateTransaction() {
         return parentData;
       }
 
-      // Single transaction (no installments)
+      // If it's a recurring income transaction
+      if (transaction.is_recurring && transaction.type === "income" && transaction.recurring_day) {
+        const recurringDay = transaction.recurring_day;
+        const duration = transaction.recurring_duration;
+        
+        // Determine number of months to generate
+        let monthsToGenerate = 0;
+        if (duration === "indefinite") {
+          monthsToGenerate = 12; // Generate 12 months for indefinite
+        } else {
+          monthsToGenerate = parseInt(duration || "0");
+        }
+
+        if (monthsToGenerate > 0) {
+          const baseDate = new Date(transaction.date);
+          
+          // Create the first (parent) recurring transaction
+          const { data: parentData, error: parentError } = await supabase
+            .from("transactions")
+            .insert({
+              ...transaction,
+              user_id: user.id,
+              is_generated_installment: false,
+            })
+            .select()
+            .single();
+
+          if (parentError) {
+            console.error("Recurring transaction insert error:", parentError);
+            throw parentError;
+          }
+
+          // Create future recurring transactions
+          const futureTransactions = [];
+          for (let i = 1; i < monthsToGenerate; i++) {
+            let futureDate = addMonths(baseDate, i);
+            // Set the specific day of month
+            futureDate = setDateFns(futureDate, Math.min(recurringDay, new Date(futureDate.getFullYear(), futureDate.getMonth() + 1, 0).getDate()));
+            
+            futureTransactions.push({
+              ...transaction,
+              user_id: user.id,
+              date: futureDate.toISOString().split("T")[0],
+              parent_transaction_id: parentData.id,
+              is_generated_installment: true,
+            });
+          }
+
+          if (futureTransactions.length > 0) {
+            const { error: futureError } = await supabase
+              .from("transactions")
+              .insert(futureTransactions);
+
+            if (futureError) {
+              console.error("Future recurring transactions insert error:", futureError);
+              throw futureError;
+            }
+          }
+
+          return parentData;
+        }
+      }
+
+      // Single transaction (no installments or recurring)
       const { data, error } = await supabase
         .from("transactions")
         .insert({ ...transaction, user_id: user.id })
