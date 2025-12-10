@@ -54,7 +54,6 @@ const transactionSchema = z.object({
 });
 
 const persons = ["Huana", "Douglas"];
-const incomeOrigins = ["Salário", "Freelance", "Investimentos", "Outros"];
 const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
 
 export default function NewTransaction() {
@@ -353,12 +352,26 @@ export default function NewTransaction() {
                   <Label htmlFor="description">Descrição</Label>
                   <Input
                     id="description"
-                    placeholder="Ex: Supermercado Extra"
+                    placeholder={type === "income" ? "Ex: Salário, Pix cliente X, Cashback cartão" : "Ex: Supermercado Extra"}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
               </div>
+
+              {/* Value - For Income (before Category) */}
+              {type === "income" && (
+                <div className="space-y-2">
+                  <Label htmlFor="value">Valor Total</Label>
+                  <Input
+                    id="value"
+                    placeholder="R$ 0,00"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="text-2xl font-semibold h-14"
+                  />
+                </div>
+              )}
 
               {/* Category & Subcategory */}
               <div className="grid md:grid-cols-2 gap-6">
@@ -411,7 +424,7 @@ export default function NewTransaction() {
               {/* Who Paid & For Whom */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Quem pagou</Label>
+                  <Label>{type === "income" ? "Quem recebeu" : "Quem pagou"}</Label>
                   <Select value={paidBy} onValueChange={setPaidBy}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
@@ -427,7 +440,7 @@ export default function NewTransaction() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Para quem</Label>
+                  <Label>{type === "income" ? "Origem da receita" : "Para quem"}</Label>
                   <Select value={forWho} onValueChange={setForWho} disabled={recipientsLoading}>
                     <SelectTrigger>
                       <SelectValue placeholder={recipientsLoading ? "Carregando..." : "Selecione"} />
@@ -443,31 +456,35 @@ export default function NewTransaction() {
                 </div>
               </div>
 
-              {/* Couple Toggle */}
-              <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
-                <div className="flex items-center gap-3">
-                  <Heart className={cn("w-5 h-5", isCouple ? "text-primary fill-primary" : "text-muted-foreground")} />
-                  <div>
-                    <Label className="text-foreground">Compra do Casal</Label>
-                    <p className="text-sm text-muted-foreground">
-                      O valor será dividido entre os dois
-                    </p>
+              {/* Couple Toggle - Only for Expenses */}
+              {type === "expense" && (
+                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                  <div className="flex items-center gap-3">
+                    <Heart className={cn("w-5 h-5", isCouple ? "text-primary fill-primary" : "text-muted-foreground")} />
+                    <div>
+                      <Label className="text-foreground">Compra do Casal</Label>
+                      <p className="text-sm text-muted-foreground">
+                        O valor será dividido entre os dois
+                      </p>
+                    </div>
                   </div>
+                  <Switch checked={isCouple} onCheckedChange={setIsCouple} />
                 </div>
-                <Switch checked={isCouple} onCheckedChange={setIsCouple} />
-              </div>
+              )}
 
-              {/* Value */}
-              <div className="space-y-2">
-                <Label htmlFor="value">Valor Total</Label>
-                <Input
-                  id="value"
-                  placeholder="R$ 0,00"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  className="text-2xl font-semibold h-14"
-                />
-              </div>
+              {/* Value - For Expense (after Couple Toggle) */}
+              {type === "expense" && (
+                <div className="space-y-2">
+                  <Label htmlFor="value">Valor Total</Label>
+                  <Input
+                    id="value"
+                    placeholder="R$ 0,00"
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    className="text-2xl font-semibold h-14"
+                  />
+                </div>
+              )}
 
               {/* Value Preview */}
               {isCouple && numericValue > 0 && !isInstallment && (
@@ -559,52 +576,54 @@ export default function NewTransaction() {
                 </div>
               )}
 
-              {/* Bank & Payment */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Banco Pagador</Label>
-                  <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {banks.map((b) => (
-                        <SelectItem key={b.id} value={b.name}>
-                          <div className="flex items-center gap-2">
-                            {b.color && (
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: b.color }}
-                              />
-                            )}
-                            {b.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Bank & Payment - Only for Expenses */}
+              {type === "expense" && (
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Banco Pagador</Label>
+                    <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {banks.map((b) => (
+                          <SelectItem key={b.id} value={b.name}>
+                            <div className="flex items-center gap-2">
+                              {b.color && (
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: b.color }}
+                                />
+                              )}
+                              {b.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label>Forma de Pagamento</Label>
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={paymentMethodsLoading ? "Carregando..." : "Selecione"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((p) => (
-                        <SelectItem key={p.id} value={p.name}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label>Forma de Pagamento</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={paymentMethodsLoading ? "Carregando..." : "Selecione"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentMethods.map((p) => (
+                          <SelectItem key={p.id} value={p.name}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Income Specific Fields */}
               {type === "income" && (
-                <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-border">
+                <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label>Banco de Recebimento</Label>
                     <Select value={receivingBank} onValueChange={setReceivingBank} disabled={banksLoading}>
@@ -630,15 +649,15 @@ export default function NewTransaction() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Origem da Receita</Label>
-                    <Select value={incomeOrigin} onValueChange={setIncomeOrigin}>
+                    <Label>Forma de Pagamento</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={paymentMethodsLoading ? "Carregando..." : "Selecione"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {incomeOrigins.map((o) => (
-                          <SelectItem key={o} value={o}>
-                            {o}
+                        {paymentMethods.map((p) => (
+                          <SelectItem key={p.id} value={p.name}>
+                            {p.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
