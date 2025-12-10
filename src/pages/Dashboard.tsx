@@ -83,11 +83,11 @@ export default function Dashboard() {
 
     // Calculate spending per person based on for_who field
     const person1Expenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 1")
+      .filter((t) => t.type === "expense" && t.for_who === "Huana")
       .reduce((sum, t) => sum + t.total_value, 0);
 
     const person2Expenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 2")
+      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
       .reduce((sum, t) => sum + t.total_value, 0);
 
     return { expenses, income, balance, person1Expenses, person2Expenses };
@@ -260,13 +260,13 @@ export default function Dashboard() {
               variant="accent"
             />
             <MetricCard
-              title="Gastos Pessoa 1"
+              title="Gastos Huana"
               value={formatCurrency(metrics.person1Expenses)}
               icon={Users}
               variant="default"
             />
             <MetricCard
-              title="Gastos Pessoa 2"
+              title="Gastos Douglas"
               value={formatCurrency(metrics.person2Expenses)}
               icon={Users}
               variant="default"

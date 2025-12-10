@@ -74,11 +74,11 @@ export default function People() {
   // Calculate expenses per person
   const personExpenses = useMemo(() => {
     const person1Expenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 1")
+      .filter((t) => t.type === "expense" && t.for_who === "Huana")
       .reduce((sum, t) => sum + t.total_value, 0);
 
     const person2Expenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Pessoa 2")
+      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
       .reduce((sum, t) => sum + t.total_value, 0);
 
     const totalExpenses = filteredTransactions
@@ -96,9 +96,9 @@ export default function People() {
     filteredTransactions
       .filter((t) => t.type === "expense" && t.bank_id)
       .forEach((t) => {
-        if (t.for_who === "Pessoa 1") {
+        if (t.for_who === "Huana") {
           person1BankIds.add(t.bank_id!);
-        } else if (t.for_who === "Pessoa 2") {
+        } else if (t.for_who === "Douglas") {
           person2BankIds.add(t.bank_id!);
         }
       });
@@ -151,14 +151,14 @@ export default function People() {
   const people = [
     {
       id: "1",
-      name: "Pessoa 1",
+      name: "Huana",
       avatar: "",
       totalExpenses: formatCurrency(personExpenses.person1Expenses),
       banks: personBanks.person1Banks,
     },
     {
       id: "2",
-      name: "Pessoa 2",
+      name: "Douglas",
       avatar: "",
       totalExpenses: formatCurrency(personExpenses.person2Expenses),
       banks: personBanks.person2Banks,
@@ -178,7 +178,7 @@ export default function People() {
               <span className="text-sm font-medium text-primary">O Casal</span>
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Nosso Casal
+              Huana e Douglas
             </h1>
             <p className="text-muted-foreground max-w-md mx-auto">
               Gerencie os perfis e bancos de cada pessoa do casal
