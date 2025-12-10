@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const persons = ["Todos", "Huana", "Douglas"];
+const forWhoOptions = ["Todos", "Huana", "Douglas", "Casal", "Empresa"];
 const categories = ["Todas", "Alimentação", "Moradia", "Lazer", "Trabalho", "Assinaturas", "Transporte", "Saúde"];
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
@@ -44,6 +45,7 @@ export default function Transactions() {
 
   const [search, setSearch] = useState("");
   const [personFilter, setPersonFilter] = useState("Todos");
+  const [forWhoFilter, setForWhoFilter] = useState("Todos");
   const [categoryFilter, setCategoryFilter] = useState("Todas");
   const [bankFilter, setBankFilter] = useState("Todos");
   const [paymentFilter, setPaymentFilter] = useState("Todos");
@@ -60,6 +62,7 @@ export default function Transactions() {
     date: format(new Date(t.date), "dd/MM/yyyy"),
     description: t.description,
     person: t.paid_by || "-",
+    forWho: t.for_who || "-",
     category: t.category || "-",
     bank: t.bank_name || "-",
     paymentMethod: t.payment_method_name || "-",
@@ -80,6 +83,7 @@ export default function Transactions() {
       return false;
     }
     if (personFilter !== "Todos" && t.person !== personFilter) return false;
+    if (forWhoFilter !== "Todos" && t.forWho !== forWhoFilter) return false;
     if (categoryFilter !== "Todas" && t.category !== categoryFilter) return false;
     if (bankFilter !== "Todos" && t.bank !== bankFilter) return false;
     if (paymentFilter !== "Todos" && t.paymentMethod !== paymentFilter) return false;
@@ -173,7 +177,7 @@ export default function Transactions() {
               <span className="text-sm font-medium text-foreground">Filtros</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-9 gap-4">
               <div className="space-y-1.5 lg:col-span-2 xl:col-span-1">
                 <label className="text-xs font-medium text-muted-foreground">Buscar</label>
                 <div className="relative">
@@ -197,6 +201,22 @@ export default function Transactions() {
                     {persons.map((p) => (
                       <SelectItem key={p} value={p}>
                         {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Para Quem</label>
+                <Select value={forWhoFilter} onValueChange={setForWhoFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Para Quem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {forWhoOptions.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        {f}
                       </SelectItem>
                     ))}
                   </SelectContent>

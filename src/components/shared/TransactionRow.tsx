@@ -14,6 +14,7 @@ export interface Transaction {
   date: string;
   description: string;
   person: string;
+  forWho: string;
   category: string;
   bank: string;
   paymentMethod: string;
