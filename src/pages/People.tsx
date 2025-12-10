@@ -71,21 +71,40 @@ export default function People() {
     });
   }, [transactions, selectedMonth, selectedYear]);
 
-  // Calculate expenses per person
+  // Calculate expenses per person with couple share logic
   const personExpenses = useMemo(() => {
-    const person1Expenses = filteredTransactions
+    // Gastos pessoais de Huana
+    const person1Personal = filteredTransactions
       .filter((t) => t.type === "expense" && t.for_who === "Huana")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    const person2Expenses = filteredTransactions
+    // Gastos pessoais de Douglas
+    const person2Personal = filteredTransactions
       .filter((t) => t.type === "expense" && t.for_who === "Douglas")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    const totalExpenses = filteredTransactions
-      .filter((t) => t.type === "expense")
+    // Gastos do casal (será dividido por 2)
+    const coupleExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Casal")
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    return { person1Expenses, person2Expenses, totalExpenses };
+    // Parte de cada pessoa nos gastos do casal
+    const coupleShare = coupleExpenses / 2;
+
+    // Totais finais
+    const person1Total = person1Personal + coupleShare;
+    const person2Total = person2Personal + coupleShare;
+    const totalExpenses = person1Personal + person2Personal + coupleExpenses;
+
+    return {
+      person1Personal,
+      person2Personal,
+      coupleExpenses,
+      coupleShare,
+      person1Total,
+      person2Total,
+      totalExpenses,
+    };
   }, [filteredTransactions]);
 
   // Get banks used by each person from transactions
@@ -153,14 +172,18 @@ export default function People() {
       id: "1",
       name: "Huana",
       avatar: "",
-      totalExpenses: formatCurrency(personExpenses.person1Expenses),
+      personalExpenses: formatCurrency(personExpenses.person1Personal),
+      coupleShareExpenses: formatCurrency(personExpenses.coupleShare),
+      totalExpenses: formatCurrency(personExpenses.person1Total),
       banks: personBanks.person1Banks,
     },
     {
       id: "2",
       name: "Douglas",
       avatar: "",
-      totalExpenses: formatCurrency(personExpenses.person2Expenses),
+      personalExpenses: formatCurrency(personExpenses.person2Personal),
+      coupleShareExpenses: formatCurrency(personExpenses.coupleShare),
+      totalExpenses: formatCurrency(personExpenses.person2Total),
       banks: personBanks.person2Banks,
     },
   ];
@@ -222,6 +245,8 @@ export default function People() {
                 name={person.name}
                 avatar={person.avatar}
                 banks={person.banks}
+                personalExpenses={person.personalExpenses}
+                coupleShareExpenses={person.coupleShareExpenses}
                 totalExpenses={person.totalExpenses}
                 onAddBank={() => handleAddBank(person.name)}
                 onDeleteBank={handleDeleteBank}

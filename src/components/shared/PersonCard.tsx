@@ -12,6 +12,8 @@ interface PersonCardProps {
   name: string;
   avatar: string;
   banks: Bank[];
+  personalExpenses: string;
+  coupleShareExpenses: string;
   totalExpenses: string;
   className?: string;
   onAddBank?: () => void;
@@ -22,6 +24,8 @@ export function PersonCard({
   name,
   avatar,
   banks,
+  personalExpenses,
+  coupleShareExpenses,
   totalExpenses,
   className,
   onAddBank,
@@ -46,9 +50,24 @@ export function PersonCard({
           <h3 className="font-display text-xl font-semibold text-foreground">
             {name}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Total: {totalExpenses}
-          </p>
+        </div>
+      </div>
+
+      {/* Expense Breakdown */}
+      <div className="space-y-2 mb-6 p-4 rounded-xl bg-secondary/30">
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Gasto pessoal:</span>
+          <span className="font-medium text-foreground">{personalExpenses}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-muted-foreground">Parte do casal:</span>
+          <span className="font-medium text-foreground">{coupleShareExpenses}</span>
+        </div>
+        <div className="border-t border-border pt-2 mt-2">
+          <div className="flex justify-between">
+            <span className="font-medium text-foreground">Total:</span>
+            <span className="font-bold text-primary text-lg">{totalExpenses}</span>
+          </div>
         </div>
       </div>
 
