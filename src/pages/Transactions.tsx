@@ -377,6 +377,7 @@ export default function Transactions() {
                         transaction={transaction}
                         onEdit={(id) => navigate(`/novo?edit=${id}`)}
                         onDelete={handleDeleteClick}
+                        onDuplicate={(id) => navigate(`/novo?duplicate=${id}`)}
                       />
                     ))}
                   </tbody>

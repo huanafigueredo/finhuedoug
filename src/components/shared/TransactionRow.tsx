@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
-import { Heart, MoreVertical, Pencil, Trash2, CreditCard } from "lucide-react";
+import { Heart, MoreVertical, Pencil, Trash2, CreditCard, Copy } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,7 @@ interface TransactionRowProps {
   className?: string;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
 }
 
 export function TransactionRow({
@@ -40,6 +41,7 @@ export function TransactionRow({
   className,
   onEdit,
   onDelete,
+  onDuplicate,
 }: TransactionRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -104,6 +106,10 @@ export function TransactionRow({
             <DropdownMenuItem onClick={() => onEdit?.(transaction.id)}>
               <Pencil className="w-4 h-4 mr-2" />
               Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDuplicate?.(transaction.id)}>
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicar
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onDelete?.(transaction.id)}
