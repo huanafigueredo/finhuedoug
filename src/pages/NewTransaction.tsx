@@ -69,7 +69,6 @@ export default function NewTransaction() {
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
-  const { data: categoriesData = [], isLoading: categoriesLoading } = useCategories();
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -81,6 +80,8 @@ export default function NewTransaction() {
   const [categoryId, setCategoryId] = useState("");
   const [subcategory, setSubcategory] = useState("");
 
+  // Fetch categories based on transaction type
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useCategories(type);
   // Fetch subcategories based on selected category
   const { data: subcategoriesData = [], isLoading: subcategoriesLoading } = useSubcategories(categoryId || undefined);
   const [paidBy, setPaidBy] = useState("");
@@ -346,7 +347,14 @@ export default function NewTransaction() {
               <div className="flex items-center justify-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setType("expense")}
+                  onClick={() => {
+                    if (type !== "expense") {
+                      setType("expense");
+                      setCategory("");
+                      setCategoryId("");
+                      setSubcategory("");
+                    }
+                  }}
                   className={cn(
                     "px-6 py-3 rounded-xl font-medium transition-all duration-300",
                     type === "expense"
@@ -358,7 +366,14 @@ export default function NewTransaction() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setType("income")}
+                  onClick={() => {
+                    if (type !== "income") {
+                      setType("income");
+                      setCategory("");
+                      setCategoryId("");
+                      setSubcategory("");
+                    }
+                  }}
                   className={cn(
                     "px-6 py-3 rounded-xl font-medium transition-all duration-300",
                     type === "income"

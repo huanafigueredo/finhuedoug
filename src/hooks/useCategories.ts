@@ -4,16 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Category {
   id: string;
   name: string;
+  type: string;
 }
 
-export function useCategories() {
+export function useCategories(type?: "expense" | "income") {
   return useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", type],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("categories")
-        .select("id, name")
+        .select("id, name, type")
         .order("name");
+
+      if (type) {
+        query = query.eq("type", type);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Category[];
