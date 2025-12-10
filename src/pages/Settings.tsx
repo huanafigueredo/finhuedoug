@@ -15,7 +15,25 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Folder,
   Tag,
@@ -26,16 +44,22 @@ import {
   Pencil,
   Trash2,
   Users,
+  ChevronRight,
 } from "lucide-react";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
 import { useRecipients, useAddRecipient, useUpdateRecipient, useDeleteRecipient } from "@/hooks/useRecipients";
+import { useCategories } from "@/hooks/useCategories";
+import { useSubcategories } from "@/hooks/useSubcategories";
+import { useAddCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
+import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@/hooks/useSubcategoriesMutations";
 import { useToast } from "@/hooks/use-toast";
 
 interface ConfigItem {
   id: string;
   name: string;
   color?: string | null;
+  category_id?: string;
 }
 
 const initialBalances = [
@@ -53,11 +77,16 @@ export default function Settings() {
   const [editingItem, setEditingItem] = useState<ConfigItem | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemColor, setNewItemColor] = useState("#D77A61");
+  const [newItemCategoryId, setNewItemCategoryId] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ section: string; id: string; name: string } | null>(null);
 
   // Data from Supabase
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategories();
 
   // Mutations
   const addBank = useAddBank();
@@ -69,12 +98,26 @@ export default function Settings() {
   const addRecipient = useAddRecipient();
   const updateRecipient = useUpdateRecipient();
   const deleteRecipient = useDeleteRecipient();
+  const addCategory = useAddCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
+  const addSubcategory = useAddSubcategory();
+  const updateSubcategory = useUpdateSubcategory();
+  const deleteSubcategory = useDeleteSubcategory();
+
+  // Group subcategories by category
+  const subcategoriesByCategory = subcategories.reduce((acc, sub) => {
+    if (!acc[sub.category_id]) acc[sub.category_id] = [];
+    acc[sub.category_id].push(sub);
+    return acc;
+  }, {} as Record<string, typeof subcategories>);
 
   const sections = {
     banks: {
       title: "Bancos",
       icon: CreditCard,
       allowColor: true,
+      requiresCategory: false,
       items: banks.map((b) => ({ id: b.id, name: b.name, color: b.color })),
       isLoading: banksLoading,
     },
@@ -82,6 +125,7 @@ export default function Settings() {
       title: "Formas de Pagamento",
       icon: Wallet,
       allowColor: false,
+      requiresCategory: false,
       items: paymentMethods.map((p) => ({ id: p.id, name: p.name })),
       isLoading: paymentMethodsLoading,
     },
@@ -89,8 +133,25 @@ export default function Settings() {
       title: "Para Quem",
       icon: Users,
       allowColor: false,
+      requiresCategory: false,
       items: recipients.map((r) => ({ id: r.id, name: r.name })),
       isLoading: recipientsLoading,
+    },
+    categories: {
+      title: "Categorias",
+      icon: Folder,
+      allowColor: false,
+      requiresCategory: false,
+      items: categories.map((c) => ({ id: c.id, name: c.name })),
+      isLoading: categoriesLoading,
+    },
+    subcategories: {
+      title: "Subcategorias",
+      icon: Tag,
+      allowColor: false,
+      requiresCategory: true,
+      items: subcategories.map((s) => ({ id: s.id, name: s.name, category_id: s.category_id })),
+      isLoading: subcategoriesLoading,
     },
   };
 
@@ -99,6 +160,7 @@ export default function Settings() {
     setEditingItem(null);
     setNewItemName("");
     setNewItemColor("#D77A61");
+    setNewItemCategoryId("");
     setIsDialogOpen(true);
   };
 
@@ -107,7 +169,13 @@ export default function Settings() {
     setEditingItem(item);
     setNewItemName(item.name);
     setNewItemColor(item.color || "#D77A61");
+    setNewItemCategoryId(item.category_id || "");
     setIsDialogOpen(true);
+  };
+
+  const confirmDelete = (sectionKey: string, id: string, name: string) => {
+    setItemToDelete({ section: sectionKey, id, name });
+    setDeleteConfirmOpen(true);
   };
 
   const handleSave = async () => {
@@ -132,6 +200,26 @@ export default function Settings() {
         } else {
           await addRecipient.mutateAsync({ name: newItemName });
         }
+      } else if (editingSection === "categories") {
+        if (editingItem) {
+          await updateCategory.mutateAsync({ id: editingItem.id, name: newItemName });
+        } else {
+          await addCategory.mutateAsync({ name: newItemName });
+        }
+      } else if (editingSection === "subcategories") {
+        if (!newItemCategoryId) {
+          toast({
+            title: "Erro",
+            description: "Selecione uma categoria para a subcategoria.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (editingItem) {
+          await updateSubcategory.mutateAsync({ id: editingItem.id, name: newItemName, category_id: newItemCategoryId });
+        } else {
+          await addSubcategory.mutateAsync({ name: newItemName, category_id: newItemCategoryId });
+        }
       }
 
       toast({
@@ -139,40 +227,56 @@ export default function Settings() {
         description: "As alterações foram salvas com sucesso.",
       });
       setIsDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "Não foi possível salvar as alterações.",
+        description: error?.message || "Não foi possível salvar as alterações.",
         variant: "destructive",
       });
     }
   };
 
-  const handleDelete = async (sectionKey: string, itemId: string) => {
+  const handleDelete = async () => {
+    if (!itemToDelete) return;
+    const { section, id } = itemToDelete;
+
     try {
-      if (sectionKey === "banks") {
-        await deleteBank.mutateAsync(itemId);
-      } else if (sectionKey === "paymentMethods") {
-        await deletePaymentMethod.mutateAsync(itemId);
-      } else if (sectionKey === "recipients") {
-        await deleteRecipient.mutateAsync(itemId);
+      if (section === "banks") {
+        await deleteBank.mutateAsync(id);
+      } else if (section === "paymentMethods") {
+        await deletePaymentMethod.mutateAsync(id);
+      } else if (section === "recipients") {
+        await deleteRecipient.mutateAsync(id);
+      } else if (section === "categories") {
+        await deleteCategory.mutateAsync(id);
+      } else if (section === "subcategories") {
+        await deleteSubcategory.mutateAsync(id);
       }
 
       toast({
         title: "Item removido!",
         description: "O item foi excluído com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Não foi possível remover o item.",
+        title: "Erro ao excluir",
+        description: error?.message || "Não foi possível remover o item.",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
     }
   };
 
   const isSaving = addBank.isPending || updateBank.isPending || addPaymentMethod.isPending || 
-                   updatePaymentMethod.isPending || addRecipient.isPending || updateRecipient.isPending;
+                   updatePaymentMethod.isPending || addRecipient.isPending || updateRecipient.isPending ||
+                   addCategory.isPending || updateCategory.isPending ||
+                   addSubcategory.isPending || updateSubcategory.isPending;
+
+  const getCategoryName = (categoryId: string) => {
+    return categories.find(c => c.id === categoryId)?.name || "";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -232,9 +336,17 @@ export default function Settings() {
                                     style={{ backgroundColor: item.color }}
                                   />
                                 )}
-                                <span className="text-sm font-medium text-foreground">
-                                  {item.name}
-                                </span>
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-medium text-foreground">
+                                    {item.name}
+                                  </span>
+                                  {key === "subcategories" && item.category_id && (
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <ChevronRight className="w-3 h-3" />
+                                      {getCategoryName(item.category_id)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
@@ -244,7 +356,7 @@ export default function Settings() {
                                   <Pencil className="w-4 h-4 text-muted-foreground" />
                                 </button>
                                 <button
-                                  onClick={() => handleDelete(key, item.id)}
+                                  onClick={() => confirmDelete(key, item.id, item.name)}
                                   className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
                                 >
                                   <Trash2 className="w-4 h-4 text-destructive" />
@@ -361,6 +473,24 @@ export default function Settings() {
               </div>
             )}
 
+            {editingSection === "subcategories" && (
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select value={newItemCategoryId} onValueChange={setNewItemCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
@@ -372,6 +502,24 @@ export default function Settings() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir "{itemToDelete?.name}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Footer />
     </div>
