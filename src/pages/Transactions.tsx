@@ -30,8 +30,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const persons = ["Todos", "Pessoa 1", "Pessoa 2"];
-const forWhoOptions = ["Todos", "Pessoa 1", "Pessoa 2", "Casal", "Empresa"];
+const persons = ["Todos", "Huana", "Douglas"];
+const forWhoOptions = ["Todos", "Huana", "Douglas", "Casal", "Empresa"];
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];

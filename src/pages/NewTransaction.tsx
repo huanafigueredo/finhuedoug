@@ -53,7 +53,7 @@ const transactionSchema = z.object({
   incomeOrigin: z.string().max(100).optional(),
 });
 
-const persons = ["Pessoa 1", "Pessoa 2"];
+const persons = ["Huana", "Douglas"];
 const incomeOrigins = ["Salário", "Freelance", "Investimentos", "Outros"];
 const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
 
