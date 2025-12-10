@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { TransactionRow, Transaction } from "@/components/shared/TransactionRow";
@@ -11,18 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Loader2, CalendarIcon } from "lucide-react";
+import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
-import { format, parseISO, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +35,23 @@ const forWhoOptions = ["Todos", "Huana", "Douglas", "Casal", "Empresa"];
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];
+
+const days = ["Todos", ...Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"))];
+const months = [
+  { value: "Todos", label: "Todos" },
+  { value: "1", label: "Janeiro" },
+  { value: "2", label: "Fevereiro" },
+  { value: "3", label: "Março" },
+  { value: "4", label: "Abril" },
+  { value: "5", label: "Maio" },
+  { value: "6", label: "Junho" },
+  { value: "7", label: "Julho" },
+  { value: "8", label: "Agosto" },
+  { value: "9", label: "Setembro" },
+  { value: "10", label: "Outubro" },
+  { value: "11", label: "Novembro" },
+  { value: "12", label: "Dezembro" },
+];
 
 export default function Transactions() {
   const navigate = useNavigate();
@@ -58,8 +71,9 @@ export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [coupleFilter, setCoupleFilter] = useState("Todos");
   const [installmentFilter, setInstallmentFilter] = useState("Todos");
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [dayFilter, setDayFilter] = useState("Todos");
+  const [monthFilter, setMonthFilter] = useState("Todos");
+  const [yearFilter, setYearFilter] = useState("Todos");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
@@ -90,6 +104,11 @@ export default function Transactions() {
   const banks = ["Todos", ...banksData.map((b) => b.name)];
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
   const categories = ["Todas", ...categoriesData.map((c) => c.name)];
+  
+  const years = useMemo(() => {
+    const uniqueYears = [...new Set(transactions.map((t) => t.rawDate.getFullYear()))];
+    return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
+  }, [transactions]);
 
   const filteredTransactions = transactions.filter((t) => {
     if (search && !t.description.toLowerCase().includes(search.toLowerCase())) {
@@ -112,9 +131,19 @@ export default function Transactions() {
       const isInstallment = installmentFilter === "Sim";
       if (t.isInstallment !== isInstallment) return false;
     }
-    // Date period filter
-    if (startDate && isBefore(t.rawDate, startOfDay(startDate))) return false;
-    if (endDate && isAfter(t.rawDate, endOfDay(endDate))) return false;
+    // Date filters by day, month, year
+    if (dayFilter !== "Todos") {
+      const day = t.rawDate.getDate().toString().padStart(2, "0");
+      if (day !== dayFilter) return false;
+    }
+    if (monthFilter !== "Todos") {
+      const month = (t.rawDate.getMonth() + 1).toString();
+      if (month !== monthFilter) return false;
+    }
+    if (yearFilter !== "Todos") {
+      const year = t.rawDate.getFullYear().toString();
+      if (year !== yearFilter) return false;
+    }
     return true;
   });
 
@@ -213,7 +242,7 @@ export default function Transactions() {
               <span className="text-sm font-medium text-foreground">Filtros</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-11 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-12 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Buscar</label>
                 <div className="relative">
@@ -228,59 +257,51 @@ export default function Transactions() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Data Início</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      locale={ptBR}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <label className="text-xs font-medium text-muted-foreground">Dia</label>
+                <Select value={dayFilter} onValueChange={setDayFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {days.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Data Fim</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !endDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {endDate ? format(endDate, "dd/MM/yyyy") : "Selecionar"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      locale={ptBR}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+                <label className="text-xs font-medium text-muted-foreground">Mês</label>
+                <Select value={monthFilter} onValueChange={setMonthFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Ano</label>
+                <Select value={yearFilter} onValueChange={setYearFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={y}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
