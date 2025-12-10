@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -21,14 +21,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Heart, Check, ArrowLeft, CreditCard } from "lucide-react";
+import { CalendarIcon, Heart, Check, ArrowLeft, CreditCard, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useRecipients } from "@/hooks/useRecipients";
-import { useCreateTransaction } from "@/hooks/useTransactions";
+import { useCreateTransaction, useUpdateTransaction, useTransactions } from "@/hooks/useTransactions";
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 
@@ -59,12 +59,18 @@ const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
 
 export default function NewTransaction() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
+  const isEditMode = !!editId;
+  
   const { toast } = useToast();
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
   const { data: categoriesData = [], isLoading: categoriesLoading } = useCategories();
+  const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
@@ -85,10 +91,50 @@ export default function NewTransaction() {
   const [incomeOrigin, setIncomeOrigin] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Installment fields
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
+
+  // Load transaction data if editing
+  useEffect(() => {
+    if (isEditMode && !transactionsLoading && transactionsData.length > 0 && !isInitialized) {
+      const transaction = transactionsData.find(t => t.id === editId);
+      if (transaction) {
+        setDate(parseISO(transaction.date));
+        // Remove installment suffix from description if present
+        const cleanDescription = transaction.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
+        setDescription(cleanDescription);
+        setType(transaction.type);
+        setCategory(transaction.category || "");
+        setSubcategory(transaction.subcategory || "");
+        setPaidBy(transaction.paid_by || "");
+        setForWho(transaction.for_who || "");
+        setIsCouple(transaction.is_couple || false);
+        setValue(transaction.total_value.toString().replace(".", ","));
+        setIncomeOrigin(transaction.income_origin || "");
+        setIsInstallment(transaction.is_installment || false);
+        setTotalInstallments(transaction.total_installments || 2);
+        
+        // Set bank and payment method names
+        const bankRecord = banks.find(b => b.id === transaction.bank_id);
+        if (bankRecord) setBank(bankRecord.name);
+        
+        const paymentMethodRecord = paymentMethods.find(p => p.id === transaction.payment_method_id);
+        if (paymentMethodRecord) setPaymentMethod(paymentMethodRecord.name);
+        
+        const receivingBankRecord = banks.find(b => b.id === transaction.receiving_bank_id);
+        if (receivingBankRecord) setReceivingBank(receivingBankRecord.name);
+        
+        // Set category ID for subcategory loading
+        const categoryRecord = categoriesData.find(c => c.name === transaction.category);
+        if (categoryRecord) setCategoryId(categoryRecord.id);
+        
+        setIsInitialized(true);
+      }
+    }
+  }, [isEditMode, editId, transactionsData, transactionsLoading, banks, paymentMethods, categoriesData, isInitialized]);
 
   const numericValue = parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
   const valuePerPerson = isCouple ? numericValue / 2 : numericValue;
@@ -131,7 +177,7 @@ export default function NewTransaction() {
       const selectedRecipient = recipients.find((r) => r.name === forWho);
       const selectedReceivingBank = banks.find((b) => b.name === receivingBank);
 
-      await createTransaction.mutateAsync({
+      const transactionData = {
         date: format(date, "yyyy-MM-dd"),
         description,
         type,
@@ -150,19 +196,34 @@ export default function NewTransaction() {
         is_installment: isInstallment && totalInstallments > 1,
         total_installments: isInstallment ? totalInstallments : undefined,
         installment_value: isInstallment ? installmentValue : undefined,
-      });
+      };
 
-      setShowSuccess(true);
-      
-      setTimeout(() => {
-        toast({
-          title: "Lançamento salvo!",
-          description: isInstallment && totalInstallments > 1
-            ? `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`
-            : "O lançamento foi registrado com sucesso.",
+      if (isEditMode && editId) {
+        await updateTransaction.mutateAsync({
+          id: editId,
+          updates: transactionData,
         });
-        navigate("/lancamentos");
-      }, 1000);
+        setShowSuccess(true);
+        setTimeout(() => {
+          toast({
+            title: "Lançamento atualizado!",
+            description: "As alterações foram salvas com sucesso.",
+          });
+          navigate("/lancamentos");
+        }, 1000);
+      } else {
+        await createTransaction.mutateAsync(transactionData);
+        setShowSuccess(true);
+        setTimeout(() => {
+          toast({
+            title: "Lançamento salvo!",
+            description: isInstallment && totalInstallments > 1
+              ? `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`
+              : "O lançamento foi registrado com sucesso.",
+          });
+          navigate("/lancamentos");
+        }, 1000);
+      }
     } catch (error: any) {
       console.error("Error saving transaction:", error);
       toast({
@@ -181,7 +242,7 @@ export default function NewTransaction() {
     }).format(value);
   };
 
-  const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading;
+  const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading || (isEditMode && transactionsLoading);
 
   // Generate installment preview
   const installmentPreview = () => {
@@ -217,10 +278,10 @@ export default function NewTransaction() {
               Voltar
             </button>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Novo Lançamento
+              {isEditMode ? "Editar Lançamento" : "Novo Lançamento"}
             </h1>
             <p className="text-muted-foreground">
-              Registre uma nova transação para o casal
+              {isEditMode ? "Altere os dados da transação" : "Registre uma nova transação para o casal"}
             </p>
           </div>
 
@@ -597,8 +658,10 @@ export default function NewTransaction() {
                     <Check className="w-5 h-5 animate-check" />
                   ) : isSaving ? (
                     <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  ) : isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    "Salvar Lançamento"
+                    isEditMode ? "Salvar Alterações" : "Salvar Lançamento"
                   )}
                 </Button>
               </div>

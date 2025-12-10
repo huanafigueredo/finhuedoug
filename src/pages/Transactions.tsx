@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
@@ -37,6 +37,7 @@ const coupleOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];
 
 export default function Transactions() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const { data: banksData = [] } = useBanks();
@@ -374,7 +375,7 @@ export default function Transactions() {
                       <TransactionRow
                         key={transaction.id}
                         transaction={transaction}
-                        onEdit={(id) => console.log("Edit", id)}
+                        onEdit={(id) => navigate(`/novo?edit=${id}`)}
                         onDelete={handleDeleteClick}
                       />
                     ))}
