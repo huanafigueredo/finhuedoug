@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PersonCard } from "@/components/shared/PersonCard";
@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -19,29 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
+import { useTransactions } from "@/hooks/useTransactions";
+import { useBanks, useAddBank, useDeleteBank } from "@/hooks/useBanks";
+import { toast } from "sonner";
 
-const initialPeople = [
-  {
-    id: "1",
-    name: "Huana",
-    avatar: "",
-    totalExpenses: "R$ 2.500,00",
-    banks: [
-      { id: "1", name: "Nubank", color: "#9B59B6" },
-      { id: "2", name: "Inter", color: "#FF7F00" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Douglas",
-    avatar: "",
-    totalExpenses: "R$ 2.700,00",
-    banks: [
-      { id: "3", name: "Nubank", color: "#9B59B6" },
-      { id: "4", name: "Itaú", color: "#003399" },
-    ],
-  },
+const months = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
 
 const availableBanks = [
@@ -52,48 +36,134 @@ const availableBanks = [
   { name: "Santander", color: "#EC0000" },
   { name: "C6 Bank", color: "#000000" },
   { name: "PicPay", color: "#21C25E" },
+  { name: "Caixa", color: "#005CA9" },
+  { name: "Banco do Brasil", color: "#FFCC00" },
 ];
 
 export default function People() {
-  const [people, setPeople] = useState(initialPeople);
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(months[currentDate.getMonth()]);
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
   const [selectedBank, setSelectedBank] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleAddBank = (personId: string) => {
-    setSelectedPerson(personId);
+  const { data: transactions = [] } = useTransactions();
+  const { data: banks = [] } = useBanks();
+  const createBank = useAddBank();
+  const deleteBank = useDeleteBank();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  // Filter transactions by selected month/year
+  const filteredTransactions = useMemo(() => {
+    const monthIndex = months.indexOf(selectedMonth);
+    const year = parseInt(selectedYear);
+    
+    return transactions.filter((t) => {
+      const date = new Date(t.date);
+      return date.getMonth() === monthIndex && date.getFullYear() === year;
+    });
+  }, [transactions, selectedMonth, selectedYear]);
+
+  // Calculate expenses per person
+  const personExpenses = useMemo(() => {
+    const huanaExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Huana")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    const douglasExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    const totalExpenses = filteredTransactions
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    return { huanaExpenses, douglasExpenses, totalExpenses };
+  }, [filteredTransactions]);
+
+  // Get banks used by each person from transactions
+  const personBanks = useMemo(() => {
+    const huanaBankIds = new Set<string>();
+    const douglasBankIds = new Set<string>();
+
+    filteredTransactions
+      .filter((t) => t.type === "expense" && t.bank_id)
+      .forEach((t) => {
+        if (t.for_who === "Huana") {
+          huanaBankIds.add(t.bank_id!);
+        } else if (t.for_who === "Douglas") {
+          douglasBankIds.add(t.bank_id!);
+        }
+      });
+
+    const huanaBanks = banks
+      .filter((b) => huanaBankIds.has(b.id))
+      .map((b) => ({ id: b.id, name: b.name, color: b.color || "#6B7280" }));
+
+    const douglasBanks = banks
+      .filter((b) => douglasBankIds.has(b.id))
+      .map((b) => ({ id: b.id, name: b.name, color: b.color || "#6B7280" }));
+
+    return { huanaBanks, douglasBanks };
+  }, [filteredTransactions, banks]);
+
+  const handleAddBank = (personName: string) => {
+    setSelectedPerson(personName);
     setIsDialogOpen(true);
   };
 
-  const confirmAddBank = () => {
-    if (!selectedPerson || !selectedBank) return;
+  const handleDeleteBank = async (bankId: string) => {
+    try {
+      await deleteBank.mutateAsync(bankId);
+      toast.success("Banco excluído com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao excluir banco: " + error.message);
+    }
+  };
+
+  const confirmAddBank = async () => {
+    if (!selectedBank) return;
 
     const bankInfo = availableBanks.find((b) => b.name === selectedBank);
     if (!bankInfo) return;
 
-    setPeople((prev) =>
-      prev.map((person) => {
-        if (person.id === selectedPerson) {
-          return {
-            ...person,
-            banks: [
-              ...person.banks,
-              {
-                id: Date.now().toString(),
-                name: bankInfo.name,
-                color: bankInfo.color,
-              },
-            ],
-          };
-        }
-        return person;
-      })
-    );
-
-    setIsDialogOpen(false);
-    setSelectedBank("");
-    setSelectedPerson(null);
+    try {
+      await createBank.mutateAsync({
+        name: bankInfo.name,
+        color: bankInfo.color,
+      });
+      toast.success("Banco adicionado com sucesso!");
+      setIsDialogOpen(false);
+      setSelectedBank("");
+      setSelectedPerson(null);
+    } catch (error: any) {
+      toast.error("Erro ao adicionar banco: " + error.message);
+    }
   };
+
+  const people = [
+    {
+      id: "1",
+      name: "Huana",
+      avatar: "",
+      totalExpenses: formatCurrency(personExpenses.huanaExpenses),
+      banks: personBanks.huanaBanks,
+    },
+    {
+      id: "2",
+      name: "Douglas",
+      avatar: "",
+      totalExpenses: formatCurrency(personExpenses.douglasExpenses),
+      banks: personBanks.douglasBanks,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,7 +172,7 @@ export default function People() {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Heart className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">O Casal</span>
@@ -115,6 +185,35 @@ export default function People() {
             </p>
           </div>
 
+          {/* Month/Year Filter */}
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month} value={month}>
+                    {month}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-24">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {["2024", "2025"].map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* People Grid */}
           <div className="grid md:grid-cols-2 gap-8">
             {people.map((person) => (
@@ -124,7 +223,8 @@ export default function People() {
                 avatar={person.avatar}
                 banks={person.banks}
                 totalExpenses={person.totalExpenses}
-                onAddBank={() => handleAddBank(person.id)}
+                onAddBank={() => handleAddBank(person.name)}
+                onDeleteBank={handleDeleteBank}
               />
             ))}
           </div>
@@ -136,10 +236,10 @@ export default function People() {
               Juntos somos mais fortes
             </h2>
             <p className="text-muted-foreground mb-6">
-              Gastos totais do casal este mês
+              Gastos totais do casal em {selectedMonth}/{selectedYear}
             </p>
             <div className="text-4xl font-display font-bold text-primary">
-              R$ 5.200,00
+              {formatCurrency(personExpenses.totalExpenses)}
             </div>
           </div>
         </div>
@@ -181,8 +281,8 @@ export default function People() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={confirmAddBank} disabled={!selectedBank}>
-                Adicionar
+              <Button onClick={confirmAddBank} disabled={!selectedBank || createBank.isPending}>
+                {createBank.isPending ? "Adicionando..." : "Adicionar"}
               </Button>
             </div>
           </div>
