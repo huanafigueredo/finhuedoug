@@ -51,7 +51,7 @@ export function TransactionRow({
   };
 
   return (
-    <tr className={cn("border-b border-border hover:bg-secondary/30 transition-colors", className)}>
+    <tr className={cn("border-b border-primary/5 hover:bg-primary/5 transition-colors", className)}>
       <td className="px-4 py-4 text-sm text-muted-foreground whitespace-nowrap">
         {transaction.date}
       </td>
@@ -76,9 +76,9 @@ export function TransactionRow({
       {/* Installment Column */}
       <td className="px-4 py-4">
         {transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments ? (
-          <div className="flex items-center gap-1.5">
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-accent/10 w-fit">
+            <CreditCard className="w-3 h-3 text-accent" />
+            <span className="text-xs font-medium text-accent">
               {transaction.installmentNumber}/{transaction.totalInstallments}
             </span>
           </div>
@@ -98,22 +98,22 @@ export function TransactionRow({
       <td className="px-4 py-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10">
               <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit?.(transaction.id)}>
+          <DropdownMenuContent align="end" className="bg-card border-primary/10">
+            <DropdownMenuItem onClick={() => onEdit?.(transaction.id)} className="hover:bg-primary/5">
               <Pencil className="w-4 h-4 mr-2" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDuplicate?.(transaction.id)}>
+            <DropdownMenuItem onClick={() => onDuplicate?.(transaction.id)} className="hover:bg-primary/5">
               <Copy className="w-4 h-4 mr-2" />
               Duplicar
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onDelete?.(transaction.id)}
-              className="text-destructive"
+              className="text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Excluir

@@ -55,20 +55,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        terracotta: {
-          DEFAULT: "hsl(var(--terracotta))",
-          light: "hsl(var(--terracotta-light))",
+        rose: {
+          DEFAULT: "hsl(var(--rose))",
+          light: "hsl(var(--rose-light))",
+          soft: "hsl(var(--rose-soft))",
         },
-        sand: {
-          DEFAULT: "hsl(var(--sand))",
-          light: "hsl(var(--sand-light))",
+        lavender: {
+          DEFAULT: "hsl(var(--lavender))",
+          light: "hsl(var(--lavender-light))",
         },
-        olive: {
-          DEFAULT: "hsl(var(--olive))",
-          light: "hsl(var(--olive-light))",
-        },
-        graphite: "hsl(var(--graphite))",
-        cream: "hsl(var(--cream))",
+        blush: "hsl(var(--blush))",
+        mauve: "hsl(var(--mauve))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -88,9 +85,16 @@ export default {
         "2xl": "calc(var(--radius) + 8px)",
       },
       boxShadow: {
-        'warm': '0 4px 20px -4px hsl(14 56% 62% / 0.15)',
-        'soft': '0 4px 16px -4px hsl(0 0% 0% / 0.08)',
-        'card': '0 2px 8px -2px hsl(0 0% 0% / 0.05)',
+        'glow': '0 4px 20px -4px hsl(340 82% 52% / 0.25)',
+        'glow-lg': '0 8px 40px -8px hsl(340 82% 52% / 0.35)',
+        'soft': '0 4px 16px -4px hsl(0 0% 0% / 0.06)',
+        'card': '0 2px 8px -2px hsl(340 82% 52% / 0.08)',
+        'romantic': '0 4px 24px -4px hsl(340 82% 52% / 0.2)',
+      },
+      backgroundImage: {
+        'gradient-romantic': 'linear-gradient(135deg, hsl(340, 82%, 52%) 0%, hsl(280, 60%, 65%) 100%)',
+        'gradient-romantic-soft': 'linear-gradient(135deg, hsl(340, 82%, 62%) 0%, hsl(280, 60%, 75%) 100%)',
+        'gradient-soft': 'linear-gradient(180deg, hsl(340, 30%, 98%) 0%, hsl(340, 40%, 96%) 100%)',
       },
       keyframes: {
         "accordion-down": {
@@ -121,6 +125,12 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.7" },
         },
+        "heartbeat": {
+          "0%, 100%": { transform: "scale(1)" },
+          "25%": { transform: "scale(1.1)" },
+          "50%": { transform: "scale(1)" },
+          "75%": { transform: "scale(1.1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -130,6 +140,7 @@ export default {
         "scale-in": "scale-in 0.4s ease-out forwards",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+        "heartbeat": "heartbeat 1.5s ease-in-out infinite",
       },
     },
   },
