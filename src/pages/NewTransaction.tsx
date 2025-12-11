@@ -34,11 +34,8 @@ import { useSubcategories } from "@/hooks/useSubcategories";
 
 // Validation schema for transactions
 const transactionSchema = z.object({
-  date: z.date({ required_error: "Data é obrigatória" }),
-  description: z.string()
-    .min(1, "Descrição é obrigatória")
-    .max(200, "Descrição deve ter no máximo 200 caracteres")
-    .trim(),
+  date: z.date().optional(),
+  description: z.string().max(200, "Descrição deve ter no máximo 200 caracteres").trim().optional(),
   type: z.enum(["expense", "income"], { required_error: "Tipo é obrigatório" }),
   value: z.number()
     .positive("Valor deve ser maior que zero")
@@ -173,37 +170,19 @@ export default function NewTransaction() {
     // Clear previous errors
     setFieldErrors({});
     
-    // Validate required fields
+    // Validate required fields - only value is mandatory
     const errors: FieldErrors = {};
     
-    if (!date) {
-      errors.date = "Selecione a data";
-    }
-    if (!description.trim()) {
-      errors.description = type === "income" ? "Informe a descrição da receita" : "Informe a descrição da despesa";
-    }
     if (numericValue <= 0) {
       errors.value = type === "income" ? "Informe o valor da receita" : "Informe o valor da despesa";
-    }
-    if (!category) {
-      errors.category = "Selecione uma categoria";
-    }
-    if (!paidBy) {
-      errors.paidBy = type === "income" ? "Selecione quem recebeu" : "Selecione quem pagou";
-    }
-    if (type === "expense" && !bank) {
-      errors.bank = "Selecione o banco pagador";
-    }
-    if (type === "income" && !receivingBank) {
-      errors.receivingBank = "Selecione o banco de recebimento";
     }
     
     // If there are errors, set them and stop submission
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios antes de salvar.",
+        title: "Campo obrigatório",
+        description: "Informe o valor do lançamento.",
         variant: "destructive",
       });
       return;
@@ -408,7 +387,7 @@ export default function NewTransaction() {
               {/* Date & Description */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Data <span className="text-destructive">*</span></Label>
+                  <Label>Data</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -440,7 +419,7 @@ export default function NewTransaction() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Descrição <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="description">Descrição</Label>
                   <Input
                     id="description"
                     placeholder={type === "income" ? "Ex: Salário, Pix cliente X, Cashback cartão" : "Ex: Supermercado Extra"}
@@ -538,7 +517,7 @@ export default function NewTransaction() {
               {/* Category & Subcategory */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>Categoria <span className="text-destructive">*</span></Label>
+                  <Label>Categoria</Label>
                   <Select 
                     value={category} 
                     onValueChange={(value) => {
@@ -588,7 +567,7 @@ export default function NewTransaction() {
               {/* Who Paid & For Whom */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label>{type === "income" ? "Quem recebeu" : "Quem pagou"} <span className="text-destructive">*</span></Label>
+                  <Label>{type === "income" ? "Quem recebeu" : "Quem pagou"}</Label>
                   <Select 
                     value={paidBy} 
                     onValueChange={(v) => {
@@ -756,7 +735,7 @@ export default function NewTransaction() {
               {type === "expense" && (
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Banco Pagador <span className="text-destructive">*</span></Label>
+                    <Label>Banco Pagador</Label>
                     <Select 
                       value={bank} 
                       onValueChange={(v) => {
@@ -809,7 +788,7 @@ export default function NewTransaction() {
               {type === "income" && (
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label>Banco de Recebimento <span className="text-destructive">*</span></Label>
+                    <Label>Banco de Recebimento</Label>
                     <Select 
                       value={receivingBank} 
                       onValueChange={(v) => {
