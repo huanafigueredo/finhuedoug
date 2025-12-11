@@ -112,6 +112,8 @@ export function TransactionFormModal({
 
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
+  const [isAlreadyStarted, setIsAlreadyStarted] = useState(false);
+  const [startFromInstallment, setStartFromInstallment] = useState<number>(1);
 
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDay, setRecurringDay] = useState<number>(1);
@@ -149,6 +151,8 @@ export function TransactionFormModal({
         setIncomeOrigin("");
         setIsInstallment(false);
         setTotalInstallments(2);
+        setIsAlreadyStarted(false);
+        setStartFromInstallment(1);
         setIsRecurring(false);
         setRecurringDay(1);
         setRecurringDuration("indefinite");
@@ -273,6 +277,7 @@ export function TransactionFormModal({
         is_installment: isInstallment && totalInstallments > 1,
         total_installments: isInstallment ? totalInstallments : undefined,
         installment_value: isInstallment ? installmentValue : undefined,
+        start_from_installment: isInstallment && isAlreadyStarted ? startFromInstallment : undefined,
         is_recurring: type === "income" && isRecurring,
         recurring_day: type === "income" && isRecurring ? recurringDay : undefined,
         recurring_duration: type === "income" && isRecurring ? recurringDuration : undefined,
@@ -298,7 +303,13 @@ export function TransactionFormModal({
         setTimeout(() => {
           let toastDescription = "O lançamento foi registrado com sucesso.";
           if (isInstallment && totalInstallments > 1) {
-            toastDescription = `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`;
+            const installmentsCreated = isAlreadyStarted 
+              ? totalInstallments - startFromInstallment + 1 
+              : totalInstallments;
+            toastDescription = `Criadas ${installmentsCreated} parcelas de ${formatCurrency(installmentValue)}`;
+            if (isAlreadyStarted) {
+              toastDescription += ` (${startFromInstallment}/${totalInstallments} até ${totalInstallments}/${totalInstallments})`;
+            }
           } else if (type === "income" && isRecurring) {
             const months = recurringDuration === "indefinite" ? 12 : parseInt(recurringDuration);
             toastDescription = `Receita recorrente criada! Gerados ${months} lançamentos futuros.`;
@@ -356,9 +367,12 @@ export function TransactionFormModal({
   const installmentPreview = () => {
     if (!isInstallment || totalInstallments <= 1 || !date || numericValue <= 0) return null;
     
+    const startFrom = isAlreadyStarted ? startFromInstallment : 1;
     const previews = [];
-    for (let i = 1; i <= totalInstallments; i++) {
-      const installmentDate = addMonths(date, i - 1);
+    for (let i = startFrom; i <= totalInstallments; i++) {
+      // When already started, the selected date is for the startFrom installment
+      const monthOffset = isAlreadyStarted ? (i - startFrom) : (i - 1);
+      const installmentDate = addMonths(date, monthOffset);
       previews.push({
         number: i,
         date: format(installmentDate, "dd/MM/yyyy"),
@@ -699,7 +713,14 @@ export function TransactionFormModal({
                         <Label>Número de Parcelas</Label>
                         <Select
                           value={totalInstallments.toString()}
-                          onValueChange={(v) => setTotalInstallments(parseInt(v))}
+                          onValueChange={(v) => {
+                            const newTotal = parseInt(v);
+                            setTotalInstallments(newTotal);
+                            // Reset startFrom if it's >= new total
+                            if (startFromInstallment >= newTotal) {
+                              setStartFromInstallment(1);
+                            }
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -713,6 +734,45 @@ export function TransactionFormModal({
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Already Started Toggle */}
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border">
+                        <div>
+                          <Label className="text-foreground text-sm">Compra já iniciada?</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Lançar parcelas a partir de uma específica
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={isAlreadyStarted} 
+                          onCheckedChange={(checked) => {
+                            setIsAlreadyStarted(checked);
+                            if (!checked) setStartFromInstallment(1);
+                          }} 
+                        />
+                      </div>
+
+                      {/* Start From Installment Field */}
+                      {isAlreadyStarted && (
+                        <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                          <Label>Iniciar a partir da parcela</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={totalInstallments - 1}
+                            value={startFromInstallment}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 1;
+                              setStartFromInstallment(Math.min(totalInstallments - 1, Math.max(1, val)));
+                            }}
+                            placeholder="Ex: 3"
+                            className="w-32"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Serão geradas {totalInstallments - startFromInstallment + 1} parcelas ({startFromInstallment}/{totalInstallments} até {totalInstallments}/{totalInstallments})
+                          </p>
+                        </div>
+                      )}
 
                       {preview && preview.length > 0 && (
                         <div className="p-4 rounded-xl bg-secondary/50 border border-border space-y-3">

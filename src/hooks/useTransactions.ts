@@ -24,6 +24,7 @@ export interface TransactionInsert {
   installment_value?: number;
   parent_transaction_id?: string;
   is_generated_installment?: boolean;
+  start_from_installment?: number; // New field for already started purchases
   // Recurring fields
   is_recurring?: boolean;
   recurring_day?: number;
@@ -105,16 +106,20 @@ export function useCreateTransaction() {
       if (transaction.is_installment && transaction.total_installments && transaction.total_installments > 1) {
         const installmentValue = transaction.total_value / transaction.total_installments;
         const baseDate = new Date(transaction.date);
+        const startFrom = transaction.start_from_installment || 1;
         
-        // Create the parent transaction (first installment)
+        // Remove start_from_installment from the data we send to the database
+        const { start_from_installment, ...transactionData } = transaction;
+        
+        // Create the first installment (starting from startFrom)
         const { data: parentData, error: parentError } = await supabase
           .from("transactions")
           .insert({
-            ...transaction,
+            ...transactionData,
             user_id: user.id,
-            description: `${transaction.description} (Parcela 1/${transaction.total_installments})`,
+            description: `${transaction.description} (Parcela ${startFrom}/${transaction.total_installments})`,
             total_value: installmentValue,
-            installment_number: 1,
+            installment_number: startFrom,
             installment_value: installmentValue,
             is_generated_installment: false,
           })
@@ -126,12 +131,14 @@ export function useCreateTransaction() {
           throw parentError;
         }
 
-        // Create child installments
+        // Create remaining installments (from startFrom+1 to total)
         const childInstallments = [];
-        for (let i = 2; i <= transaction.total_installments; i++) {
-          const installmentDate = addMonths(baseDate, i - 1);
+        for (let i = startFrom + 1; i <= transaction.total_installments; i++) {
+          // When starting from a specific installment, date offset is relative to startFrom
+          const monthOffset = i - startFrom;
+          const installmentDate = addMonths(baseDate, monthOffset);
           childInstallments.push({
-            ...transaction,
+            ...transactionData,
             user_id: user.id,
             date: installmentDate.toISOString().split("T")[0],
             description: `${transaction.description} (Parcela ${i}/${transaction.total_installments})`,
