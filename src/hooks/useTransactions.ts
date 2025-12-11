@@ -173,12 +173,17 @@ export function useCreateTransaction() {
         if (monthsToGenerate > 0) {
           const baseDate = new Date(transaction.date);
           
+          // Set the first transaction date to the recurring day of the base month
+          const daysInBaseMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
+          const firstDate = setDateFns(baseDate, Math.min(recurringDay, daysInBaseMonth));
+          
           // Create the first (parent) recurring transaction
           const { data: parentData, error: parentError } = await supabase
             .from("transactions")
             .insert({
               ...transaction,
               user_id: user.id,
+              date: firstDate.toISOString().split("T")[0],
               is_generated_installment: false,
             })
             .select()
@@ -189,12 +194,13 @@ export function useCreateTransaction() {
             throw parentError;
           }
 
-          // Create future recurring transactions
+          // Create future recurring transactions for subsequent months
           const futureTransactions = [];
           for (let i = 1; i < monthsToGenerate; i++) {
-            let futureDate = addMonths(baseDate, i);
-            // Set the specific day of month
-            futureDate = setDateFns(futureDate, Math.min(recurringDay, new Date(futureDate.getFullYear(), futureDate.getMonth() + 1, 0).getDate()));
+            const futureMonth = addMonths(firstDate, i);
+            // Set the specific day of month (handle months with fewer days)
+            const daysInMonth = new Date(futureMonth.getFullYear(), futureMonth.getMonth() + 1, 0).getDate();
+            const futureDate = setDateFns(futureMonth, Math.min(recurringDay, daysInMonth));
             
             futureTransactions.push({
               ...transaction,
