@@ -54,7 +54,7 @@ const transactionSchema = z.object({
 });
 
 const persons = ["Huana", "Douglas"];
-const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
+const installmentOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 18];
 const recurringDurationOptions = [
   { value: "indefinite", label: "Sem prazo definido" },
   { value: "3", label: "3 meses" },
