@@ -71,9 +71,10 @@ export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [coupleFilter, setCoupleFilter] = useState("Todos");
   const [installmentFilter, setInstallmentFilter] = useState("Todos");
+  const currentDate = new Date();
   const [dayFilter, setDayFilter] = useState("Todos");
-  const [monthFilter, setMonthFilter] = useState("Todos");
-  const [yearFilter, setYearFilter] = useState("Todos");
+  const [monthFilter, setMonthFilter] = useState((currentDate.getMonth() + 1).toString());
+  const [yearFilter, setYearFilter] = useState(currentDate.getFullYear().toString());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
@@ -109,7 +110,8 @@ export default function Transactions() {
   const categories = ["Todas", ...categoriesData.map((c) => c.name)];
   
   const years = useMemo(() => {
-    const uniqueYears = [...new Set(transactions.map((t) => t.rawDate.getFullYear()))];
+    const currentYear = new Date().getFullYear();
+    const uniqueYears = [...new Set([currentYear, ...transactions.map((t) => t.rawDate.getFullYear())])];
     return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
   }, [transactions]);
 
