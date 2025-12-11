@@ -605,7 +605,20 @@ export function TransactionFormModal({
 
                 <div className="space-y-2">
                   <Label>{type === "income" ? "Origem da receita" : "Para quem"}</Label>
-                  <Select value={forWho} onValueChange={setForWho} disabled={recipientsLoading}>
+                  <Select 
+                    value={forWho} 
+                    onValueChange={(value) => {
+                      setForWho(value);
+                      if (type === "expense") {
+                        if (value === "Casal") {
+                          setIsCouple(true);
+                        } else {
+                          setIsCouple(false);
+                        }
+                      }
+                    }} 
+                    disabled={recipientsLoading}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={recipientsLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
@@ -622,17 +635,31 @@ export function TransactionFormModal({
 
               {/* Couple Toggle - Only for Expenses */}
               {type === "expense" && (
-                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-3">
-                    <Heart className={cn("w-5 h-5", isCouple ? "text-primary fill-primary" : "text-muted-foreground")} />
-                    <div>
-                      <Label className="text-foreground">Compra do Casal</Label>
-                      <p className="text-sm text-muted-foreground">
-                        O valor será dividido entre os dois
-                      </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50">
+                    <div className="flex items-center gap-3">
+                      <Heart className={cn("w-5 h-5", isCouple ? "text-primary fill-primary" : "text-muted-foreground")} />
+                      <div>
+                        <Label className="text-foreground">Compra do Casal</Label>
+                        <p className="text-sm text-muted-foreground">
+                          O valor será dividido entre os dois
+                        </p>
+                      </div>
                     </div>
+                    <Switch checked={isCouple} onCheckedChange={setIsCouple} />
                   </div>
-                  <Switch checked={isCouple} onCheckedChange={setIsCouple} />
+
+                  {/* Valor por pessoa - Only when isCouple is true */}
+                  {isCouple && numericValue > 0 && (
+                    <div className="space-y-2">
+                      <Label>Valor por pessoa</Label>
+                      <Input
+                        value={formatCurrency(valuePerPerson)}
+                        readOnly
+                        className="text-lg font-semibold bg-muted cursor-not-allowed"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -649,16 +676,6 @@ export function TransactionFormModal({
                     className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
                   {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
-                </div>
-              )}
-
-              {/* Value Preview */}
-              {isCouple && numericValue > 0 && !isInstallment && (
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Valor por pessoa</span>
-                    <span className="text-lg font-semibold text-primary">{formatCurrency(valuePerPerson)}</span>
-                  </div>
                 </div>
               )}
 
