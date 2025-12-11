@@ -795,6 +795,18 @@ export function TransactionFormModal({
                               </div>
                             ))}
                           </div>
+                          {isAlreadyStarted && startFromInstallment > 1 && (
+                            <div className="pt-2 border-t border-border space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Parcelas já pagas</span>
+                                <span className="font-medium text-muted-foreground">{startFromInstallment - 1}x de {formatCurrency(installmentValue)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Valor já pago</span>
+                                <span className="font-medium text-amber-600">{formatCurrency((startFromInstallment - 1) * installmentValue)}</span>
+                              </div>
+                            </div>
+                          )}
                           {isCouple && (
                             <div className="pt-2 border-t border-border">
                               <div className="flex items-center justify-between text-sm">
