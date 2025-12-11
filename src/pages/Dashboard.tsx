@@ -71,26 +71,63 @@ export default function Dashboard() {
 
   // Calculate metrics
   const metrics = useMemo(() => {
+    // Total expenses (all)
     const expenses = filteredTransactions
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + t.total_value, 0);
 
+    // Total income (all)
     const income = filteredTransactions
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + t.total_value, 0);
 
     const balance = income - expenses;
 
-    // Calculate spending per person based on for_who field
-    const person1Expenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Huana")
+    // Couple expenses (to be split 50/50)
+    const coupleExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.is_couple)
+      .reduce((sum, t) => sum + t.total_value, 0);
+    
+    const halfCoupleExpenses = coupleExpenses / 2;
+
+    // Individual expenses for Huana (excluding couple purchases)
+    const huanaIndividualExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Huana" && !t.is_couple)
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    const person2Expenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
+    // Individual expenses for Douglas (excluding couple purchases)
+    const douglasIndividualExpenses = filteredTransactions
+      .filter((t) => t.type === "expense" && t.for_who === "Douglas" && !t.is_couple)
       .reduce((sum, t) => sum + t.total_value, 0);
 
-    return { expenses, income, balance, person1Expenses, person2Expenses };
+    // Total expenses per person = individual + half of couple
+    const person1Expenses = huanaIndividualExpenses + halfCoupleExpenses;
+    const person2Expenses = douglasIndividualExpenses + halfCoupleExpenses;
+
+    // Income per person
+    const huanaIncome = filteredTransactions
+      .filter((t) => t.type === "income" && t.for_who === "Huana")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    const douglasIncome = filteredTransactions
+      .filter((t) => t.type === "income" && t.for_who === "Douglas")
+      .reduce((sum, t) => sum + t.total_value, 0);
+
+    // Balance per person = income - expenses (including half of couple)
+    const huanaBalance = huanaIncome - person1Expenses;
+    const douglasBalance = douglasIncome - person2Expenses;
+
+    return { 
+      expenses, 
+      income, 
+      balance, 
+      person1Expenses, 
+      person2Expenses,
+      huanaIncome,
+      douglasIncome,
+      huanaBalance,
+      douglasBalance
+    };
   }, [filteredTransactions]);
 
   // Category breakdown
@@ -239,8 +276,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          {/* Metric Cards - Row 1: Totals */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <MetricCard
               title="Total de Despesas"
               value={formatCurrency(metrics.expenses)}
@@ -259,17 +296,37 @@ export default function Dashboard() {
               icon={Wallet}
               variant="accent"
             />
+          </div>
+
+          {/* Metric Cards - Row 2: Per Person */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
               title="Gastos Huana"
               value={formatCurrency(metrics.person1Expenses)}
+              subtitle="Individual + metade do casal"
               icon={Users}
               variant="default"
             />
             <MetricCard
               title="Gastos Douglas"
               value={formatCurrency(metrics.person2Expenses)}
+              subtitle="Individual + metade do casal"
               icon={Users}
               variant="default"
+            />
+            <MetricCard
+              title="Saldo do mês Huana"
+              value={formatCurrency(metrics.huanaBalance)}
+              subtitle={`Receitas: ${formatCurrency(metrics.huanaIncome)}`}
+              icon={Wallet}
+              variant={metrics.huanaBalance >= 0 ? "success" : "primary"}
+            />
+            <MetricCard
+              title="Saldo do mês Douglas"
+              value={formatCurrency(metrics.douglasBalance)}
+              subtitle={`Receitas: ${formatCurrency(metrics.douglasIncome)}`}
+              icon={Wallet}
+              variant={metrics.douglasBalance >= 0 ? "success" : "primary"}
             />
           </div>
 
