@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { TransactionRow, Transaction } from "@/components/shared/TransactionRow";
+import { TransactionFormModal } from "@/components/TransactionFormModal";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
@@ -54,7 +55,6 @@ const months = [
 ];
 
 export default function Transactions() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const { data: banksData = [] } = useBanks();
@@ -80,6 +80,9 @@ export default function Transactions() {
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [transactionToDuplicate, setTransactionToDuplicate] = useState<string | null>(null);
   const [duplicateIsInstallment, setDuplicateIsInstallment] = useState(false);
+  const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
+  const [editTransactionId, setEditTransactionId] = useState<string | null>(null);
+  const [duplicateTransactionId, setDuplicateTransactionId] = useState<string | null>(null);
 
   // Transform DB transactions to UI format
   const transactions: (Transaction & { rawDate: Date })[] = transactionsData.map((t) => ({
@@ -191,17 +194,27 @@ export default function Transactions() {
       setDuplicateIsInstallment(true);
       setDuplicateDialogOpen(true);
     } else {
-      navigate(`/novo?duplicate=${id}`);
+      setEditTransactionId(null);
+      setDuplicateTransactionId(id);
+      setNewTransactionModalOpen(true);
     }
   };
 
   const confirmDuplicate = () => {
     if (transactionToDuplicate) {
-      navigate(`/novo?duplicate=${transactionToDuplicate}`);
+      setEditTransactionId(null);
+      setDuplicateTransactionId(transactionToDuplicate);
+      setNewTransactionModalOpen(true);
     }
     setDuplicateDialogOpen(false);
     setTransactionToDuplicate(null);
     setDuplicateIsInstallment(false);
+  };
+
+  const handleEditClick = (id: string) => {
+    setDuplicateTransactionId(null);
+    setEditTransactionId(id);
+    setNewTransactionModalOpen(true);
   };
 
   return (
@@ -226,12 +239,14 @@ export default function Transactions() {
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
-              <Link to="/novo">
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Lançamento
-                </Button>
-              </Link>
+              <Button size="sm" onClick={() => {
+                setEditTransactionId(null);
+                setDuplicateTransactionId(null);
+                setNewTransactionModalOpen(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Lançamento
+              </Button>
             </div>
           </div>
 
@@ -485,7 +500,7 @@ export default function Transactions() {
                       <TransactionRow
                         key={transaction.id}
                         transaction={transaction}
-                        onEdit={(id) => navigate(`/novo?edit=${id}`)}
+                        onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
                         onDuplicate={handleDuplicateClick}
                       />
@@ -571,6 +586,14 @@ export default function Transactions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Transaction Form Modal */}
+      <TransactionFormModal
+        open={newTransactionModalOpen}
+        onOpenChange={setNewTransactionModalOpen}
+        editId={editTransactionId}
+        duplicateId={duplicateTransactionId}
+      />
     </div>
   );
 }
