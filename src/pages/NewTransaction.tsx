@@ -296,6 +296,36 @@ export default function NewTransaction() {
     }).format(value);
   };
 
+  // Format value as Brazilian currency mask
+  const formatCurrencyMask = (input: string): string => {
+    // Remove everything except digits
+    const digits = input.replace(/\D/g, "");
+    if (!digits) return "";
+    
+    // Convert to number (cents)
+    const cents = parseInt(digits, 10);
+    // Convert to reais
+    const reais = cents / 100;
+    
+    // Format as Brazilian currency
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(reais);
+  };
+
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCurrencyMask(e.target.value);
+    setValue(formatted);
+    // Extract numeric value for validation
+    const num = parseFloat(formatted.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+    if (num > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
+  };
+
+  const handleValueFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.select();
+  };
+
   const isLoading = banksLoading || paymentMethodsLoading || recipientsLoading || ((isEditMode || isDuplicateMode) && transactionsLoading);
 
   // Generate installment preview
@@ -442,11 +472,8 @@ export default function NewTransaction() {
                     id="value"
                     placeholder="R$ 0,00"
                     value={value}
-                    onChange={(e) => {
-                      setValue(e.target.value);
-                      const num = parseFloat(e.target.value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
-                      if (num > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
-                    }}
+                    onChange={handleValueChange}
+                    onFocus={handleValueFocus}
                     className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
                   {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
@@ -630,11 +657,8 @@ export default function NewTransaction() {
                     id="value"
                     placeholder="R$ 0,00"
                     value={value}
-                    onChange={(e) => {
-                      setValue(e.target.value);
-                      const num = parseFloat(e.target.value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
-                      if (num > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
-                    }}
+                    onChange={handleValueChange}
+                    onFocus={handleValueFocus}
                     className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
                   {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
