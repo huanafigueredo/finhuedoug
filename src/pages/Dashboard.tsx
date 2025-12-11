@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
+import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -51,6 +52,12 @@ export default function Dashboard() {
   const { data: transactions = [], isLoading: loadingTransactions } = useTransactions();
   const { data: banks = [] } = useBanks();
 
+  const monthIndex = months.indexOf(selectedMonth);
+  const year = parseInt(selectedYear);
+
+  // Use centralized financial metrics hook
+  const metrics = useFinancialMetrics(transactions, monthIndex, year);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -60,75 +67,11 @@ export default function Dashboard() {
 
   // Filter transactions by selected month/year
   const filteredTransactions = useMemo(() => {
-    const monthIndex = months.indexOf(selectedMonth);
-    const year = parseInt(selectedYear);
-    
     return transactions.filter((t) => {
       const date = parseISO(t.date);
       return date.getMonth() === monthIndex && date.getFullYear() === year;
     });
-  }, [transactions, selectedMonth, selectedYear]);
-
-  // Calculate metrics
-  const metrics = useMemo(() => {
-    // Total expenses (all)
-    const expenses = filteredTransactions
-      .filter((t) => t.type === "expense")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Total income (all)
-    const income = filteredTransactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    const balance = income - expenses;
-
-    // Couple expenses (to be split 50/50)
-    const coupleExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.is_couple)
-      .reduce((sum, t) => sum + t.total_value, 0);
-    
-    const halfCoupleExpenses = coupleExpenses / 2;
-
-    // Individual expenses for Huana (excluding couple purchases)
-    const huanaIndividualExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Huana" && !t.is_couple)
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Individual expenses for Douglas (excluding couple purchases)
-    const douglasIndividualExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Douglas" && !t.is_couple)
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Total expenses per person = individual + half of couple
-    const person1Expenses = huanaIndividualExpenses + halfCoupleExpenses;
-    const person2Expenses = douglasIndividualExpenses + halfCoupleExpenses;
-
-    // Income per person
-    const huanaIncome = filteredTransactions
-      .filter((t) => t.type === "income" && t.for_who === "Huana")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    const douglasIncome = filteredTransactions
-      .filter((t) => t.type === "income" && t.for_who === "Douglas")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Balance per person = income - expenses (including half of couple)
-    const huanaBalance = huanaIncome - person1Expenses;
-    const douglasBalance = douglasIncome - person2Expenses;
-
-    return { 
-      expenses, 
-      income, 
-      balance, 
-      person1Expenses, 
-      person2Expenses,
-      huanaIncome,
-      douglasIncome,
-      huanaBalance,
-      douglasBalance
-    };
-  }, [filteredTransactions]);
+  }, [transactions, monthIndex, year]);
 
   // Category breakdown
   const categoryData = useMemo(() => {
@@ -280,19 +223,19 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <MetricCard
               title="Total de Despesas"
-              value={formatCurrency(metrics.expenses)}
+              value={formatCurrency(metrics.totalExpenses)}
               icon={TrendingDown}
               variant="primary"
             />
             <MetricCard
               title="Total de Receitas"
-              value={formatCurrency(metrics.income)}
+              value={formatCurrency(metrics.totalIncome)}
               icon={TrendingUp}
               variant="success"
             />
             <MetricCard
               title="Saldo do Mês"
-              value={formatCurrency(metrics.balance)}
+              value={formatCurrency(metrics.totalBalance)}
               icon={Wallet}
               variant="accent"
             />
@@ -302,14 +245,14 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
               title="Gastos Huana"
-              value={formatCurrency(metrics.person1Expenses)}
+              value={formatCurrency(metrics.huanaTotalExpenses)}
               subtitle="Individual + metade do casal"
               icon={Users}
               variant="default"
             />
             <MetricCard
               title="Gastos Douglas"
-              value={formatCurrency(metrics.person2Expenses)}
+              value={formatCurrency(metrics.douglasTotalExpenses)}
               subtitle="Individual + metade do casal"
               icon={Users}
               variant="default"
@@ -470,8 +413,8 @@ export default function Dashboard() {
                             {formatCurrency(bank.value)}
                           </span>
                           <div className="text-xs text-muted-foreground">
-                            {metrics.expenses > 0
-                              ? ((bank.value / metrics.expenses) * 100).toFixed(0)
+                            {metrics.totalExpenses > 0
+                              ? ((bank.value / metrics.totalExpenses) * 100).toFixed(0)
                               : 0}
                             % do total
                           </div>
