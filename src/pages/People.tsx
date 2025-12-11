@@ -3,7 +3,6 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PersonCard } from "@/components/shared/PersonCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -21,7 +20,9 @@ import {
 import { Heart } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks, useAddBank, useDeleteBank } from "@/hooks/useBanks";
+import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { toast } from "sonner";
+import { parseISO } from "date-fns";
 
 const months = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -53,6 +54,12 @@ export default function People() {
   const createBank = useAddBank();
   const deleteBank = useDeleteBank();
 
+  const monthIndex = months.indexOf(selectedMonth);
+  const year = parseInt(selectedYear);
+
+  // Use centralized financial metrics hook
+  const metrics = useFinancialMetrics(transactions, monthIndex, year);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -60,52 +67,13 @@ export default function People() {
     }).format(value);
   };
 
-  // Filter transactions by selected month/year
+  // Filter transactions by selected month/year for bank usage
   const filteredTransactions = useMemo(() => {
-    const monthIndex = months.indexOf(selectedMonth);
-    const year = parseInt(selectedYear);
-    
     return transactions.filter((t) => {
-      const date = new Date(t.date);
+      const date = parseISO(t.date);
       return date.getMonth() === monthIndex && date.getFullYear() === year;
     });
-  }, [transactions, selectedMonth, selectedYear]);
-
-  // Calculate expenses per person with couple share logic
-  const personExpenses = useMemo(() => {
-    // Gastos pessoais de Huana
-    const person1Personal = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Huana")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Gastos pessoais de Douglas
-    const person2Personal = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Douglas")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Gastos do casal (será dividido por 2)
-    const coupleExpenses = filteredTransactions
-      .filter((t) => t.type === "expense" && t.for_who === "Casal")
-      .reduce((sum, t) => sum + t.total_value, 0);
-
-    // Parte de cada pessoa nos gastos do casal
-    const coupleShare = coupleExpenses / 2;
-
-    // Totais finais
-    const person1Total = person1Personal + coupleShare;
-    const person2Total = person2Personal + coupleShare;
-    const totalExpenses = person1Personal + person2Personal + coupleExpenses;
-
-    return {
-      person1Personal,
-      person2Personal,
-      coupleExpenses,
-      coupleShare,
-      person1Total,
-      person2Total,
-      totalExpenses,
-    };
-  }, [filteredTransactions]);
+  }, [transactions, monthIndex, year]);
 
   // Get banks used by each person from transactions
   const personBanks = useMemo(() => {
@@ -172,18 +140,18 @@ export default function People() {
       id: "1",
       name: "Huana",
       avatar: "",
-      personalExpenses: formatCurrency(personExpenses.person1Personal),
-      coupleShareExpenses: formatCurrency(personExpenses.coupleShare),
-      totalExpenses: formatCurrency(personExpenses.person1Total),
+      personalExpenses: formatCurrency(metrics.huanaIndividualExpenses),
+      coupleShareExpenses: formatCurrency(metrics.halfCoupleExpenses),
+      totalExpenses: formatCurrency(metrics.huanaTotalExpenses),
       banks: personBanks.person1Banks,
     },
     {
       id: "2",
       name: "Douglas",
       avatar: "",
-      personalExpenses: formatCurrency(personExpenses.person2Personal),
-      coupleShareExpenses: formatCurrency(personExpenses.coupleShare),
-      totalExpenses: formatCurrency(personExpenses.person2Total),
+      personalExpenses: formatCurrency(metrics.douglasIndividualExpenses),
+      coupleShareExpenses: formatCurrency(metrics.halfCoupleExpenses),
+      totalExpenses: formatCurrency(metrics.douglasTotalExpenses),
       banks: personBanks.person2Banks,
     },
   ];
@@ -264,7 +232,7 @@ export default function People() {
               Gastos totais do casal em {selectedMonth}/{selectedYear}
             </p>
             <div className="text-4xl font-display font-bold text-primary">
-              {formatCurrency(personExpenses.totalExpenses)}
+              {formatCurrency(metrics.totalExpenses)}
             </div>
           </div>
         </div>
