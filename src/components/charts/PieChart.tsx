@@ -13,7 +13,7 @@ interface PieChartProps {
 
 export function PieChart({ data, title }: PieChartProps) {
   return (
-    <div className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft hover:shadow-glow transition-shadow duration-300">
+    <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
       <h3 className="font-display text-lg font-semibold text-foreground mb-4">
         {title}
       </h3>
@@ -36,9 +36,9 @@ export function PieChart({ data, title }: PieChartProps) {
             <Tooltip
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--primary) / 0.2)",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "12px",
-                boxShadow: "0 4px 20px -4px hsl(340 82% 52% / 0.15)",
+                boxShadow: "0 4px 16px -4px rgba(0,0,0,0.1)",
               }}
               formatter={(value: number) =>
                 new Intl.NumberFormat("pt-BR", {

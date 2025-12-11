@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Loader2, Calendar, Users, CreditCard, Tag, X, Heart } from "lucide-react";
+import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
 
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -136,6 +136,7 @@ export default function Transactions() {
       const isInstallment = installmentFilter === "Sim";
       if (t.isInstallment !== isInstallment) return false;
     }
+    // Date filters by day, month, year
     if (dayFilter !== "Todos") {
       const day = t.rawDate.getDate().toString().padStart(2, "0");
       if (day !== dayFilter) return false;
@@ -150,35 +151,6 @@ export default function Transactions() {
     }
     return true;
   });
-
-  // Count active filters
-  const activeFilters = [
-    search,
-    personFilter !== "Todos" ? personFilter : null,
-    forWhoFilter !== "Todos" ? forWhoFilter : null,
-    categoryFilter !== "Todas" ? categoryFilter : null,
-    bankFilter !== "Todos" ? bankFilter : null,
-    paymentFilter !== "Todos" ? paymentFilter : null,
-    typeFilter !== "Todos" ? typeFilter : null,
-    coupleFilter !== "Todos" ? coupleFilter : null,
-    installmentFilter !== "Todos" ? installmentFilter : null,
-    dayFilter !== "Todos" ? dayFilter : null,
-  ].filter(Boolean);
-
-  const clearAllFilters = () => {
-    setSearch("");
-    setPersonFilter("Todos");
-    setForWhoFilter("Todos");
-    setCategoryFilter("Todas");
-    setBankFilter("Todos");
-    setPaymentFilter("Todos");
-    setTypeFilter("Todos");
-    setCoupleFilter("Todos");
-    setInstallmentFilter("Todos");
-    setDayFilter("Todos");
-    setMonthFilter("Todos");
-    setYearFilter("Todos");
-  };
 
   const handleDeleteClick = (id: string) => {
     const tx = transactionsData.find((t) => t.id === id);
@@ -248,7 +220,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <main className="pt-24 pb-16">
@@ -265,11 +237,11 @@ export default function Transactions() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="border-primary/20 hover:bg-primary/5">
+              <Button variant="outline" size="sm">
                 <Download className="w-4 h-4 mr-2" />
                 Exportar
               </Button>
-              <Button variant="gradient" size="sm" onClick={() => {
+              <Button size="sm" onClick={() => {
                 setEditTransactionId(null);
                 setDuplicateTransactionId(null);
                 setNewTransactionModalOpen(true);
@@ -280,227 +252,215 @@ export default function Transactions() {
             </div>
           </div>
 
-          {/* Filters - Redesigned */}
-          <div className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft mb-6">
-            {/* Header with active filters count */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-romantic flex items-center justify-center shadow-glow">
-                  <Filter className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <span className="text-sm font-semibold text-foreground">Filtros</span>
-                  {activeFilters.length > 0 && (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      {activeFilters.length} ativo{activeFilters.length > 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-              {activeFilters.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearAllFilters} className="text-muted-foreground hover:text-primary">
-                  <X className="w-4 h-4 mr-1" />
-                  Limpar
-                </Button>
-              )}
+          {/* Filters */}
+          <div className="p-6 rounded-2xl bg-card border border-border shadow-card mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Filtros</span>
             </div>
 
-            {/* Search Bar - Full Width */}
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por descrição..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 h-12 rounded-xl bg-secondary/30 border-primary/10 focus:border-primary focus:ring-primary text-base"
-                />
-              </div>
-            </div>
-
-            {/* Filter Groups */}
-            <div className="space-y-6">
-              {/* Row 1: Date Filters */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10">
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">Período</span>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Select value={dayFilter} onValueChange={setDayFilter}>
-                    <SelectTrigger className="border-primary/20 focus:ring-primary bg-white/50">
-                      <SelectValue placeholder="Dia" />
-                    </SelectTrigger>
-                    <SelectContent className="border-primary/20">
-                      {days.map((d) => (
-                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={monthFilter} onValueChange={setMonthFilter}>
-                    <SelectTrigger className="border-primary/20 focus:ring-primary bg-white/50">
-                      <SelectValue placeholder="Mês" />
-                    </SelectTrigger>
-                    <SelectContent className="border-primary/20">
-                      {months.map((m) => (
-                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={yearFilter} onValueChange={setYearFilter}>
-                    <SelectTrigger className="border-primary/20 focus:ring-primary bg-white/50">
-                      <SelectValue placeholder="Ano" />
-                    </SelectTrigger>
-                    <SelectContent className="border-primary/20">
-                      {years.map((y) => (
-                        <SelectItem key={y} value={y}>{y}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-12 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Buscar</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9"
+                  />
                 </div>
               </div>
 
-              {/* Row 2: Person & Payment */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Person Filters */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-accent/5 to-lavender/5 border border-accent/10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="w-4 h-4 text-accent" />
-                    <span className="text-xs font-semibold text-accent uppercase tracking-wide">Pessoas</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Select value={personFilter} onValueChange={setPersonFilter}>
-                      <SelectTrigger className="border-accent/20 focus:ring-accent bg-white/50">
-                        <SelectValue placeholder="Pessoa" />
-                      </SelectTrigger>
-                      <SelectContent className="border-accent/20">
-                        {persons.map((p) => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={forWhoFilter} onValueChange={setForWhoFilter}>
-                      <SelectTrigger className="border-accent/20 focus:ring-accent bg-white/50">
-                        <SelectValue placeholder="Para Quem" />
-                      </SelectTrigger>
-                      <SelectContent className="border-accent/20">
-                        {forWhoOptions.map((f) => (
-                          <SelectItem key={f} value={f}>{f}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Payment Filters */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-success/5 to-emerald-400/5 border border-success/10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <CreditCard className="w-4 h-4 text-success" />
-                    <span className="text-xs font-semibold text-success uppercase tracking-wide">Pagamento</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Select value={bankFilter} onValueChange={setBankFilter}>
-                      <SelectTrigger className="border-success/20 focus:ring-success bg-white/50">
-                        <SelectValue placeholder="Banco" />
-                      </SelectTrigger>
-                      <SelectContent className="border-success/20">
-                        {banks.map((b) => (
-                          <SelectItem key={b} value={b}>{b}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                      <SelectTrigger className="border-success/20 focus:ring-success bg-white/50">
-                        <SelectValue placeholder="Método" />
-                      </SelectTrigger>
-                      <SelectContent className="border-success/20">
-                        {paymentMethods.map((p) => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Dia</label>
+                <Select value={dayFilter} onValueChange={setDayFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {days.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Row 3: Category & Type */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Category Filter */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-lavender/5 to-mauve/5 border border-lavender/10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Tag className="w-4 h-4 text-lavender" />
-                    <span className="text-xs font-semibold text-lavender uppercase tracking-wide">Categorização</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="border-lavender/20 focus:ring-lavender bg-white/50">
-                        <SelectValue placeholder="Categoria" />
-                      </SelectTrigger>
-                      <SelectContent className="border-lavender/20">
-                        {categories.map((c) => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={coupleFilter} onValueChange={setCoupleFilter}>
-                      <SelectTrigger className="border-lavender/20 focus:ring-lavender bg-white/50">
-                        <SelectValue placeholder="Casal?" />
-                      </SelectTrigger>
-                      <SelectContent className="border-lavender/20">
-                        {coupleOptions.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c === "Sim" && <Heart className="w-3 h-3 inline mr-1 text-primary" />}
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Mês</label>
+                <Select value={monthFilter} onValueChange={setMonthFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Mês" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>
+                        {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Type Filter */}
-                <div className="p-4 rounded-xl bg-gradient-to-r from-rose-soft/50 to-primary/5 border border-primary/10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Filter className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Tipo</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
-                      <SelectTrigger className="border-primary/20 focus:ring-primary bg-white/50">
-                        <SelectValue placeholder="Tipo" />
-                      </SelectTrigger>
-                      <SelectContent className="border-primary/20">
-                        {types.map((t) => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
-                      <SelectTrigger className="border-primary/20 focus:ring-primary bg-white/50">
-                        <SelectValue placeholder="Parcelado?" />
-                      </SelectTrigger>
-                      <SelectContent className="border-primary/20">
-                        {installmentOptions.map((i) => (
-                          <SelectItem key={i} value={i}>{i}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Ano</label>
+                <Select value={yearFilter} onValueChange={setYearFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={y}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Pessoa</label>
+                <Select value={personFilter} onValueChange={setPersonFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pessoa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {persons.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+              </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Para Quem</label>
+                <Select value={forWhoFilter} onValueChange={setForWhoFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Para Quem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {forWhoOptions.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Casal</label>
+                <Select value={coupleFilter} onValueChange={setCoupleFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Casal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coupleOptions.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Banco</label>
+                <Select value={bankFilter} onValueChange={setBankFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Banco" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
+                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pagamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {types.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Parcelado</label>
+                <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Parcelado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {installmentOptions.map((i) => (
+                      <SelectItem key={i} value={i}>
+                        {i}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft overflow-hidden">
+          <div className="rounded-2xl bg-card border border-border shadow-card overflow-hidden">
             {transactionsLoading ? (
               <div className="p-12 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-primary/5 to-accent/5">
+                  <thead className="bg-secondary/50">
                     <tr>
                       <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Data
@@ -549,7 +509,7 @@ export default function Transactions() {
                     ))}
                   </tbody>
                   {filteredTransactions.length > 0 && (
-                    <tfoot className="bg-gradient-to-r from-primary/5 to-accent/5 border-t border-primary/10">
+                    <tfoot className="bg-secondary/50 border-t border-border">
                       <tr>
                         <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
                           Total Despesas:
@@ -572,7 +532,7 @@ export default function Transactions() {
                         </td>
                         <td colSpan={3}></td>
                       </tr>
-                      <tr className="border-t border-primary/10">
+                      <tr className="border-t border-border">
                         <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
                           Saldo:
                         </td>
@@ -611,7 +571,7 @@ export default function Transactions() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="border-primary/10">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir lançamento?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -640,7 +600,7 @@ export default function Transactions() {
 
       {/* Duplicate Confirmation Dialog */}
       <AlertDialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
-        <AlertDialogContent className="border-primary/10">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Duplicar lançamento parcelado?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -651,7 +611,7 @@ export default function Transactions() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDuplicate} className="bg-gradient-romantic text-white">
+            <AlertDialogAction onClick={confirmDuplicate}>
               Duplicar
             </AlertDialogAction>
           </AlertDialogFooter>

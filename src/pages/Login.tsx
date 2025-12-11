@@ -82,6 +82,7 @@ const Login = () => {
     
     if (error) {
       if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        // Show intermediate screen instead of auto-switching
         setMode('email-exists');
         setPassword('');
         return;
@@ -196,9 +197,9 @@ const Login = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
-          <Heart className="w-12 h-12 text-primary fill-primary animate-heartbeat" />
+          <Heart className="w-12 h-12 text-primary fill-primary" />
         </div>
       </div>
     );
@@ -207,12 +208,12 @@ const Login = () => {
   // Email already exists - intermediate screen
   if (mode === 'email-exists') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-glow border border-primary/10 text-center">
+          <div className="bg-card rounded-2xl p-8 shadow-soft border border-border/50 text-center">
             <div className="flex items-center justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-amber-600" />
+              <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
               </div>
             </div>
             
@@ -227,7 +228,6 @@ const Login = () => {
             <div className="space-y-3">
               <Button 
                 onClick={goToLogin}
-                variant="gradient"
                 className="w-full h-12 rounded-xl text-lg font-semibold"
               >
                 <Lock className="w-5 h-5 mr-2" />
@@ -264,10 +264,10 @@ const Login = () => {
   // Email sent confirmation screen
   if (mode === 'forgot' && emailSent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <CheckCircle className="w-16 h-16 text-success" />
+            <CheckCircle className="w-16 h-16 text-green-500" />
           </div>
           <h1 className="font-display text-2xl font-bold text-foreground mb-4">
             Email Enviado!
@@ -290,19 +290,13 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 left-20 w-48 h-48 bg-gradient-to-tr from-accent/20 to-lavender/20 rounded-full blur-3xl" />
-      
-      <div className="w-full max-w-md relative">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-romantic flex items-center justify-center shadow-glow">
-              <Heart className="w-8 h-8 text-white" />
-            </div>
+            <Heart className="w-10 h-10 text-primary fill-primary" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-gradient mb-2">
+          <h1 className="font-display text-3xl font-bold text-foreground mb-2">
             CasalFin
           </h1>
           <p className="text-muted-foreground">
@@ -313,7 +307,7 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-glow border border-primary/10 space-y-4">
+          <div className="bg-card rounded-2xl p-8 shadow-soft border border-border/50 space-y-4">
             {mode === 'forgot' && (
               <>
                 <button
@@ -341,7 +335,7 @@ const Login = () => {
                     placeholder="Seu nome"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="pl-12 h-12 rounded-xl bg-secondary/50 border-primary/20 focus:border-primary focus:ring-primary"
+                    className="pl-12 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-primary"
                     required
                   />
                 </div>
@@ -358,7 +352,7 @@ const Login = () => {
                   placeholder="seu@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 h-12 rounded-xl bg-secondary/50 border-primary/20 focus:border-primary focus:ring-primary"
+                  className="pl-12 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-primary"
                   required
                 />
               </div>
@@ -375,7 +369,7 @@ const Login = () => {
                     placeholder="Sua senha"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-12 h-12 rounded-xl bg-secondary/50 border-primary/20 focus:border-primary focus:ring-primary"
+                    className="pl-12 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-primary"
                     required
                     minLength={6}
                   />
@@ -397,8 +391,8 @@ const Login = () => {
 
             {/* Show hint after 2 failed login attempts */}
             {mode === 'login' && loginAttempts >= 2 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                <p className="text-sm text-amber-800">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   <strong>Dica:</strong> Se você esqueceu sua senha, clique em{' '}
                   <button
                     type="button"
@@ -414,7 +408,6 @@ const Login = () => {
 
             <Button
               type="submit"
-              variant="gradient"
               className="w-full h-12 mt-4 text-lg font-semibold rounded-xl"
               disabled={isLoading}
             >

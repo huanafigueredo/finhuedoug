@@ -34,21 +34,17 @@ export function PersonCard({
   return (
     <div
       className={cn(
-        "p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft hover:shadow-glow transition-all duration-300",
+        "p-6 rounded-2xl bg-card border border-border shadow-card card-hover",
         className
       )}
     >
       <div className="flex items-center gap-4 mb-6">
-        <div className="relative">
-          <div className="w-16 h-16 rounded-full bg-gradient-romantic p-0.5">
-            <div className="w-full h-full rounded-full bg-card flex items-center justify-center text-2xl font-display font-semibold text-foreground overflow-hidden">
-              {avatar ? (
-                <img src={avatar} alt={name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-gradient">{name.charAt(0)}</span>
-              )}
-            </div>
-          </div>
+        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl font-display font-semibold text-foreground overflow-hidden">
+          {avatar ? (
+            <img src={avatar} alt={name} className="w-full h-full object-cover" />
+          ) : (
+            name.charAt(0)
+          )}
         </div>
         <div>
           <h3 className="font-display text-xl font-semibold text-foreground">
@@ -58,7 +54,7 @@ export function PersonCard({
       </div>
 
       {/* Expense Breakdown */}
-      <div className="space-y-2 mb-6 p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/10">
+      <div className="space-y-2 mb-6 p-4 rounded-xl bg-secondary/30">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Gasto pessoal:</span>
           <span className="font-medium text-foreground">{personalExpenses}</span>
@@ -67,10 +63,10 @@ export function PersonCard({
           <span className="text-muted-foreground">Parte do casal:</span>
           <span className="font-medium text-foreground">{coupleShareExpenses}</span>
         </div>
-        <div className="border-t border-primary/10 pt-2 mt-2">
+        <div className="border-t border-border pt-2 mt-2">
           <div className="flex justify-between">
             <span className="font-medium text-foreground">Total:</span>
-            <span className="font-bold text-gradient text-lg">{totalExpenses}</span>
+            <span className="font-bold text-primary text-lg">{totalExpenses}</span>
           </div>
         </div>
       </div>
@@ -78,7 +74,7 @@ export function PersonCard({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-foreground">Bancos utilizados</span>
-          <Button variant="ghost" size="sm" onClick={onAddBank} className="h-8 px-2 text-primary hover:text-primary">
+          <Button variant="ghost" size="sm" onClick={onAddBank} className="h-8 px-2">
             <Plus className="w-4 h-4 mr-1" />
             Adicionar
           </Button>
@@ -89,7 +85,7 @@ export function PersonCard({
             banks.map((bank) => (
               <div
                 key={bank.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50 group hover:bg-primary/5 transition-colors"
+                className="flex items-center justify-between gap-3 p-3 rounded-xl bg-secondary/50 group"
               >
                 <div className="flex items-center gap-3">
                   <div

@@ -279,7 +279,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <main className="pt-24 pb-16">
@@ -301,18 +301,18 @@ export default function Settings() {
                 <AccordionItem
                   key={key}
                   value={key}
-                  className="rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft overflow-hidden"
+                  className="rounded-2xl bg-card border border-border shadow-card overflow-hidden"
                 >
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-primary/5">
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/30">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-romantic flex items-center justify-center shadow-glow">
-                        <section.icon className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <section.icon className="w-5 h-5 text-primary" />
                       </div>
                       <span className="font-display text-lg font-semibold text-foreground">
                         {section.title}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                        {section.items.length}
+                      <span className="text-sm text-muted-foreground">
+                        ({section.items.length})
                       </span>
                     </div>
                   </AccordionTrigger>
@@ -327,12 +327,12 @@ export default function Settings() {
                           {section.items.map((item) => (
                             <div
                               key={item.id}
-                              className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10 group hover:shadow-glow transition-all"
+                              className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 group"
                             >
                               <div className="flex items-center gap-3">
                                 {item.color && (
                                   <div
-                                    className="w-4 h-4 rounded-full shadow-sm"
+                                    className="w-4 h-4 rounded-full"
                                     style={{ backgroundColor: item.color }}
                                   />
                                 )}
@@ -351,9 +351,9 @@ export default function Settings() {
                               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => openEditDialog(key, item)}
-                                  className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                                  className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
                                 >
-                                  <Pencil className="w-4 h-4 text-primary" />
+                                  <Pencil className="w-4 h-4 text-muted-foreground" />
                                 </button>
                                 <button
                                   onClick={() => confirmDelete(key, item.id, item.name)}
@@ -369,7 +369,7 @@ export default function Settings() {
                             variant="outline"
                             size="sm"
                             onClick={() => openAddDialog(key)}
-                            className="w-full mt-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
+                            className="w-full mt-2"
                           >
                             <Plus className="w-4 h-4 mr-2" />
                             Adicionar
@@ -384,12 +384,12 @@ export default function Settings() {
               {/* Initial Balances */}
               <AccordionItem
                 value="balances"
-                className="rounded-2xl bg-white/80 backdrop-blur-sm border border-accent/10 shadow-soft overflow-hidden"
+                className="rounded-2xl bg-card border border-border shadow-card overflow-hidden"
               >
-                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-accent/5">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/30">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-lavender flex items-center justify-center shadow-md">
-                      <PiggyBank className="w-5 h-5 text-white" />
+                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+                      <PiggyBank className="w-5 h-5 text-accent" />
                     </div>
                     <span className="font-display text-lg font-semibold text-foreground">
                       Saldos Iniciais
@@ -421,7 +421,7 @@ export default function Settings() {
                                 )
                               )
                             }
-                            className="pl-10 text-right border-accent/20 focus:ring-accent"
+                            className="pl-10 text-right"
                           />
                         </div>
                       </div>
@@ -436,7 +436,7 @@ export default function Settings() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="border-primary/10">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
               {editingItem ? "Editar" : "Adicionar"}{" "}
@@ -451,7 +451,6 @@ export default function Settings() {
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 placeholder="Digite o nome..."
-                className="border-primary/20 focus:ring-primary"
               />
             </div>
 
@@ -463,12 +462,12 @@ export default function Settings() {
                     type="color"
                     value={newItemColor}
                     onChange={(e) => setNewItemColor(e.target.value)}
-                    className="w-12 h-12 rounded-xl border border-primary/20 cursor-pointer"
+                    className="w-12 h-12 rounded-xl border border-border cursor-pointer"
                   />
                   <Input
                     value={newItemColor}
                     onChange={(e) => setNewItemColor(e.target.value)}
-                    className="flex-1 border-primary/20 focus:ring-primary"
+                    className="flex-1"
                   />
                 </div>
               </div>
@@ -478,10 +477,10 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Categoria</Label>
                 <Select value={newItemCategoryId} onValueChange={setNewItemCategoryId}>
-                  <SelectTrigger className="border-primary/20 focus:ring-primary">
+                  <SelectTrigger>
                     <SelectValue placeholder="Selecione a categoria..." />
                   </SelectTrigger>
-                  <SelectContent className="border-primary/20">
+                  <SelectContent>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -496,7 +495,7 @@ export default function Settings() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button variant="gradient" onClick={handleSave} disabled={!newItemName.trim() || isSaving}>
+              <Button onClick={handleSave} disabled={!newItemName.trim() || isSaving}>
                 {isSaving ? "Salvando..." : editingItem ? "Salvar" : "Adicionar"}
               </Button>
             </div>

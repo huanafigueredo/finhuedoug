@@ -6,69 +6,68 @@
 
 @layer base {
   :root {
-    --background: 340 30% 98%;
-    --foreground: 340 10% 15%;
+    --background: 30 33% 97%;
+    --foreground: 0 0% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 340 10% 15%;
+    --card: 30 30% 99%;
+    --card-foreground: 0 0% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 340 10% 15%;
+    --popover: 30 30% 99%;
+    --popover-foreground: 0 0% 20%;
 
-    --primary: 340 82% 52%;
+    --primary: 14 56% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 340 40% 95%;
-    --secondary-foreground: 340 10% 15%;
+    --secondary: 25 50% 91%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 340 20% 94%;
-    --muted-foreground: 340 10% 45%;
+    --muted: 25 30% 94%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 280 60% 65%;
+    --accent: 135 14% 42%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 60% 45%;
+    --success: 135 14% 42%;
     --success-foreground: 0 0% 100%;
 
-    --border: 340 20% 90%;
-    --input: 340 20% 90%;
-    --ring: 340 82% 52%;
+    --border: 25 20% 88%;
+    --input: 25 20% 88%;
+    --ring: 14 56% 62%;
 
     --radius: 1rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 340 10% 15%;
-    --sidebar-primary: 340 82% 52%;
+    --sidebar-background: 30 30% 99%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 14 56% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 340 40% 95%;
-    --sidebar-accent-foreground: 340 10% 15%;
-    --sidebar-border: 340 20% 90%;
-    --sidebar-ring: 340 82% 52%;
+    --sidebar-accent: 25 50% 91%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 25 20% 88%;
+    --sidebar-ring: 14 56% 62%;
 
-    /* Custom romantic tokens */
-    --rose: 340 82% 52%;
-    --rose-light: 340 82% 62%;
-    --rose-soft: 340 40% 95%;
-    --lavender: 280 60% 65%;
-    --lavender-light: 280 60% 75%;
-    --blush: 340 30% 98%;
-    --mauve: 280 45% 55%;
+    /* Custom tokens */
+    --terracotta: 14 56% 62%;
+    --terracotta-light: 14 56% 72%;
+    --sand: 25 50% 91%;
+    --sand-light: 25 50% 96%;
+    --olive: 135 14% 42%;
+    --olive-light: 135 14% 52%;
+    --graphite: 0 0% 20%;
+    --cream: 30 33% 97%;
 
     /* Gradients */
-    --gradient-romantic: linear-gradient(135deg, hsl(340, 82%, 52%) 0%, hsl(280, 60%, 65%) 100%);
-    --gradient-soft: linear-gradient(180deg, hsl(340, 30%, 98%) 0%, hsl(340, 40%, 96%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(340, 40%, 98%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(252,240,245,0.8) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(14 56% 62%) 0%, hsl(25 50% 75%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(30 33% 97%) 0%, hsl(25 50% 96%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(30 30% 99%) 0%, hsl(25 50% 97%) 100%);
 
     /* Shadows */
-    --shadow-sm: 0 2px 8px -2px hsl(340 82% 52% / 0.08);
-    --shadow-md: 0 4px 16px -4px hsl(340 82% 52% / 0.12);
-    --shadow-lg: 0 8px 32px -8px hsl(340 82% 52% / 0.15);
-    --shadow-glow: 0 4px 20px -4px hsl(340 82% 52% / 0.25);
-    --shadow-soft: 0 4px 16px -4px hsl(0 0% 0% / 0.06);
+    --shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 16px -4px hsl(0 0% 0% / 0.08);
+    --shadow-lg: 0 8px 32px -8px hsl(0 0% 0% / 0.1);
+    --shadow-warm: 0 4px 20px -4px hsl(14 56% 62% / 0.15);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -76,33 +75,33 @@
   }
 
   .dark {
-    --background: 340 15% 10%;
-    --foreground: 340 20% 95%;
+    --background: 0 0% 12%;
+    --foreground: 30 33% 97%;
 
-    --card: 340 15% 13%;
-    --card-foreground: 340 20% 95%;
+    --card: 0 0% 15%;
+    --card-foreground: 30 33% 97%;
 
-    --popover: 340 15% 13%;
-    --popover-foreground: 340 20% 95%;
+    --popover: 0 0% 15%;
+    --popover-foreground: 30 33% 97%;
 
-    --primary: 340 82% 58%;
+    --primary: 14 56% 62%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 340 20% 18%;
-    --secondary-foreground: 340 20% 95%;
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 30 33% 97%;
 
-    --muted: 340 15% 20%;
-    --muted-foreground: 340 20% 65%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 30 20% 70%;
 
-    --accent: 280 60% 60%;
+    --accent: 135 14% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 340 15% 22%;
-    --input: 340 15% 22%;
-    --ring: 340 82% 58%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 14 56% 62%;
   }
 }
 
@@ -127,46 +126,23 @@
   }
 
   .card-hover:hover {
-    @apply scale-[1.02];
-    box-shadow: var(--shadow-glow);
+    @apply scale-[1.02] shadow-lg;
+    box-shadow: var(--shadow-warm);
   }
 
-  .gradient-romantic {
-    background: var(--gradient-romantic);
+  .gradient-warm {
+    background: var(--gradient-warm);
   }
 
   .gradient-soft {
     background: var(--gradient-soft);
   }
 
-  .gradient-glass {
-    background: var(--gradient-glass);
-  }
-
   .text-gradient {
-    background: var(--gradient-romantic);
+    background: var(--gradient-warm);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-  }
-
-  .glass {
-    @apply bg-white/70 backdrop-blur-xl border-white/20;
-  }
-
-  .glass-card {
-    @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-lg;
-  }
-
-  .border-gradient {
-    position: relative;
-    background: linear-gradient(var(--background), var(--background)) padding-box,
-                var(--gradient-romantic) border-box;
-    border: 2px solid transparent;
-  }
-
-  .glow-pink {
-    box-shadow: 0 0 20px hsl(340 82% 52% / 0.3);
   }
 }
 
@@ -189,20 +165,6 @@
 
   .animate-check {
     animation: checkPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  .animate-heartbeat {
-    animation: heartbeat 1.5s ease-in-out infinite;
-  }
-
-  .animate-shimmer {
-    animation: shimmer 2s linear infinite;
-    background-size: 200% 100%;
-  }
-
-  .animate-gradient {
-    animation: gradientShift 3s ease infinite;
-    background-size: 200% 200%;
   }
 
   @keyframes fadeUp {
@@ -249,24 +211,6 @@
       transform: scale(1);
       opacity: 1;
     }
-  }
-
-  @keyframes heartbeat {
-    0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.1); }
-    50% { transform: scale(1); }
-    75% { transform: scale(1.1); }
-  }
-
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-
-  @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
   }
 
   .stagger-1 { animation-delay: 0.1s; }

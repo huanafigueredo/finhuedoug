@@ -34,14 +34,14 @@ export default function Index() {
       {/* Hero Section */}
       <section className="pt-32 pb-20 md:pt-40 md:pb-32 relative overflow-hidden">
         {/* Background decoration */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
-        <div className="absolute top-20 right-0 w-96 h-96 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-accent/20 to-lavender/20 rounded-full blur-3xl" />
+        <div className="absolute inset-0 gradient-soft" />
+        <div className="absolute top-20 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
 
         <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 mb-8 animate-fade-up opacity-0">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-up opacity-0">
               <Heart className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">
                 Para casais que sonham juntos
@@ -64,7 +64,7 @@ export default function Index() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up opacity-0 stagger-3">
               <Link to="/login">
-                <Button variant="gradient" size="xl">
+                <Button variant="hero" size="xl">
                   Entrar na Planilha
                   <ArrowRight className="w-5 h-5 ml-1" />
                 </Button>
@@ -80,11 +80,11 @@ export default function Index() {
           {/* Illustration placeholder */}
           <div className="mt-16 md:mt-24 flex justify-center animate-fade-up opacity-0 stagger-4">
             <div className="relative">
-              <div className="w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-primary/30 via-accent/20 to-lavender/30 flex items-center justify-center animate-float">
-                <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-white/90 backdrop-blur-sm shadow-glow-lg flex items-center justify-center">
+              <div className="w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-primary/20 via-secondary to-accent/20 flex items-center justify-center animate-float">
+                <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-card shadow-warm flex items-center justify-center">
                   <div className="text-center">
-                    <Heart className="w-16 h-16 md:w-20 md:h-20 text-primary mx-auto mb-2 animate-heartbeat" />
-                    <span className="font-display text-lg md:text-xl font-semibold text-gradient">
+                    <Heart className="w-16 h-16 md:w-20 md:h-20 text-primary mx-auto mb-2" />
+                    <span className="font-display text-lg md:text-xl font-semibold text-foreground">
                       H + D
                     </span>
                   </div>
@@ -96,7 +96,7 @@ export default function Index() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-background to-secondary/30">
+      <section className="py-20 md:py-32 bg-secondary/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -122,11 +122,10 @@ export default function Index() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 md:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-background" />
-        <div className="container mx-auto px-4 relative">
+      <section className="py-20 md:py-32">
+        <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
-            <Heart className="w-12 h-12 text-primary mx-auto mb-6 animate-heartbeat" />
+            <Heart className="w-12 h-12 text-primary mx-auto mb-6" />
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
               Prontos para começar?
             </h2>
@@ -134,7 +133,7 @@ export default function Index() {
               Junte-se a casais que já estão organizando suas finanças com amor
             </p>
             <Link to="/login">
-              <Button variant="gradient" size="xl">
+              <Button variant="hero" size="xl">
                 Acessar o Dashboard
                 <ArrowRight className="w-5 h-5 ml-1" />
               </Button>

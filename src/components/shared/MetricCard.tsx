@@ -24,23 +24,23 @@ export function MetricCard({
   className,
 }: MetricCardProps) {
   const variants = {
-    default: "bg-card border-border",
-    primary: "bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20",
-    accent: "bg-gradient-to-br from-accent/5 to-accent/10 border-accent/20",
-    success: "bg-gradient-to-br from-success/5 to-success/10 border-success/20",
+    default: "bg-card",
+    primary: "bg-primary/5 border-primary/20",
+    accent: "bg-accent/5 border-accent/20",
+    success: "bg-success/5 border-success/20",
   };
 
   const iconVariants = {
-    default: "bg-gradient-romantic text-white",
-    primary: "bg-gradient-romantic text-white",
-    accent: "bg-gradient-to-br from-accent to-lavender text-white",
-    success: "bg-gradient-to-br from-success to-emerald-400 text-white",
+    default: "bg-secondary text-muted-foreground",
+    primary: "bg-primary/10 text-primary",
+    accent: "bg-accent/10 text-accent",
+    success: "bg-success/10 text-success",
   };
 
   return (
     <div
       className={cn(
-        "group p-6 rounded-2xl border shadow-soft hover:shadow-glow transition-all duration-300 hover:-translate-y-1",
+        "p-6 rounded-2xl border shadow-card card-hover",
         variants[variant],
         className
       )}
@@ -71,10 +71,7 @@ export function MetricCard({
             </div>
           )}
         </div>
-        <div className={cn(
-          "p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform duration-300",
-          iconVariants[variant]
-        )}>
+        <div className={cn("p-3 rounded-xl", iconVariants[variant])}>
           <Icon className="w-5 h-5" />
         </div>
       </div>

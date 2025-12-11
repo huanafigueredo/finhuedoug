@@ -157,15 +157,15 @@ export default function People() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 mb-6">
-              <Heart className="w-4 h-4 text-primary animate-heartbeat" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+              <Heart className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-primary">O Casal</span>
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -179,10 +179,10 @@ export default function People() {
           {/* Month/Year Filter */}
           <div className="flex items-center justify-center gap-3 mb-8">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-36 border-primary/20 focus:ring-primary">
+              <SelectTrigger className="w-36">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
-              <SelectContent className="border-primary/20">
+              <SelectContent>
                 {months.map((month) => (
                   <SelectItem key={month} value={month}>
                     {month}
@@ -192,10 +192,10 @@ export default function People() {
             </Select>
 
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-24 border-primary/20 focus:ring-primary">
+              <SelectTrigger className="w-24">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
-              <SelectContent className="border-primary/20">
+              <SelectContent>
                 {["2024", "2025"].map((year) => (
                   <SelectItem key={year} value={year}>
                     {year}
@@ -223,15 +223,15 @@ export default function People() {
           </div>
 
           {/* Summary Card */}
-          <div className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-primary/5 via-accent/5 to-lavender/5 border border-primary/10 shadow-glow text-center">
-            <Heart className="w-12 h-12 text-primary mx-auto mb-4 animate-heartbeat" />
+          <div className="mt-12 p-8 rounded-2xl bg-card border border-border shadow-card text-center">
+            <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
             <h2 className="font-display text-2xl font-semibold text-foreground mb-2">
               Juntos somos mais fortes
             </h2>
             <p className="text-muted-foreground mb-6">
               Gastos totais do casal em {selectedMonth}/{selectedYear}
             </p>
-            <div className="text-4xl font-display font-bold text-gradient">
+            <div className="text-4xl font-display font-bold text-primary">
               {formatCurrency(metrics.totalExpenses)}
             </div>
           </div>
@@ -240,7 +240,7 @@ export default function People() {
 
       {/* Add Bank Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="border-primary/10">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
               Adicionar Banco
@@ -251,10 +251,10 @@ export default function People() {
             <div className="space-y-2">
               <Label>Selecione o Banco</Label>
               <Select value={selectedBank} onValueChange={setSelectedBank}>
-                <SelectTrigger className="border-primary/20 focus:ring-primary">
+                <SelectTrigger>
                   <SelectValue placeholder="Escolha um banco" />
                 </SelectTrigger>
-                <SelectContent className="border-primary/20">
+                <SelectContent>
                   {availableBanks.map((bank) => (
                     <SelectItem key={bank.name} value={bank.name}>
                       <div className="flex items-center gap-2">
@@ -274,7 +274,7 @@ export default function People() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button variant="gradient" onClick={confirmAddBank} disabled={!selectedBank || createBank.isPending}>
+              <Button onClick={confirmAddBank} disabled={!selectedBank || createBank.isPending}>
                 {createBank.isPending ? "Adicionando..." : "Adicionar"}
               </Button>
             </div>
