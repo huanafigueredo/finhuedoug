@@ -499,7 +499,7 @@ export default function Transactions() {
                         </td>
                         <td className="px-4 py-4 text-sm font-bold text-foreground">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.reduce((sum, t) => sum + t.totalValue, 0)
+                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
                           )}
                         </td>
                         <td colSpan={3}></td>
