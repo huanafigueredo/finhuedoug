@@ -73,7 +73,7 @@ export default function Dashboard() {
     });
   }, [transactions, monthIndex, year]);
 
-  // Category breakdown
+  // Category breakdown with romantic colors
   const categoryData = useMemo(() => {
     const categoryMap: Record<string, number> = {};
     
@@ -85,12 +85,12 @@ export default function Dashboard() {
       });
 
     const colors = [
-      "hsl(14, 56%, 62%)",
-      "hsl(135, 14%, 42%)",
-      "hsl(25, 50%, 65%)",
-      "hsl(0, 0%, 50%)",
-      "hsl(25, 50%, 80%)",
-      "hsl(210, 60%, 50%)",
+      "hsl(340, 82%, 52%)",
+      "hsl(280, 60%, 65%)",
+      "hsl(340, 82%, 72%)",
+      "hsl(280, 60%, 75%)",
+      "hsl(160, 60%, 45%)",
+      "hsl(340, 40%, 60%)",
     ];
 
     return Object.entries(categoryMap).map(([name, value], i) => ({
@@ -109,7 +109,7 @@ export default function Dashboard() {
       .forEach((t) => {
         const bank = banks.find((b) => b.id === t.bank_id);
         const bankName = bank?.name || "Outros";
-        const bankColor = bank?.color || "hsl(0, 0%, 60%)";
+        const bankColor = bank?.color || "hsl(340, 82%, 52%)";
         
         if (!bankMap[bankName]) {
           bankMap[bankName] = { value: 0, color: bankColor };
@@ -138,7 +138,7 @@ export default function Dashboard() {
       }));
   }, [filteredTransactions]);
 
-  // Evolution data (last 6 months) - simplified version
+  // Evolution data (last 6 months)
   const evolutionData = useMemo(() => {
     const result: { name: string; total: number }[] = [];
     const year = parseInt(selectedYear);
@@ -174,7 +174,7 @@ export default function Dashboard() {
   const hasData = filteredTransactions.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Header />
 
       <main className="pt-24 pb-16">
@@ -183,7 +183,7 @@ export default function Dashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Olá! 💕
+                Olá! <span className="animate-heartbeat inline-block">💕</span>
               </h1>
               <p className="text-muted-foreground">
                 Aqui está o resumo financeiro de vocês
@@ -192,10 +192,10 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-3">
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="w-36 border-primary/20 focus:ring-primary">
                   <SelectValue placeholder="Mês" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-primary/20">
                   {months.map((month) => (
                     <SelectItem key={month} value={month}>
                       {month}
@@ -205,10 +205,10 @@ export default function Dashboard() {
               </Select>
 
               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-24 border-primary/20 focus:ring-primary">
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-primary/20">
                   {years.map((year) => (
                     <SelectItem key={year} value={year}>
                       {year}
@@ -281,13 +281,13 @@ export default function Dashboard() {
               <LineChart
                 data={evolutionData}
                 lines={[
-                  { dataKey: "total", color: "hsl(14, 56%, 62%)", name: "Total" },
+                  { dataKey: "total", color: "hsl(340, 82%, 52%)", name: "Total" },
                 ]}
                 title="Evolução Mensal"
               />
             </div>
           ) : (
-            <div className="p-12 rounded-2xl bg-card border border-border shadow-card mb-8 text-center">
+            <div className="p-12 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft mb-8 text-center">
               <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-display text-lg font-semibold text-foreground mb-2">
                 Nenhum lançamento encontrado
@@ -297,7 +297,7 @@ export default function Dashboard() {
               </p>
               <a
                 href="/novo-lancamento"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-romantic text-white shadow-glow hover:shadow-glow-lg transition-all"
               >
                 Adicionar lançamento
                 <ArrowUpRight className="w-4 h-4" />
@@ -308,7 +308,7 @@ export default function Dashboard() {
           {/* Bottom Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Transactions */}
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft hover:shadow-glow transition-shadow duration-300">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground">
                   Lançamentos Recentes
@@ -327,14 +327,14 @@ export default function Dashboard() {
                   {recentTransactions.map((transaction) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-xl hover:bg-primary/5 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                             transaction.value > 0
-                              ? "bg-success/10"
-                              : "bg-primary/10"
+                              ? "bg-gradient-to-br from-success/20 to-emerald-400/20"
+                              : "bg-gradient-to-br from-primary/20 to-accent/20"
                           }`}
                         >
                           {transaction.value > 0 ? (
@@ -375,7 +375,7 @@ export default function Dashboard() {
             </div>
 
             {/* Banks Summary */}
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft hover:shadow-glow transition-shadow duration-300">
               <h3 className="font-display text-lg font-semibold text-foreground mb-6">
                 Bancos Mais Utilizados
               </h3>

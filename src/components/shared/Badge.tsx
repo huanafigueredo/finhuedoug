@@ -9,9 +9,9 @@ interface BadgeProps {
 
 export function Badge({ variant, children, className }: BadgeProps) {
   const variants = {
-    income: "bg-success/10 text-success border-success/20",
-    expense: "bg-primary/10 text-primary border-primary/20",
-    couple: "bg-primary/10 text-primary border-primary/20",
+    income: "bg-gradient-to-r from-success/20 to-emerald-400/20 text-success border-success/30",
+    expense: "bg-gradient-to-r from-primary/20 to-rose-light/20 text-primary border-primary/30",
+    couple: "bg-gradient-to-r from-primary/20 to-accent/20 text-primary border-primary/30",
   };
 
   if (variant === "couple") {

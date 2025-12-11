@@ -26,22 +26,22 @@ interface LineChartProps {
 
 export function LineChart({ data, lines, title }: LineChartProps) {
   return (
-    <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+    <div className="p-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-primary/10 shadow-soft hover:shadow-glow transition-shadow duration-300">
       <h3 className="font-display text-lg font-semibold text-foreground mb-4">
         {title}
       </h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <RechartsLineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--primary) / 0.1)" />
             <XAxis
               dataKey="name"
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              tickLine={{ stroke: "hsl(var(--border))" }}
+              tickLine={{ stroke: "hsl(var(--primary) / 0.2)" }}
             />
             <YAxis
               tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }}
-              tickLine={{ stroke: "hsl(var(--border))" }}
+              tickLine={{ stroke: "hsl(var(--primary) / 0.2)" }}
               tickFormatter={(value) =>
                 new Intl.NumberFormat("pt-BR", {
                   notation: "compact",
@@ -52,9 +52,9 @@ export function LineChart({ data, lines, title }: LineChartProps) {
             <Tooltip
               contentStyle={{
                 backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
+                border: "1px solid hsl(var(--primary) / 0.2)",
                 borderRadius: "12px",
-                boxShadow: "0 4px 16px -4px rgba(0,0,0,0.1)",
+                boxShadow: "0 4px 20px -4px hsl(340 82% 52% / 0.15)",
               }}
               formatter={(value: number) =>
                 new Intl.NumberFormat("pt-BR", {
@@ -74,10 +74,10 @@ export function LineChart({ data, lines, title }: LineChartProps) {
                 type="monotone"
                 dataKey={line.dataKey}
                 stroke={line.color}
-                strokeWidth={2}
+                strokeWidth={3}
                 name={line.name}
                 dot={{ fill: line.color, strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
+                activeDot={{ r: 6, strokeWidth: 0, fill: line.color }}
               />
             ))}
           </RechartsLineChart>
