@@ -512,12 +512,41 @@ export default function Transactions() {
                     <tfoot className="bg-secondary/50 border-t border-border">
                       <tr>
                         <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
-                          Total:
+                          Total Despesas:
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-foreground">
+                        <td className="px-4 py-4 text-sm font-bold text-primary">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
                           )}
+                        </td>
+                        <td colSpan={3}></td>
+                      </tr>
+                      <tr>
+                        <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
+                          Total Receitas:
+                        </td>
+                        <td className="px-4 py-4 text-sm font-bold text-success">
+                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
+                          )}
+                        </td>
+                        <td colSpan={3}></td>
+                      </tr>
+                      <tr className="border-t border-border">
+                        <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
+                          Saldo:
+                        </td>
+                        <td className="px-4 py-4 text-sm font-bold">
+                          {(() => {
+                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
+                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
+                            const balance = income - expenses;
+                            return (
+                              <span className={balance >= 0 ? "text-success" : "text-destructive"}>
+                                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balance)}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td colSpan={3}></td>
                       </tr>
