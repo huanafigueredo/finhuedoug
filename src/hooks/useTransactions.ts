@@ -102,14 +102,14 @@ export function useCreateTransaction() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
+      // Remove start_from_installment from the data we send to the database (it's only used client-side)
+      const { start_from_installment, ...transactionData } = transaction;
+
       // If it's an installment transaction, create multiple records
-      if (transaction.is_installment && transaction.total_installments && transaction.total_installments > 1) {
-        const installmentValue = transaction.total_value / transaction.total_installments;
-        const baseDate = new Date(transaction.date);
-        const startFrom = transaction.start_from_installment || 1;
-        
-        // Remove start_from_installment from the data we send to the database
-        const { start_from_installment, ...transactionData } = transaction;
+      if (transactionData.is_installment && transactionData.total_installments && transactionData.total_installments > 1) {
+        const installmentValue = transactionData.total_value / transactionData.total_installments;
+        const baseDate = new Date(transactionData.date);
+        const startFrom = start_from_installment || 1;
         
         // Create the first installment (starting from startFrom)
         const { data: parentData, error: parentError } = await supabase
@@ -117,7 +117,7 @@ export function useCreateTransaction() {
           .insert({
             ...transactionData,
             user_id: user.id,
-            description: `${transaction.description} (Parcela ${startFrom}/${transaction.total_installments})`,
+            description: `${transactionData.description} (Parcela ${startFrom}/${transactionData.total_installments})`,
             total_value: installmentValue,
             installment_number: startFrom,
             installment_value: installmentValue,
@@ -133,7 +133,7 @@ export function useCreateTransaction() {
 
         // Create remaining installments (from startFrom+1 to total)
         const childInstallments = [];
-        for (let i = startFrom + 1; i <= transaction.total_installments; i++) {
+        for (let i = startFrom + 1; i <= transactionData.total_installments; i++) {
           // When starting from a specific installment, date offset is relative to startFrom
           const monthOffset = i - startFrom;
           const installmentDate = addMonths(baseDate, monthOffset);
@@ -141,7 +141,7 @@ export function useCreateTransaction() {
             ...transactionData,
             user_id: user.id,
             date: installmentDate.toISOString().split("T")[0],
-            description: `${transaction.description} (Parcela ${i}/${transaction.total_installments})`,
+            description: `${transactionData.description} (Parcela ${i}/${transactionData.total_installments})`,
             total_value: installmentValue,
             installment_number: i,
             installment_value: installmentValue,
@@ -165,9 +165,9 @@ export function useCreateTransaction() {
       }
 
       // If it's a recurring income transaction
-      if (transaction.is_recurring && transaction.type === "income" && transaction.recurring_day) {
-        const recurringDay = transaction.recurring_day;
-        const duration = transaction.recurring_duration;
+      if (transactionData.is_recurring && transactionData.type === "income" && transactionData.recurring_day) {
+        const recurringDay = transactionData.recurring_day;
+        const duration = transactionData.recurring_duration;
         
         // Determine number of months to generate
         let monthsToGenerate = 0;
@@ -178,7 +178,7 @@ export function useCreateTransaction() {
         }
 
         if (monthsToGenerate > 0) {
-          const baseDate = new Date(transaction.date);
+          const baseDate = new Date(transactionData.date);
           
           // Set the first transaction date to the recurring day of the base month
           const daysInBaseMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
@@ -188,7 +188,7 @@ export function useCreateTransaction() {
           const { data: parentData, error: parentError } = await supabase
             .from("transactions")
             .insert({
-              ...transaction,
+              ...transactionData,
               user_id: user.id,
               date: firstDate.toISOString().split("T")[0],
               is_generated_installment: false,
@@ -210,7 +210,7 @@ export function useCreateTransaction() {
             const futureDate = setDateFns(futureMonth, Math.min(recurringDay, daysInMonth));
             
             futureTransactions.push({
-              ...transaction,
+              ...transactionData,
               user_id: user.id,
               date: futureDate.toISOString().split("T")[0],
               parent_transaction_id: parentData.id,
@@ -236,7 +236,7 @@ export function useCreateTransaction() {
       // Single transaction (no installments or recurring)
       const { data, error } = await supabase
         .from("transactions")
-        .insert({ ...transaction, user_id: user.id })
+        .insert({ ...transactionData, user_id: user.id })
         .select()
         .single();
 
