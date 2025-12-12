@@ -4,31 +4,21 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { FeatureCard } from "@/components/shared/FeatureCard";
 import { Heart, PieChart, Users, Sparkles, ArrowRight } from "lucide-react";
-
-const features = [
-  {
-    icon: PieChart,
-    title: "Controle Inteligente",
-    description:
-      "Acompanhe todas as despesas e receitas do casal com gráficos intuitivos e relatórios detalhados.",
-  },
-  {
-    icon: Users,
-    title: "Divisão Justa",
-    description:
-      "Divisão automática das despesas compartilhadas. Saiba exatamente quanto cada um deve.",
-  },
-  {
-    icon: Sparkles,
-    title: "Visual Moderno",
-    description:
-      "Interface elegante inspirada nas melhores fintechs. Organização nunca foi tão bonita.",
-  },
-];
-
+const features = [{
+  icon: PieChart,
+  title: "Controle Inteligente",
+  description: "Acompanhe todas as despesas e receitas do casal com gráficos intuitivos e relatórios detalhados."
+}, {
+  icon: Users,
+  title: "Divisão Justa",
+  description: "Divisão automática das despesas compartilhadas. Saiba exatamente quanto cada um deve."
+}, {
+  icon: Sparkles,
+  title: "Visual Moderno",
+  description: "Interface elegante inspirada nas melhores fintechs. Organização nunca foi tão bonita."
+}];
 export default function Index() {
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <Header />
 
       {/* Hero Section */}
@@ -55,11 +45,7 @@ export default function Index() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-up opacity-0 stagger-2">
-              Uma planilha financeira elegante para casais, com divisão
-              automática, controle por banco, categorias e visual moderno
-              inspirado nas melhores fintechs.
-            </p>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-up opacity-0 stagger-2">Uma planilha financeira casais, com divisão automática, controle por banco, categorias e visual moderno.</p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up opacity-0 stagger-3">
@@ -108,15 +94,11 @@ export default function Index() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="opacity-0 animate-fade-up"
-                style={{ animationDelay: `${(index + 1) * 0.15}s` }}
-              >
+            {features.map((feature, index) => <div key={feature.title} className="opacity-0 animate-fade-up" style={{
+            animationDelay: `${(index + 1) * 0.15}s`
+          }}>
                 <FeatureCard {...feature} />
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -143,6 +125,5 @@ export default function Index() {
       </section>
 
       <Footer />
-    </div>
-  );
+    </div>;
 }
