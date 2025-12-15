@@ -630,7 +630,17 @@ export default function NewTransaction() {
 
                 <div className="space-y-2">
                   <Label>{type === "income" ? "Origem da receita" : "Para quem"}</Label>
-                  <Select value={forWho} onValueChange={setForWho} disabled={recipientsLoading}>
+                  <Select 
+                    value={forWho} 
+                    onValueChange={(value) => {
+                      setForWho(value);
+                      // Auto-enable "Compra do Casal" when "Casal" is selected
+                      if (value === "Casal" && type === "expense") {
+                        setIsCouple(true);
+                      }
+                    }} 
+                    disabled={recipientsLoading}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={recipientsLoading ? "Carregando..." : "Selecione"} />
                     </SelectTrigger>
