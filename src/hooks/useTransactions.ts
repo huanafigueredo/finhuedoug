@@ -265,10 +265,13 @@ export function useUpdateTransaction() {
       updates: Partial<TransactionInsert>;
       updateFutureInstallments?: boolean;
     }) => {
+      // Remove client-only fields before sending to the database
+      const { start_from_installment, ...updatesWithoutClientOnly } = updates;
+
       // Update the main transaction
       const { data, error } = await supabase
         .from("transactions")
-        .update(updates)
+        .update(updatesWithoutClientOnly)
         .eq("id", id)
         .select()
         .single();
@@ -282,9 +285,9 @@ export function useUpdateTransaction() {
         // Recalculate installment value if total_value changed
         let updateData: any = {};
         
-        if (updates.description) {
+        if (updatesWithoutClientOnly.description) {
           // Update description pattern for future installments
-          const baseDescription = updates.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
+          const baseDescription = updatesWithoutClientOnly.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
           
           // Get all future installments
           const { data: futureInstallments } = await supabase
@@ -298,7 +301,7 @@ export function useUpdateTransaction() {
               await supabase
                 .from("transactions")
                 .update({
-                  ...updates,
+                  ...updatesWithoutClientOnly,
                   description: `${baseDescription} (Parcela ${inst.installment_number}/${inst.total_installments})`,
                 })
                 .eq("id", inst.id);
