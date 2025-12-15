@@ -51,7 +51,7 @@ const transactionSchema = z.object({
 });
 
 const persons = ["Huana", "Douglas"];
-const installmentOptions = [2, 3, 4, 5, 6, 10, 12];
+const installmentOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 18];
 const recurringDurationOptions = [
   { value: "indefinite", label: "Sem prazo definido" },
   { value: "3", label: "3 meses" },
@@ -102,6 +102,8 @@ export default function NewTransaction() {
   // Installment fields
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
+  const [isAlreadyStarted, setIsAlreadyStarted] = useState(false);
+  const [startFromInstallment, setStartFromInstallment] = useState<number>(1);
 
   // Recurring income fields
   const [isRecurring, setIsRecurring] = useState(false);
@@ -241,6 +243,7 @@ export default function NewTransaction() {
         is_installment: isInstallment && totalInstallments > 1,
         total_installments: isInstallment ? totalInstallments : undefined,
         installment_value: isInstallment ? installmentValue : undefined,
+        start_from_installment: isInstallment && isAlreadyStarted ? startFromInstallment : undefined,
         // Recurring fields (only for income)
         is_recurring: type === "income" && isRecurring,
         recurring_day: type === "income" && isRecurring ? recurringDay : undefined,
@@ -266,7 +269,13 @@ export default function NewTransaction() {
         setTimeout(() => {
           let toastDescription = "O lançamento foi registrado com sucesso.";
           if (isInstallment && totalInstallments > 1) {
-            toastDescription = `Criadas ${totalInstallments} parcelas de ${formatCurrency(installmentValue)}`;
+            const installmentsCreated = isAlreadyStarted 
+              ? totalInstallments - startFromInstallment + 1 
+              : totalInstallments;
+            toastDescription = `Criadas ${installmentsCreated} parcelas de ${formatCurrency(installmentValue)}`;
+            if (isAlreadyStarted) {
+              toastDescription += ` (${startFromInstallment}/${totalInstallments} até ${totalInstallments}/${totalInstallments})`;
+            }
           } else if (type === "income" && isRecurring) {
             const months = recurringDuration === "indefinite" ? 12 : parseInt(recurringDuration);
             toastDescription = `Receita recorrente criada! Gerados ${months} lançamentos futuros.`;
@@ -332,9 +341,12 @@ export default function NewTransaction() {
   const installmentPreview = () => {
     if (!isInstallment || totalInstallments <= 1 || !date || numericValue <= 0) return null;
     
+    const startFrom = isAlreadyStarted ? startFromInstallment : 1;
     const previews = [];
-    for (let i = 1; i <= totalInstallments; i++) {
-      const installmentDate = addMonths(date, i - 1);
+    for (let i = startFrom; i <= totalInstallments; i++) {
+      // When already started, the selected date is for the startFrom installment
+      const monthOffset = isAlreadyStarted ? (i - startFrom) : (i - 1);
+      const installmentDate = addMonths(date, monthOffset);
       previews.push({
         number: i,
         date: format(installmentDate, "dd/MM/yyyy"),
@@ -701,7 +713,14 @@ export default function NewTransaction() {
                         <Label>Número de Parcelas</Label>
                         <Select
                           value={totalInstallments.toString()}
-                          onValueChange={(v) => setTotalInstallments(parseInt(v))}
+                          onValueChange={(v) => {
+                            const newTotal = parseInt(v);
+                            setTotalInstallments(newTotal);
+                            // Reset startFromInstallment if it exceeds new total
+                            if (startFromInstallment >= newTotal) {
+                              setStartFromInstallment(1);
+                            }
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -715,6 +734,48 @@ export default function NewTransaction() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Already Started Purchase Toggle */}
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border">
+                        <div>
+                          <Label className="text-foreground text-sm">Compra já iniciada?</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Se já pagou algumas parcelas
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={isAlreadyStarted} 
+                          onCheckedChange={(checked) => {
+                            setIsAlreadyStarted(checked);
+                            if (!checked) setStartFromInstallment(1);
+                          }} 
+                        />
+                      </div>
+
+                      {/* Start From Installment Select */}
+                      {isAlreadyStarted && (
+                        <div className="space-y-2">
+                          <Label>Começar a partir da parcela</Label>
+                          <Select
+                            value={startFromInstallment.toString()}
+                            onValueChange={(v) => setStartFromInstallment(parseInt(v))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: totalInstallments - 1 }, (_, i) => i + 1).map((n) => (
+                                <SelectItem key={n} value={n.toString()}>
+                                  Parcela {n}/{totalInstallments}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Serão criadas {totalInstallments - startFromInstallment + 1} parcelas (de {startFromInstallment} até {totalInstallments})
+                          </p>
+                        </div>
+                      )}
 
                       {/* Installment Preview */}
                       {preview && preview.length > 0 && (
