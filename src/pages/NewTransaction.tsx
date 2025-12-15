@@ -634,11 +634,15 @@ export default function NewTransaction() {
                     value={forWho} 
                     onValueChange={(value) => {
                       setForWho(value);
-                      // Auto-enable "Compra do Casal" when "Casal" is selected
-                      if (value === "Casal" && type === "expense") {
-                        setIsCouple(true);
+                      // Auto-toggle "Compra do Casal" based on selection
+                      if (type === "expense") {
+                        if (value === "Casal") {
+                          setIsCouple(true);
+                        } else {
+                          setIsCouple(false);
+                        }
                       }
-                    }} 
+                    }}
                     disabled={recipientsLoading}
                   >
                     <SelectTrigger>
