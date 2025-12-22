@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ComprovantesCard } from "@/components/comprovantes/ComprovantesCard";
+import { ItensCompraCard } from "@/components/comprovantes/ItensCompraCard";
+import { useItensLancamento } from "@/hooks/useComprovantes";
 
 export interface TransactionDetails {
   id: string;
@@ -38,6 +41,9 @@ export interface TransactionDetails {
   isInstallment?: boolean;
   installmentNumber?: number;
   totalInstallments?: number;
+  tags?: string[];
+  resumo_curto?: string;
+  status_extracao?: string;
 }
 
 interface TransactionDetailsDialogProps {
@@ -54,6 +60,7 @@ export function TransactionDetailsDialog({
   onEdit,
 }: TransactionDetailsDialogProps) {
   const { toast } = useToast();
+  const { data: itensLancamento } = useItensLancamento(transaction?.id);
 
   if (!transaction) return null;
 
@@ -80,6 +87,28 @@ export function TransactionDetailsDialog({
     if (transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments) {
       text += `💳 Parcela: ${transaction.installmentNumber}/${transaction.totalInstallments}\n`;
     }
+    
+    // Add tags
+    if (transaction.tags && transaction.tags.length > 0) {
+      text += `🏷️ Tags: ${transaction.tags.join(', ')}\n`;
+    }
+    
+    // Add resumo curto
+    if (transaction.resumo_curto) {
+      text += `📋 Resumo: ${transaction.resumo_curto}\n`;
+    }
+    
+    // Add extracted items
+    if (itensLancamento && itensLancamento.length > 0) {
+      text += `\n🛒 Itens da compra:\n`;
+      itensLancamento.forEach(item => {
+        let itemText = `  • ${item.nome_item}`;
+        if (item.quantidade) itemText += ` (${item.quantidade}x)`;
+        if (item.valor) itemText += ` - R$ ${item.valor.toFixed(2)}`;
+        text += itemText + '\n';
+      });
+    }
+    
     if (transaction.observacao) {
       text += `\n📋 Observação:\n${transaction.observacao}`;
     }
@@ -207,7 +236,18 @@ export function TransactionDetailsDialog({
               </div>
             )}
 
-            {/* Bloco E - Observações */}
+            {/* Bloco E - Comprovantes */}
+            <ComprovantesCard lancamentoId={transaction.id} />
+
+            {/* Bloco F - Itens da compra */}
+            <ItensCompraCard 
+              lancamentoId={transaction.id}
+              tags={transaction.tags}
+              resumoCurto={transaction.resumo_curto}
+              statusExtracao={transaction.status_extracao}
+            />
+
+            {/* Bloco G - Observações */}
             <div className="p-4 rounded-xl bg-secondary/50">
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />

@@ -71,6 +71,50 @@ export type Database = {
         }
         Relationships: []
       }
+      comprovantes_lancamento: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          lancamento_id: string
+          nfe_qr_url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          lancamento_id: string
+          nfe_qr_url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          lancamento_id?: string
+          nfe_qr_url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comprovantes_lancamento_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contas_agendadas: {
         Row: {
           competencia: string
@@ -127,6 +171,50 @@ export type Database = {
             columns: ["recorrencia_id"]
             isOneToOne: false
             referencedRelation: "recorrencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      itens_lancamento: {
+        Row: {
+          categoria_item: string | null
+          confirmado: boolean
+          created_at: string
+          id: string
+          lancamento_id: string
+          nome_item: string
+          quantidade: number | null
+          user_id: string
+          valor: number | null
+        }
+        Insert: {
+          categoria_item?: string | null
+          confirmado?: boolean
+          created_at?: string
+          id?: string
+          lancamento_id: string
+          nome_item: string
+          quantidade?: number | null
+          user_id: string
+          valor?: number | null
+        }
+        Update: {
+          categoria_item?: string | null
+          confirmado?: boolean
+          created_at?: string
+          id?: string
+          lancamento_id?: string
+          nome_item?: string
+          quantidade?: number | null
+          user_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "itens_lancamento_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -313,7 +401,10 @@ export type Database = {
           recurring_day: number | null
           recurring_duration: string | null
           recurring_end_date: string | null
+          resumo_curto: string | null
+          status_extracao: string | null
           subcategory: string | null
+          tags: string[] | null
           total_installments: number | null
           total_value: number
           type: string
@@ -346,7 +437,10 @@ export type Database = {
           recurring_day?: number | null
           recurring_duration?: string | null
           recurring_end_date?: string | null
+          resumo_curto?: string | null
+          status_extracao?: string | null
           subcategory?: string | null
+          tags?: string[] | null
           total_installments?: number | null
           total_value: number
           type: string
@@ -379,7 +473,10 @@ export type Database = {
           recurring_day?: number | null
           recurring_duration?: string | null
           recurring_end_date?: string | null
+          resumo_curto?: string | null
+          status_extracao?: string | null
           subcategory?: string | null
+          tags?: string[] | null
           total_installments?: number | null
           total_value?: number
           type?: string
