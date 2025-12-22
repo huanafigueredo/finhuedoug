@@ -10,7 +10,7 @@ import {
   Eye, 
   Trash2, 
   Loader2,
-  X
+  Camera
 } from 'lucide-react';
 import { useComprovantes, useComprovantesMutations, Comprovante } from '@/hooks/useComprovantes';
 import {
@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
+import { QrScannerModal } from './QrScannerModal';
 
 interface ComprovantesCardProps {
   lancamentoId: string;
@@ -47,6 +48,7 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
   const [previewDialog, setPreviewDialog] = useState<{ open: boolean; comprovante?: Comprovante }>({ open: false });
   const [duplicateDialog, setDuplicateDialog] = useState<{ open: boolean; file?: File }>({ open: false });
   const [showQrScanner, setShowQrScanner] = useState(false);
+  const [showManualQrInput, setShowManualQrInput] = useState(false);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -96,13 +98,13 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
     setDuplicateDialog({ open: false });
   };
 
-  const handleScanQr = () => {
-    setShowQrScanner(true);
+  const handleCameraScanResult = async (qrData: string) => {
+    await handleQrResult(qrData);
   };
 
   const handleQrResult = async (qrData: string) => {
     setShowQrScanner(false);
-    
+    setShowManualQrInput(false);
     // Create a text file with the QR data
     const blob = new Blob([qrData], { type: 'text/plain' });
     const file = new File([blob], `nfce_qr_${Date.now()}.txt`, { type: 'text/plain' });
@@ -146,12 +148,24 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
             <Button
               variant="outline"
               size="sm"
-              onClick={handleScanQr}
+              onClick={() => setShowQrScanner(true)}
               disabled={isUploading}
               className="gap-1.5 text-xs"
+              title="Escanear QR Code com câmera"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              Câmera
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowManualQrInput(true)}
+              disabled={isUploading}
+              className="gap-1.5 text-xs"
+              title="Inserir URL do QR manualmente"
             >
               <QrCode className="w-3.5 h-3.5" />
-              QR NFC-e
+              URL
             </Button>
             <Button
               variant="outline"
@@ -227,11 +241,21 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
         )}
       </Card>
 
-      {/* QR Scanner Modal */}
-      <Dialog open={showQrScanner} onOpenChange={setShowQrScanner}>
+      {/* Camera QR Scanner Modal */}
+      <QrScannerModal
+        open={showQrScanner}
+        onOpenChange={setShowQrScanner}
+        onScanSuccess={handleCameraScanResult}
+      />
+
+      {/* Manual QR Input Modal */}
+      <Dialog open={showManualQrInput} onOpenChange={setShowManualQrInput}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Escanear QR Code NFC-e</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5" />
+              Inserir URL do QR Code
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
@@ -247,7 +271,7 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
               }}
             />
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setShowQrScanner(false)}>
+              <Button variant="ghost" onClick={() => setShowManualQrInput(false)}>
                 Cancelar
               </Button>
               <Button
