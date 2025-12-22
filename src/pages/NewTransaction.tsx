@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -78,6 +79,7 @@ export default function NewTransaction() {
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
+  const [observacao, setObservacao] = useState("");
   const [type, setType] = useState<"expense" | "income">("expense");
   const [category, setCategory] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -132,6 +134,7 @@ export default function NewTransaction() {
         // Remove installment suffix from description if present
         const cleanDescription = transaction.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
         setDescription(cleanDescription);
+        setObservacao(transaction.observacao || "");
         setType(transaction.type);
         setCategory(transaction.category || "");
         setSubcategory(transaction.subcategory || "");
@@ -227,6 +230,7 @@ export default function NewTransaction() {
       const transactionData = {
         date: format(date, "yyyy-MM-dd"),
         description,
+        observacao: observacao.trim() || undefined,
         type,
         category: category || undefined,
         subcategory: subcategory || undefined,
@@ -474,6 +478,22 @@ export default function NewTransaction() {
                   />
                   {fieldErrors.description && <p className="text-sm text-destructive">{fieldErrors.description}</p>}
                 </div>
+              </div>
+
+              {/* Observação */}
+              <div className="space-y-2">
+                <Label htmlFor="observacao">Observação</Label>
+                <Textarea
+                  id="observacao"
+                  placeholder="Detalhes do gasto, contexto, o que foi comprado, para quem foi, motivo, etc."
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  className="min-h-[80px] resize-y"
+                  maxLength={1500}
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {observacao.length}/1500
+                </p>
               </div>
 
               {/* Value - For Income (before Category) */}

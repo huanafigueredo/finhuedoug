@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -91,6 +92,7 @@ export function TransactionFormModal({
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
+  const [observacao, setObservacao] = useState("");
   const [type, setType] = useState<"expense" | "income">("expense");
   const [category, setCategory] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -137,6 +139,7 @@ export function TransactionFormModal({
       setTimeout(() => {
         setDate(new Date());
         setDescription("");
+        setObservacao("");
         setType("expense");
         setCategory("");
         setCategoryId("");
@@ -172,6 +175,7 @@ export function TransactionFormModal({
         setDate(isDuplicateMode ? new Date() : parseISO(transaction.date));
         const cleanDescription = transaction.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
         setDescription(cleanDescription);
+        setObservacao(transaction.observacao || "");
         setType(transaction.type);
         setCategory(transaction.category || "");
         setSubcategory(transaction.subcategory || "");
@@ -261,6 +265,7 @@ export function TransactionFormModal({
       const transactionData = {
         date: format(date || new Date(), "yyyy-MM-dd"),
         description,
+        observacao: observacao.trim() || undefined,
         type,
         category: category || undefined,
         subcategory: subcategory || undefined,
@@ -480,6 +485,22 @@ export function TransactionFormModal({
                     onChange={(e) => setDescription(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Observação */}
+              <div className="space-y-2">
+                <Label htmlFor="observacao">Observação</Label>
+                <Textarea
+                  id="observacao"
+                  placeholder="Detalhes do gasto, contexto, o que foi comprado, para quem foi, motivo, etc."
+                  value={observacao}
+                  onChange={(e) => setObservacao(e.target.value)}
+                  className="min-h-[80px] resize-y"
+                  maxLength={1500}
+                />
+                <p className="text-xs text-muted-foreground text-right">
+                  {observacao.length}/1500
+                </p>
               </div>
 
               {/* Value - For Income */}

@@ -5,6 +5,7 @@ import { addMonths, setDate as setDateFns } from "date-fns";
 export interface TransactionInsert {
   date: string;
   description: string;
+  observacao?: string;
   type: "income" | "expense";
   category?: string;
   subcategory?: string;
@@ -37,6 +38,7 @@ export interface Transaction {
   created_at: string;
   date: string;
   description: string;
+  observacao: string | null;
   type: "income" | "expense";
   category: string | null;
   subcategory: string | null;
