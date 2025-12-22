@@ -179,6 +179,7 @@ export type Database = {
           is_generated_installment: boolean | null
           is_installment: boolean | null
           is_recurring: boolean | null
+          observacao: string | null
           paid_by: string | null
           parent_transaction_id: string | null
           payment_method_id: string | null
@@ -209,6 +210,7 @@ export type Database = {
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
           is_recurring?: boolean | null
+          observacao?: string | null
           paid_by?: string | null
           parent_transaction_id?: string | null
           payment_method_id?: string | null
@@ -239,6 +241,7 @@ export type Database = {
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
           is_recurring?: boolean | null
+          observacao?: string | null
           paid_by?: string | null
           parent_transaction_id?: string | null
           payment_method_id?: string | null

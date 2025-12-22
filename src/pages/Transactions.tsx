@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { TransactionRow, Transaction } from "@/components/shared/TransactionRow";
 import { TransactionFormModal } from "@/components/TransactionFormModal";
+import { TransactionDetailsDialog, TransactionDetails } from "@/components/TransactionDetailsDialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -84,6 +85,8 @@ export default function Transactions() {
   const [newTransactionModalOpen, setNewTransactionModalOpen] = useState(false);
   const [editTransactionId, setEditTransactionId] = useState<string | null>(null);
   const [duplicateTransactionId, setDuplicateTransactionId] = useState<string | null>(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<TransactionDetails | null>(null);
 
   // Transform DB transactions to UI format
   const transactions: (Transaction & { rawDate: Date })[] = transactionsData.map((t) => ({
@@ -91,9 +94,11 @@ export default function Transactions() {
     date: format(parseISO(t.date), "dd/MM/yyyy"),
     rawDate: parseISO(t.date),
     description: t.description,
+    observacao: t.observacao,
     person: t.paid_by || "-",
     forWho: t.for_who || "-",
     category: t.category || "-",
+    subcategory: t.subcategory || "-",
     bank: t.bank_name || "-",
     paymentMethod: t.payment_method_name || "-",
     totalValue: Number(t.total_value),
@@ -217,6 +222,37 @@ export default function Transactions() {
     setDuplicateTransactionId(null);
     setEditTransactionId(id);
     setNewTransactionModalOpen(true);
+  };
+
+  const handleRowClick = (id: string) => {
+    const tx = transactions.find((t) => t.id === id);
+    if (tx) {
+      setSelectedTransactionDetails({
+        id: tx.id,
+        date: tx.date,
+        description: tx.description,
+        observacao: tx.observacao,
+        person: tx.person,
+        forWho: tx.forWho,
+        category: tx.category,
+        subcategory: tx.subcategory,
+        bank: tx.bank,
+        paymentMethod: tx.paymentMethod,
+        totalValue: tx.totalValue,
+        valuePerPerson: tx.valuePerPerson,
+        isCouple: tx.isCouple,
+        type: tx.type,
+        isInstallment: tx.isInstallment,
+        installmentNumber: tx.installmentNumber,
+        totalInstallments: tx.totalInstallments,
+      });
+      setDetailsDialogOpen(true);
+    }
+  };
+
+  const handleEditFromDetails = (id: string) => {
+    setDetailsDialogOpen(false);
+    handleEditClick(id);
   };
 
   return (
@@ -505,6 +541,7 @@ export default function Transactions() {
                         onEdit={handleEditClick}
                         onDelete={handleDeleteClick}
                         onDuplicate={handleDuplicateClick}
+                        onClick={handleRowClick}
                       />
                     ))}
                   </tbody>
@@ -624,6 +661,14 @@ export default function Transactions() {
         onOpenChange={setNewTransactionModalOpen}
         editId={editTransactionId}
         duplicateId={duplicateTransactionId}
+      />
+
+      {/* Transaction Details Dialog */}
+      <TransactionDetailsDialog
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        transaction={selectedTransactionDetails}
+        onEdit={handleEditFromDetails}
       />
     </div>
   );
