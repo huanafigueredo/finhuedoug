@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,7 +5,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/shared/Badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -14,12 +12,9 @@ import {
   Calendar, 
   CreditCard, 
   Pencil, 
-  Copy, 
-  X,
+  Copy,
   User,
   Tag,
-  Building2,
-  Wallet,
   FileText
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -59,7 +54,6 @@ export function TransactionDetailsDialog({
   onEdit,
 }: TransactionDetailsDialogProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("resumo");
 
   if (!transaction) return null;
 
@@ -83,6 +77,9 @@ export function TransactionDetailsDialog({
     if (transaction.forWho && transaction.forWho !== "-") {
       text += `🎯 Para: ${transaction.forWho}\n`;
     }
+    if (transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments) {
+      text += `💳 Parcela: ${transaction.installmentNumber}/${transaction.totalInstallments}\n`;
+    }
     if (transaction.observacao) {
       text += `\n📋 Observação:\n${transaction.observacao}`;
     }
@@ -99,12 +96,12 @@ export function TransactionDetailsDialog({
     onEdit?.(transaction.id);
   };
 
-  const hasObservacao = !!transaction.observacao && transaction.observacao.trim().length > 0;
   const hasInstallment = transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden">
+        {/* Bloco A - Cabeçalho */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
@@ -124,143 +121,110 @@ export function TransactionDetailsDialog({
           </div>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <div className="px-6 pt-2">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="resumo">Resumo</TabsTrigger>
-              <TabsTrigger value="detalhes">
-                Detalhes
-                {hasObservacao && (
-                  <span className="ml-1.5 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <ScrollArea className="max-h-[calc(90vh-280px)]">
-            <TabsContent value="resumo" className="px-6 py-4 space-y-4 mt-0">
-              {/* Valor */}
-              <div className="p-4 rounded-xl bg-secondary/50">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Valor total</span>
-                  <span className={cn(
-                    "text-2xl font-bold",
-                    transaction.type === "income" ? "text-success" : "text-foreground"
-                  )}>
-                    {formatCurrency(transaction.totalValue)}
+        <ScrollArea className="max-h-[calc(90vh-200px)]">
+          <div className="px-6 py-4 space-y-4">
+            {/* Bloco B - Valores */}
+            <div className="p-4 rounded-xl bg-secondary/50">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Valor total</span>
+                <span className={cn(
+                  "text-2xl font-bold",
+                  transaction.type === "income" ? "text-success" : "text-foreground"
+                )}>
+                  {formatCurrency(transaction.totalValue)}
+                </span>
+              </div>
+              {transaction.isCouple && (
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                  <span className="text-sm text-muted-foreground">Por pessoa</span>
+                  <span className="text-lg font-medium text-muted-foreground">
+                    {formatCurrency(transaction.valuePerPerson)}
                   </span>
                 </div>
-                {transaction.isCouple && (
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-                    <span className="text-sm text-muted-foreground">Por pessoa</span>
-                    <span className="text-lg font-medium text-muted-foreground">
-                      {formatCurrency(transaction.valuePerPerson)}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Info Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                <DetailItem 
-                  icon={Calendar}
-                  label="Data"
-                  value={transaction.date}
-                />
-                <DetailItem 
-                  icon={Tag}
-                  label="Categoria"
-                  value={transaction.category !== "-" ? transaction.category : undefined}
-                />
-                <DetailItem 
-                  icon={User}
-                  label="Pago por"
-                  value={transaction.person !== "-" ? transaction.person : undefined}
-                />
-                <DetailItem 
-                  icon={User}
-                  label="Para quem"
-                  value={transaction.forWho !== "-" ? transaction.forWho : undefined}
-                />
-                <DetailItem 
-                  icon={Building2}
-                  label="Banco"
-                  value={transaction.bank !== "-" ? transaction.bank : undefined}
-                />
-                <DetailItem 
-                  icon={Wallet}
-                  label="Pagamento"
-                  value={transaction.paymentMethod !== "-" ? transaction.paymentMethod : undefined}
-                />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="detalhes" className="px-6 py-4 space-y-4 mt-0">
-              {/* Parcelas */}
-              {hasInstallment && (
-                <div className="p-4 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Parcelamento</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Parcela atual</span>
-                    <span className="text-lg font-semibold text-foreground">
-                      {transaction.installmentNumber}/{transaction.totalInstallments}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <div className="h-2 rounded-full bg-border overflow-hidden">
-                      <div 
-                        className="h-full bg-primary transition-all duration-300"
-                        style={{ 
-                          width: `${(transaction.installmentNumber! / transaction.totalInstallments!) * 100}%` 
-                        }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes
-                    </p>
-                  </div>
-                </div>
               )}
+            </div>
 
-              {/* Subcategoria */}
-              {transaction.subcategory && transaction.subcategory !== "-" && (
-                <div className="p-4 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Subcategoria</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{transaction.subcategory}</p>
+            {/* Bloco C - Informações principais em grade */}
+            <div className="grid grid-cols-2 gap-3">
+              <DetailItem 
+                icon={Calendar}
+                label="Data"
+                value={transaction.date}
+              />
+              <DetailItem 
+                icon={Tag}
+                label="Categoria"
+                value={transaction.category !== "-" ? transaction.category : undefined}
+              />
+              <DetailItem 
+                icon={User}
+                label="Pago por"
+                value={transaction.person !== "-" ? transaction.person : undefined}
+              />
+              <DetailItem 
+                icon={User}
+                label="Para quem"
+                value={transaction.forWho !== "-" ? transaction.forWho : undefined}
+              />
+            </div>
+
+            {/* Bloco D - Informações adicionais */}
+            {(transaction.subcategory && transaction.subcategory !== "-") && (
+              <div className="p-4 rounded-xl bg-secondary/50">
+                <div className="flex items-center gap-2 mb-1">
+                  <Tag className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Subcategoria</span>
                 </div>
-              )}
+                <p className="text-sm text-muted-foreground">{transaction.subcategory}</p>
+              </div>
+            )}
 
-              {/* Observação */}
-              {hasObservacao && (
-                <div className="p-4 rounded-xl bg-secondary/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Observação</span>
+            {hasInstallment && (
+              <div className="p-4 rounded-xl bg-secondary/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">Parcelamento</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Parcela atual</span>
+                  <span className="text-lg font-semibold text-foreground">
+                    {transaction.installmentNumber}/{transaction.totalInstallments}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <div className="h-2 rounded-full bg-border overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ 
+                        width: `${(transaction.installmentNumber! / transaction.totalInstallments!) * 100}%` 
+                      }}
+                    />
                   </div>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-                    {transaction.observacao}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes
                   </p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Empty State */}
-              {!hasInstallment && !hasObservacao && (!transaction.subcategory || transaction.subcategory === "-") && (
-                <div className="py-8 text-center">
-                  <FileText className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Nenhum detalhe adicional
-                  </p>
-                </div>
+            {/* Bloco E - Observações */}
+            <div className="p-4 rounded-xl bg-secondary/50">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">Observações</span>
+              </div>
+              {transaction.observacao && transaction.observacao.trim().length > 0 ? (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
+                  {transaction.observacao}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground/60 italic">
+                  Sem observações
+                </p>
               )}
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
+            </div>
+          </div>
+        </ScrollArea>
 
         {/* Actions */}
         <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3">
@@ -305,25 +269,24 @@ function DetailItem({
   label: string; 
   value?: string;
 }) {
-  if (!value) {
-    return (
-      <div className="p-3 rounded-lg bg-secondary/30">
-        <div className="flex items-center gap-2 mb-1">
-          <Icon className="w-3.5 h-3.5 text-muted-foreground/50" />
-          <span className="text-xs text-muted-foreground/50">{label}</span>
-        </div>
-        <p className="text-sm text-muted-foreground/50">-</p>
-      </div>
-    );
-  }
-
   return (
     <div className="p-3 rounded-lg bg-secondary/50">
       <div className="flex items-center gap-2 mb-1">
-        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="text-xs text-muted-foreground">{label}</span>
+        <Icon className={cn(
+          "w-3.5 h-3.5",
+          value ? "text-muted-foreground" : "text-muted-foreground/50"
+        )} />
+        <span className={cn(
+          "text-xs",
+          value ? "text-muted-foreground" : "text-muted-foreground/50"
+        )}>{label}</span>
       </div>
-      <p className="text-sm font-medium text-foreground truncate">{value}</p>
+      <p className={cn(
+        "text-sm truncate",
+        value ? "font-medium text-foreground" : "text-muted-foreground/50"
+      )}>
+        {value || "Não informado"}
+      </p>
     </div>
   );
 }
