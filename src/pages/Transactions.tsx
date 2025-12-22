@@ -89,7 +89,7 @@ export default function Transactions() {
   const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<TransactionDetails | null>(null);
 
   // Transform DB transactions to UI format
-  const transactions: (Transaction & { rawDate: Date })[] = transactionsData.map((t) => ({
+  const transactions: (Transaction & { rawDate: Date; tags?: string[]; resumo_curto?: string; status_extracao?: string })[] = transactionsData.map((t) => ({
     id: t.id,
     date: format(parseISO(t.date), "dd/MM/yyyy"),
     rawDate: parseISO(t.date),
@@ -108,6 +108,9 @@ export default function Transactions() {
     isInstallment: t.is_installment || false,
     installmentNumber: t.installment_number || undefined,
     totalInstallments: t.total_installments || undefined,
+    tags: t.tags || [],
+    resumo_curto: t.resumo_curto || undefined,
+    status_extracao: t.status_extracao || undefined,
   }));
 
   const banks = ["Todos", ...banksData.map((b) => b.name)];
@@ -245,6 +248,9 @@ export default function Transactions() {
         isInstallment: tx.isInstallment,
         installmentNumber: tx.installmentNumber,
         totalInstallments: tx.totalInstallments,
+        tags: tx.tags || [],
+        resumo_curto: tx.resumo_curto,
+        status_extracao: tx.status_extracao,
       });
       setDetailsDialogOpen(true);
     }
