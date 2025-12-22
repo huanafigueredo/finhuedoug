@@ -71,6 +71,66 @@ export type Database = {
         }
         Relationships: []
       }
+      contas_agendadas: {
+        Row: {
+          competencia: string
+          confirmado_em: string | null
+          created_at: string
+          data_vencimento: string
+          id: string
+          lancamento_id: string | null
+          observacao: string | null
+          recorrencia_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          valor: number
+        }
+        Insert: {
+          competencia: string
+          confirmado_em?: string | null
+          created_at?: string
+          data_vencimento: string
+          id?: string
+          lancamento_id?: string | null
+          observacao?: string | null
+          recorrencia_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          valor: number
+        }
+        Update: {
+          competencia?: string
+          confirmado_em?: string | null
+          created_at?: string
+          data_vencimento?: string
+          id?: string
+          lancamento_id?: string | null
+          observacao?: string | null
+          recorrencia_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_agendadas_lancamento_id_fkey"
+            columns: ["lancamento_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_agendadas_recorrencia_id_fkey"
+            columns: ["recorrencia_id"]
+            isOneToOne: false
+            referencedRelation: "recorrencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           created_at: string | null
@@ -134,6 +194,69 @@ export type Database = {
         }
         Relationships: []
       }
+      recorrencias: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          created_at: string
+          data_inicio: string
+          dia_vencimento: number
+          id: string
+          lembrete_1_dia: boolean
+          lembrete_3_dias: boolean
+          lembrete_7_dias: boolean
+          observacao_padrao: string | null
+          para_quem: string | null
+          pessoa: string | null
+          subcategoria: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+          user_id: string
+          valor_padrao: number
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          data_inicio: string
+          dia_vencimento: number
+          id?: string
+          lembrete_1_dia?: boolean
+          lembrete_3_dias?: boolean
+          lembrete_7_dias?: boolean
+          observacao_padrao?: string | null
+          para_quem?: string | null
+          pessoa?: string | null
+          subcategoria?: string | null
+          tipo?: string
+          titulo: string
+          updated_at?: string
+          user_id: string
+          valor_padrao?: number
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          created_at?: string
+          data_inicio?: string
+          dia_vencimento?: number
+          id?: string
+          lembrete_1_dia?: boolean
+          lembrete_3_dias?: boolean
+          lembrete_7_dias?: boolean
+          observacao_padrao?: string | null
+          para_quem?: string | null
+          pessoa?: string | null
+          subcategoria?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          user_id?: string
+          valor_padrao?: number
+        }
+        Relationships: []
+      }
       subcategories: {
         Row: {
           category_id: string
@@ -167,6 +290,7 @@ export type Database = {
         Row: {
           bank_id: string | null
           category: string | null
+          conta_agendada_id: string | null
           created_at: string | null
           date: string
           description: string
@@ -180,6 +304,7 @@ export type Database = {
           is_installment: boolean | null
           is_recurring: boolean | null
           observacao: string | null
+          origem: string | null
           paid_by: string | null
           parent_transaction_id: string | null
           payment_method_id: string | null
@@ -198,6 +323,7 @@ export type Database = {
         Insert: {
           bank_id?: string | null
           category?: string | null
+          conta_agendada_id?: string | null
           created_at?: string | null
           date: string
           description: string
@@ -211,6 +337,7 @@ export type Database = {
           is_installment?: boolean | null
           is_recurring?: boolean | null
           observacao?: string | null
+          origem?: string | null
           paid_by?: string | null
           parent_transaction_id?: string | null
           payment_method_id?: string | null
@@ -229,6 +356,7 @@ export type Database = {
         Update: {
           bank_id?: string | null
           category?: string | null
+          conta_agendada_id?: string | null
           created_at?: string | null
           date?: string
           description?: string
@@ -242,6 +370,7 @@ export type Database = {
           is_installment?: boolean | null
           is_recurring?: boolean | null
           observacao?: string | null
+          origem?: string | null
           paid_by?: string | null
           parent_transaction_id?: string | null
           payment_method_id?: string | null
@@ -263,6 +392,13 @@ export type Database = {
             columns: ["bank_id"]
             isOneToOne: false
             referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_conta_agendada_id_fkey"
+            columns: ["conta_agendada_id"]
+            isOneToOne: false
+            referencedRelation: "contas_agendadas"
             referencedColumns: ["id"]
           },
           {
