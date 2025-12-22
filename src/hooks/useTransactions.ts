@@ -64,6 +64,10 @@ export interface Transaction {
   recurring_day: number | null;
   recurring_duration: string | null;
   recurring_end_date: string | null;
+  // Comprovantes fields
+  tags: string[] | null;
+  resumo_curto: string | null;
+  status_extracao: string | null;
   // Joined fields
   bank_name?: string;
   payment_method_name?: string;
