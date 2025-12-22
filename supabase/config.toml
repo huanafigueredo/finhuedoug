@@ -1,1 +1,4 @@
 project_id = "zpkiayaliicipxcjetqh"
+
+[functions.extrair-itens-comprovante]
+verify_jwt = true
