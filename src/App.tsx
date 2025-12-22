@@ -13,6 +13,7 @@ import Transactions from "./pages/Transactions";
 import NewTransaction from "./pages/NewTransaction";
 import People from "./pages/People";
 import Settings from "./pages/Settings";
+import Contas from "./pages/Contas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,9 @@ const App = () => (
             } />
             <Route path="/config" element={
               <ProtectedRoute><Settings /></ProtectedRoute>
+            } />
+            <Route path="/contas" element={
+              <ProtectedRoute><Contas /></ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>

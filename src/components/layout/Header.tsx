@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const navItems = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Lançamentos", path: "/lancamentos" },
+  { label: "Contas", path: "/contas" },
   { label: "Pessoas", path: "/pessoas" },
   { label: "Configurações", path: "/config" },
 ];

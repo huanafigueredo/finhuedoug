@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MetricCard } from "@/components/shared/MetricCard";
@@ -20,10 +21,13 @@ import {
   Heart,
   ArrowUpRight,
   FileText,
+  AlertCircle,
+  Calendar,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
+import { useContasAVencer } from "@/hooks/useContasAgendadas";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -51,6 +55,7 @@ export default function Dashboard() {
 
   const { data: transactions = [], isLoading: loadingTransactions } = useTransactions();
   const { data: banks = [] } = useBanks();
+  const { data: contasAVencer = [] } = useContasAVencer();
 
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
@@ -306,7 +311,57 @@ export default function Dashboard() {
           )}
 
           {/* Bottom Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Contas a Vencer */}
+            <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-primary" />
+                  Contas em Aberto
+                </h3>
+                <Link
+                  to="/contas"
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  Ver todas
+                  <ArrowUpRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {contasAVencer.length > 0 ? (
+                <div className="space-y-3">
+                  {contasAVencer.slice(0, 3).map((conta) => (
+                    <div
+                      key={conta.id}
+                      className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
+                    >
+                      <div>
+                        <span className="text-sm font-medium text-foreground">
+                          {conta.recorrencia?.titulo}
+                        </span>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="w-3 h-3" />
+                          {format(parseISO(conta.data_vencimento), "dd/MM", { locale: ptBR })}
+                        </div>
+                      </div>
+                      <span className="text-sm font-semibold text-foreground">
+                        {formatCurrency(conta.valor)}
+                      </span>
+                    </div>
+                  ))}
+                  {contasAVencer.length > 3 && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      +{contasAVencer.length - 3} outras contas
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm text-center py-8">
+                  Nenhuma conta a vencer nos próximos 7 dias
+                </p>
+              )}
+            </div>
+
             {/* Recent Transactions */}
             <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
               <div className="flex items-center justify-between mb-6">
@@ -384,6 +439,7 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   {bankData
                     .sort((a, b) => b.value - a.value)
+                    .slice(0, 4)
                     .map((bank, index) => (
                       <div
                         key={bank.name}
