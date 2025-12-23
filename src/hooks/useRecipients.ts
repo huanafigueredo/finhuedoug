@@ -33,7 +33,7 @@ export function useAddRecipient() {
         .from("recipients")
         .insert({ name, user_id: user.id })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -50,7 +50,7 @@ export function useUpdateRecipient() {
         .update({ name })
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
