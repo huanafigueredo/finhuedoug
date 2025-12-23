@@ -36,6 +36,7 @@ import { useRecipients } from "@/hooks/useRecipients";
 import { useCreateTransaction, useUpdateTransaction, useTransactions } from "@/hooks/useTransactions";
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
+import { usePersonNames } from "@/hooks/useUserSettings";
 
 const transactionSchema = z.object({
   date: z.date().optional(),
@@ -54,7 +55,7 @@ const transactionSchema = z.object({
   incomeOrigin: z.string().max(100).optional(),
 });
 
-const persons = ["Huana", "Douglas"];
+
 const installmentOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 18];
 const recurringDurationOptions = [
   { value: "indefinite", label: "Sem prazo definido" },
@@ -84,6 +85,8 @@ export function TransactionFormModal({
   const loadId = editId || duplicateId;
   
   const { toast } = useToast();
+  const { person1, person2 } = usePersonNames();
+  const persons = [person1, person2];
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();

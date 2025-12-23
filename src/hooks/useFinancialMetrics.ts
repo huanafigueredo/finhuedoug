@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { parseISO } from "date-fns";
+import { usePersonNames } from "./useUserSettings";
 
 export interface FinancialMetrics {
   // Total geral
@@ -12,20 +13,24 @@ export interface FinancialMetrics {
   halfCoupleExpenses: number;
   
   // Despesas individuais (excluindo casal)
-  huanaIndividualExpenses: number;
-  douglasIndividualExpenses: number;
+  person1IndividualExpenses: number;
+  person2IndividualExpenses: number;
   
   // Total por pessoa (individual + metade do casal)
-  huanaTotalExpenses: number;
-  douglasTotalExpenses: number;
+  person1TotalExpenses: number;
+  person2TotalExpenses: number;
   
   // Receitas por pessoa
-  huanaIncome: number;
-  douglasIncome: number;
+  person1Income: number;
+  person2Income: number;
   
   // Saldo por pessoa (receitas - despesas incluindo metade do casal)
-  huanaBalance: number;
-  douglasBalance: number;
+  person1Balance: number;
+  person2Balance: number;
+  
+  // Nomes das pessoas
+  person1Name: string;
+  person2Name: string;
 }
 
 interface Transaction {
@@ -43,6 +48,8 @@ export function useFinancialMetrics(
   selectedMonth?: number, // 0-indexed
   selectedYear?: number
 ): FinancialMetrics {
+  const { person1, person2 } = usePersonNames();
+  
   return useMemo(() => {
     // Filter transactions by month/year if provided
     let filtered = transactions;
@@ -73,32 +80,32 @@ export function useFinancialMetrics(
     
     const halfCoupleExpenses = coupleExpenses / 2;
 
-    // Individual expenses for Huana (excluding couple purchases)
-    const huanaIndividualExpenses = filtered
-      .filter((t) => t.type === "expense" && t.for_who === "Huana" && !t.is_couple)
+    // Individual expenses for Person 1 (excluding couple purchases)
+    const person1IndividualExpenses = filtered
+      .filter((t) => t.type === "expense" && t.for_who === person1 && !t.is_couple)
       .reduce((sum, t) => sum + Number(t.total_value), 0);
 
-    // Individual expenses for Douglas (excluding couple purchases)
-    const douglasIndividualExpenses = filtered
-      .filter((t) => t.type === "expense" && t.for_who === "Douglas" && !t.is_couple)
+    // Individual expenses for Person 2 (excluding couple purchases)
+    const person2IndividualExpenses = filtered
+      .filter((t) => t.type === "expense" && t.for_who === person2 && !t.is_couple)
       .reduce((sum, t) => sum + Number(t.total_value), 0);
 
     // Total expenses per person = individual + half of couple
-    const huanaTotalExpenses = huanaIndividualExpenses + halfCoupleExpenses;
-    const douglasTotalExpenses = douglasIndividualExpenses + halfCoupleExpenses;
+    const person1TotalExpenses = person1IndividualExpenses + halfCoupleExpenses;
+    const person2TotalExpenses = person2IndividualExpenses + halfCoupleExpenses;
 
     // Income per person
-    const huanaIncome = filtered
-      .filter((t) => t.type === "income" && t.for_who === "Huana")
+    const person1Income = filtered
+      .filter((t) => t.type === "income" && t.for_who === person1)
       .reduce((sum, t) => sum + Number(t.total_value), 0);
 
-    const douglasIncome = filtered
-      .filter((t) => t.type === "income" && t.for_who === "Douglas")
+    const person2Income = filtered
+      .filter((t) => t.type === "income" && t.for_who === person2)
       .reduce((sum, t) => sum + Number(t.total_value), 0);
 
     // Balance per person = income - expenses (including half of couple)
-    const huanaBalance = huanaIncome - huanaTotalExpenses;
-    const douglasBalance = douglasIncome - douglasTotalExpenses;
+    const person1Balance = person1Income - person1TotalExpenses;
+    const person2Balance = person2Income - person2TotalExpenses;
 
     return {
       totalExpenses,
@@ -106,14 +113,16 @@ export function useFinancialMetrics(
       totalBalance,
       coupleExpenses,
       halfCoupleExpenses,
-      huanaIndividualExpenses,
-      douglasIndividualExpenses,
-      huanaTotalExpenses,
-      douglasTotalExpenses,
-      huanaIncome,
-      douglasIncome,
-      huanaBalance,
-      douglasBalance,
+      person1IndividualExpenses,
+      person2IndividualExpenses,
+      person1TotalExpenses,
+      person2TotalExpenses,
+      person1Income,
+      person2Income,
+      person1Balance,
+      person2Balance,
+      person1Name: person1,
+      person2Name: person2,
     };
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [transactions, selectedMonth, selectedYear, person1, person2]);
 }

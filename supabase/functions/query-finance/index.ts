@@ -58,6 +58,16 @@ serve(async (req) => {
     const startOfMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
     const endOfMonth = new Date(currentYear, currentMonth, 0).toISOString().split("T")[0];
 
+    // Fetch user settings for person names
+    const { data: userSettings } = await supabase
+      .from("user_settings")
+      .select("person_1_name, person_2_name")
+      .eq("user_id", userId)
+      .single();
+    
+    const person1Name = userSettings?.person_1_name || "Huana";
+    const person2Name = userSettings?.person_2_name || "Douglas";
+
     // Fetch categories and banks for context
     const { data: categories } = await supabase
       .from("categories")
@@ -65,17 +75,17 @@ serve(async (req) => {
     
     const { data: banks } = await supabase
       .from("banks")
-      .select("name");
+      .select("id, name");
 
     const { data: paymentMethods } = await supabase
       .from("payment_methods")
-      .select("name");
+      .select("id, name");
 
     const categoryNames = categories?.map(c => c.name).join(", ") || "";
     const bankNames = banks?.map(b => b.name).join(", ") || "";
     const paymentMethodNames = paymentMethods?.map(p => p.name).join(", ") || "";
 
-    const systemPrompt = `Você é um assistente financeiro do app CasalFin, usado por Huana e Douglas.
+    const systemPrompt = `Você é um assistente financeiro do app CasalFin, usado por ${person1Name} e ${person2Name}.
 Você responde perguntas sobre finanças do casal baseado nos dados do app.
 
 DATA ATUAL: ${now.toLocaleDateString("pt-BR")} (${currentYear}-${String(currentMonth).padStart(2, "0")})
@@ -86,14 +96,14 @@ REGRAS IMPORTANTES:
 2. Considere apenas lançamentos CONFIRMADOS (não inclua contas_agendadas pendentes nos totais)
 3. Parcelamentos: considere apenas a parcela do mês, não o total da compra
 4. Valores são em BRL (Real)
-5. Pessoas válidas: Huana, Douglas, Casal, Empresa
+5. Pessoas válidas: ${person1Name}, ${person2Name}, Casal, Empresa
 6. Se a pergunta for ambígua, peça esclarecimento sobre: pessoa, período, tipo
 
 DADOS DISPONÍVEIS:
 - Categorias: ${categoryNames}
 - Bancos/Instituições: ${bankNames}
 - Formas de pagamento: ${paymentMethodNames}
-- Campos da transação: date, description, type (expense/income), total_value, category, subcategory, for_who, paid_by, is_couple, bank_id, forma_pagamento, instituicao, is_installment, installment_number, total_installments
+- Campos da transação: date, description, type (expense/income), total_value, category, subcategory, for_who, paid_by, is_couple, bank_id, payment_method_id, is_installment, installment_number, total_installments
 
 FORMATO DE RESPOSTA:
 Quando a pergunta puder ser respondida com dados, retorne JSON com:
@@ -101,10 +111,10 @@ Quando a pergunta puder ser respondida com dados, retorne JSON com:
   "type": "query",
   "filters": {
     "periodo": {"inicio": "YYYY-MM-DD", "fim": "YYYY-MM-DD"},
-    "pessoa": ["Huana"|"Douglas"|"Casal"|"Empresa"],
+    "pessoa": ["${person1Name}"|"${person2Name}"|"Casal"|"Empresa"],
     "tipo": ["expense"|"income"],
-    "forma_pagamento": ["credito"|"debito"|"pix"|"boleto"|"dinheiro"],
-    "instituicao": ["nubank"|"inter"|etc],
+    "forma_pagamento": ["Cartão de Crédito"|"Cartão de Débito"|"PIX"|"Boleto"|"Dinheiro"],
+    "instituicao": ["Nubank"|"Inter"|"Itaú"|etc],
     "categoria": [...],
     "subcategoria": [...],
     "busca_texto": "termo para buscar na descrição",
@@ -116,10 +126,17 @@ Quando a pergunta puder ser respondida com dados, retorne JSON com:
   "clarification_needed": null
 }
 
+IMPORTANTE sobre forma_pagamento e instituicao:
+- forma_pagamento: Use os nomes EXATOS das formas de pagamento cadastradas: ${paymentMethodNames}
+- instituicao: Use os nomes EXATOS dos bancos cadastrados: ${bankNames}
+- Quando o usuário mencionar "crédito", "cartão de crédito" → use "Cartão de Crédito" em forma_pagamento
+- Quando mencionar "débito", "cartão de débito" → use "Cartão de Débito" em forma_pagamento
+- Quando mencionar um banco como "Nubank", "Inter" → use em instituicao
+
 Se precisar de esclarecimento:
 {
   "type": "clarification",
-  "clarification_needed": "Você quer ver gastos de Huana, Douglas ou do Casal?"
+  "clarification_needed": "Você quer ver gastos de ${person1Name}, ${person2Name} ou do Casal?"
 }
 
 Se for pergunta de conversa geral:
@@ -209,9 +226,9 @@ Se for pergunta de conversa geral:
       .from("transactions")
       .select(`
         id, date, description, type, total_value, category, subcategory,
-        for_who, paid_by, is_couple, bank_id, forma_pagamento, instituicao,
+        for_who, paid_by, is_couple, bank_id, payment_method_id,
         is_installment, installment_number, total_installments, installment_value,
-        observacao, banks!transactions_bank_id_fkey(name)
+        observacao, banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
       `)
       .eq("user_id", userId)
       .order("date", { ascending: false });
@@ -244,14 +261,32 @@ Se for pergunta de conversa geral:
       query = query.in("subcategory", filters.subcategoria);
     }
 
-    // Apply forma_pagamento filter
-    if (filters.forma_pagamento && filters.forma_pagamento.length > 0) {
-      query = query.in("forma_pagamento", filters.forma_pagamento);
+    // Apply forma_pagamento filter using payment_method_id lookup
+    if (filters.forma_pagamento && filters.forma_pagamento.length > 0 && paymentMethods) {
+      const matchingPaymentMethods = paymentMethods.filter(pm => 
+        filters.forma_pagamento!.some(fp => 
+          pm.name.toLowerCase().includes(fp.toLowerCase()) || 
+          fp.toLowerCase().includes(pm.name.toLowerCase())
+        )
+      );
+      if (matchingPaymentMethods.length > 0) {
+        const pmIds = matchingPaymentMethods.map(pm => pm.id);
+        query = query.in("payment_method_id", pmIds);
+      }
     }
 
-    // Apply instituicao filter
-    if (filters.instituicao && filters.instituicao.length > 0) {
-      query = query.in("instituicao", filters.instituicao);
+    // Apply instituicao filter using bank_id lookup
+    if (filters.instituicao && filters.instituicao.length > 0 && banks) {
+      const matchingBanks = banks.filter(b => 
+        filters.instituicao!.some(inst => 
+          b.name.toLowerCase().includes(inst.toLowerCase()) || 
+          inst.toLowerCase().includes(b.name.toLowerCase())
+        )
+      );
+      if (matchingBanks.length > 0) {
+        const bankIds = matchingBanks.map(b => b.id);
+        query = query.in("bank_id", bankIds);
+      }
     }
 
     // Apply text search
@@ -293,7 +328,14 @@ Se for pergunta de conversa geral:
     if (filters.agrupar_por) {
       groupedData = {};
       for (const t of txList) {
-        const key = (t as any)[filters.agrupar_por] || "Sem categoria";
+        let key: string;
+        if (filters.agrupar_por === "instituicao") {
+          key = (t as any).banks?.name || "Sem banco";
+        } else if (filters.agrupar_por === "forma_pagamento") {
+          key = (t as any).payment_methods?.name || "Sem forma de pagamento";
+        } else {
+          key = (t as any)[filters.agrupar_por] || "Sem categoria";
+        }
         groupedData[key] = (groupedData[key] || 0) + Number(t.total_value || 0);
       }
     }
@@ -312,6 +354,8 @@ Se for pergunta de conversa geral:
         value: t.total_value,
         category: t.category,
         for_who: t.for_who,
+        bank_name: (t as any).banks?.name,
+        payment_method: (t as any).payment_methods?.name,
       })),
     };
 
@@ -367,8 +411,7 @@ Gere uma resposta amigável com o resultado.`,
         for_who: t.for_who,
         paid_by: t.paid_by,
         bank_name: (t as any).banks?.name,
-        forma_pagamento: t.forma_pagamento,
-        instituicao: t.instituicao,
+        payment_method: (t as any).payment_methods?.name,
         is_installment: t.is_installment,
         installment_number: t.installment_number,
         total_installments: t.total_installments,

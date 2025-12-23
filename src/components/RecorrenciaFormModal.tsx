@@ -20,6 +20,7 @@ import {
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { RecorrenciaInsert, useRecorrenciasMutations, Recorrencia } from "@/hooks/useRecorrencias";
+import { usePersonNames } from "@/hooks/useUserSettings";
 import { format } from "date-fns";
 
 interface RecorrenciaFormModalProps {
@@ -27,12 +28,6 @@ interface RecorrenciaFormModalProps {
   onOpenChange: (open: boolean) => void;
   recorrencia?: Recorrencia | null;
 }
-
-const pessoas = [
-  { value: "huana", label: "Huana" },
-  { value: "douglas", label: "Douglas" },
-  { value: "casal", label: "Casal" },
-];
 
 const dias = Array.from({ length: 31 }, (_, i) => i + 1);
 
@@ -44,6 +39,13 @@ export function RecorrenciaFormModal({
   const { data: categories = [] } = useCategories();
   const { data: subcategories = [] } = useSubcategories();
   const { createRecorrencia, updateRecorrencia } = useRecorrenciasMutations();
+  const { person1, person2 } = usePersonNames();
+  
+  const pessoas = [
+    { value: person1.toLowerCase(), label: person1 },
+    { value: person2.toLowerCase(), label: person2 },
+    { value: "casal", label: "Casal" },
+  ];
 
   const [formData, setFormData] = useState<RecorrenciaInsert>({
     titulo: "",
