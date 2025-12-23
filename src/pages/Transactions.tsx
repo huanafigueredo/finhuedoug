@@ -503,44 +503,44 @@ export default function Transactions() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead className="bg-secondary/50">
                     <tr>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[85px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Data
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="min-w-[180px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Descrição
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[80px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Pessoa
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[100px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Categoria
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[90px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Banco
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[110px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Pagamento
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Parcela
+                      <th className="w-[60px] px-2 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Parc.
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[95px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Valor
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Valor Parcela
+                      <th className="w-[95px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Vlr Parc.
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Por Pessoa
+                      <th className="w-[90px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        P/ Pessoa
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[75px] px-2 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Tipo
                       </th>
-                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Ações
+                      <th className="w-[50px] px-2 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        
                       </th>
                     </tr>
                   </thead>
@@ -560,29 +560,29 @@ export default function Transactions() {
                     <tfoot className="bg-secondary/50 border-t border-border">
                       {/* Total do Mês - destaque principal */}
                       <tr className="bg-primary/10 border-b border-border">
-                        <td colSpan={8} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
-                          Total do Mês (Valor que entra na fatura):
+                        <td colSpan={8} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
+                          Total do Mês (Fatura):
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-primary">
+                        <td className="px-2 py-3 text-sm font-bold text-primary text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.reduce((sum, t) => {
                               const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
-                              return sum + (t.type === "expense" ? -value : value);
-                            }, 0) * -1
+                              return sum + (t.type === "expense" ? value : 0);
+                            }, 0)
                           )}
                         </td>
                         <td colSpan={3}></td>
                       </tr>
                       <tr>
-                        <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
-                          Total Despesas:
+                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
+                          Despesas:
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-muted-foreground">
+                        <td className="px-2 py-3 text-sm text-muted-foreground text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
                           )}
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-primary">
+                        <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => {
                               const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
@@ -593,15 +593,15 @@ export default function Transactions() {
                         <td colSpan={3}></td>
                       </tr>
                       <tr>
-                        <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
-                          Total Receitas:
+                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
+                          Receitas:
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-muted-foreground">
+                        <td className="px-2 py-3 text-sm text-muted-foreground text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
                           )}
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold text-success">
+                        <td className="px-2 py-3 text-sm font-medium text-success text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => {
                               const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
@@ -612,10 +612,10 @@ export default function Transactions() {
                         <td colSpan={3}></td>
                       </tr>
                       <tr className="border-t border-border">
-                        <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
+                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                           Saldo:
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold">
+                        <td className="px-2 py-3 text-sm text-right">
                           {(() => {
                             const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
                             const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
@@ -627,7 +627,7 @@ export default function Transactions() {
                             );
                           })()}
                         </td>
-                        <td className="px-4 py-4 text-sm font-bold">
+                        <td className="px-2 py-3 text-sm font-medium text-right">
                           {(() => {
                             const getInstallmentValue = (t: typeof filteredTransactions[0]) => 
                               t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
@@ -646,14 +646,13 @@ export default function Transactions() {
                       {/* Total por pessoa (casal) */}
                       {filteredTransactions.some(t => t.isCouple) && (
                         <tr className="border-t border-border bg-primary/5">
-                          <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
+                          <td colSpan={9} className="px-3 py-3 text-right text-sm font-medium text-foreground">
                             <span className="flex items-center justify-end gap-1.5">
                               <Heart className="w-4 h-4 text-primary fill-primary" />
-                              Total por Pessoa (Casal):
+                              Por Pessoa (Casal):
                             </span>
                           </td>
-                          <td colSpan={2}></td>
-                          <td className="px-4 py-4 text-sm font-bold text-primary">
+                          <td className="px-2 py-3 text-sm font-bold text-primary text-right">
                             {(() => {
                               const getPerPersonValue = (t: typeof filteredTransactions[0]) => {
                                 if (!t.isCouple) return 0;
