@@ -63,28 +63,6 @@ const recurringDurationOptions = [
   { value: "12", label: "12 meses" },
 ];
 
-const formasPagamento = [
-  { value: "credito", label: "Crédito" },
-  { value: "debito", label: "Débito" },
-  { value: "pix", label: "Pix" },
-  { value: "boleto", label: "Boleto" },
-  { value: "dinheiro", label: "Dinheiro" },
-  { value: "transferencia", label: "Transferência" },
-];
-
-const instituicoesFinanceiras = [
-  { value: "nubank", label: "Nubank" },
-  { value: "inter", label: "Inter" },
-  { value: "itau", label: "Itaú" },
-  { value: "bradesco", label: "Bradesco" },
-  { value: "santander", label: "Santander" },
-  { value: "caixa", label: "Caixa" },
-  { value: "bb", label: "Banco do Brasil" },
-  { value: "c6", label: "C6 Bank" },
-  { value: "picpay", label: "PicPay" },
-  { value: "mercadopago", label: "Mercado Pago" },
-  { value: "outro", label: "Outro" },
-];
 
 interface TransactionFormModalProps {
   open: boolean;
@@ -922,51 +900,6 @@ export function TransactionFormModal({
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                  </div>
-
-                  {/* Novos campos para Chat IA */}
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Tipo de Pagamento</Label>
-                      <Select value={formaPagamento} onValueChange={setFormaPagamento}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formasPagamento.map((f) => (
-                            <SelectItem key={f.value} value={f.value}>
-                              {f.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Instituição</Label>
-                      <Select value={instituicao} onValueChange={setInstituicao}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {instituicoesFinanceiras.map((i) => (
-                            <SelectItem key={i.value} value={i.value}>
-                              {i.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Nome do Cartão</Label>
-                      <Input
-                        placeholder="Ex: Nubank Ultravioleta"
-                        value={cartao}
-                        onChange={(e) => setCartao(e.target.value)}
-                        maxLength={50}
-                      />
                     </div>
                   </div>
                 </div>

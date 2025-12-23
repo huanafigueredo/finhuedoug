@@ -259,8 +259,8 @@ Se for pergunta de conversa geral:
       query = query.ilike("description", `%${filters.busca_texto}%`);
     }
 
-    // Apply installment filter
-    if (filters.is_installment !== undefined) {
+    // Apply installment filter (only if explicitly true or false, not null)
+    if (filters.is_installment === true || filters.is_installment === false) {
       query = query.eq("is_installment", filters.is_installment);
     }
 
