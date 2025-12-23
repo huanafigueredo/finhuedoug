@@ -249,6 +249,7 @@ export default function Transactions() {
         isInstallment: tx.isInstallment,
         installmentNumber: tx.installmentNumber,
         totalInstallments: tx.totalInstallments,
+        installmentValue: tx.installmentValue,
         tags: tx.tags || [],
         resumo_curto: tx.resumo_curto,
         status_extracao: tx.status_extracao,
