@@ -19,7 +19,7 @@ import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInMonths, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -55,6 +55,32 @@ const months = [
   { value: "12", label: "Dezembro" },
 ];
 
+// Helper function to calculate installment info for a given filter month/year
+function calculateInstallmentForMonth(
+  firstInstallmentDate: Date,
+  startInstallment: number,
+  totalInstallments: number,
+  filterMonth: number,
+  filterYear: number
+): { currentInstallment: number; isInRange: boolean } | null {
+  // Calculate the month/year of the first installment
+  const firstMonth = firstInstallmentDate.getMonth() + 1;
+  const firstYear = firstInstallmentDate.getFullYear();
+  
+  // Calculate how many months from first installment to filter date
+  const filterDate = new Date(filterYear, filterMonth - 1, 1);
+  const firstDate = new Date(firstYear, firstMonth - 1, 1);
+  const monthsDiff = differenceInMonths(filterDate, firstDate);
+  
+  // Calculate the installment number for this month
+  const currentInstallment = startInstallment + monthsDiff;
+  
+  // Check if this installment is within the valid range
+  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
+  
+  return { currentInstallment, isInRange };
+}
+
 export default function Transactions() {
   const { toast } = useToast();
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
@@ -88,78 +114,168 @@ export default function Transactions() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<TransactionDetails | null>(null);
 
-  // Transform DB transactions to UI format
-  const transactions: (Transaction & { rawDate: Date; tags?: string[]; resumo_curto?: string; status_extracao?: string })[] = transactionsData.map((t) => ({
-    id: t.id,
-    date: format(parseISO(t.date), "dd/MM/yyyy"),
-    rawDate: parseISO(t.date),
-    description: t.description,
-    observacao: t.observacao,
-    person: t.paid_by || "-",
-    forWho: t.for_who || "-",
-    category: t.category || "-",
-    subcategory: t.subcategory || "-",
-    bank: t.bank_name || "-",
-    paymentMethod: t.payment_method_name || "-",
-    totalValue: Number(t.total_value),
-    valuePerPerson: Number(t.value_per_person || t.total_value),
-    isCouple: t.is_couple || false,
-    type: t.type as "income" | "expense",
-    isInstallment: t.is_installment || false,
-    installmentNumber: t.installment_number || undefined,
-    totalInstallments: t.total_installments || undefined,
-    installmentValue: t.installment_value ? Number(t.installment_value) : undefined,
-    tags: t.tags || [],
-    resumo_curto: t.resumo_curto || undefined,
-    status_extracao: t.status_extracao || undefined,
-  }));
-
   const banks = ["Todos", ...banksData.map((b) => b.name)];
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
   const categories = ["Todas", ...categoriesData.map((c) => c.name)];
-  
+
+  // Transform and filter transactions with dynamic installment calculation
+  const filteredTransactions = useMemo(() => {
+    const filterMonthNum = monthFilter !== "Todos" ? parseInt(monthFilter) : null;
+    const filterYearNum = yearFilter !== "Todos" ? parseInt(yearFilter) : null;
+
+    return transactionsData
+      .map((t) => {
+        const rawDate = parseISO(t.date);
+        const isNewStyleInstallment = t.is_installment && 
+          !t.is_generated_installment && 
+          !t.parent_transaction_id &&
+          t.total_installments && 
+          t.total_installments > 1;
+
+        // For new-style installments (single record), calculate dynamic installment
+        if (isNewStyleInstallment && filterMonthNum && filterYearNum) {
+          const startInstallment = t.installment_number || 1;
+          const result = calculateInstallmentForMonth(
+            rawDate,
+            startInstallment,
+            t.total_installments!,
+            filterMonthNum,
+            filterYearNum
+          );
+
+          if (!result || !result.isInRange) {
+            return null; // This installment doesn't appear in this month
+          }
+
+          // Calculate the date for this specific installment
+          const monthsFromStart = result.currentInstallment - startInstallment;
+          const installmentDate = addMonths(rawDate, monthsFromStart);
+
+          return {
+            id: t.id,
+            date: format(installmentDate, "dd/MM/yyyy"),
+            rawDate: installmentDate,
+            description: t.description,
+            observacao: t.observacao,
+            person: t.paid_by || "-",
+            forWho: t.for_who || "-",
+            category: t.category || "-",
+            subcategory: t.subcategory || "-",
+            bank: t.bank_name || "-",
+            paymentMethod: t.payment_method_name || "-",
+            totalValue: Number(t.total_value),
+            valuePerPerson: t.is_couple ? Number(t.installment_value || t.total_value) / 2 : Number(t.installment_value || t.total_value),
+            isCouple: t.is_couple || false,
+            type: t.type as "income" | "expense",
+            isInstallment: true,
+            installmentNumber: result.currentInstallment,
+            totalInstallments: t.total_installments,
+            installmentValue: t.installment_value ? Number(t.installment_value) : undefined,
+            tags: t.tags || [],
+            resumo_curto: t.resumo_curto || undefined,
+            status_extracao: t.status_extracao || undefined,
+            isNewStyleInstallment: true,
+          };
+        }
+
+        // For old-style installments (multiple records) or non-installments
+        return {
+          id: t.id,
+          date: format(rawDate, "dd/MM/yyyy"),
+          rawDate,
+          description: t.description,
+          observacao: t.observacao,
+          person: t.paid_by || "-",
+          forWho: t.for_who || "-",
+          category: t.category || "-",
+          subcategory: t.subcategory || "-",
+          bank: t.bank_name || "-",
+          paymentMethod: t.payment_method_name || "-",
+          totalValue: Number(t.total_value),
+          valuePerPerson: Number(t.value_per_person || t.total_value),
+          isCouple: t.is_couple || false,
+          type: t.type as "income" | "expense",
+          isInstallment: t.is_installment || false,
+          installmentNumber: t.installment_number || undefined,
+          totalInstallments: t.total_installments || undefined,
+          installmentValue: t.installment_value ? Number(t.installment_value) : undefined,
+          tags: t.tags || [],
+          resumo_curto: t.resumo_curto || undefined,
+          status_extracao: t.status_extracao || undefined,
+          isNewStyleInstallment: false,
+        };
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null)
+      .filter((t) => {
+        // Apply other filters
+        if (search && !t.description.toLowerCase().includes(search.toLowerCase())) {
+          return false;
+        }
+        if (personFilter !== "Todos" && t.person !== personFilter) return false;
+        if (forWhoFilter !== "Todos" && t.forWho !== forWhoFilter) return false;
+        if (categoryFilter !== "Todas" && t.category !== categoryFilter) return false;
+        if (bankFilter !== "Todos" && t.bank !== bankFilter) return false;
+        if (paymentFilter !== "Todos" && t.paymentMethod !== paymentFilter) return false;
+        if (typeFilter !== "Todos") {
+          const isIncome = typeFilter === "Receita";
+          if ((t.type === "income") !== isIncome) return false;
+        }
+        if (coupleFilter !== "Todos") {
+          const isCouple = coupleFilter === "Sim";
+          if (t.isCouple !== isCouple) return false;
+        }
+        if (installmentFilter !== "Todos") {
+          const isInstallment = installmentFilter === "Sim";
+          if (t.isInstallment !== isInstallment) return false;
+        }
+
+        // Date filters - for new-style installments, date is already calculated
+        // For old-style, filter by rawDate
+        if (!t.isNewStyleInstallment) {
+          if (dayFilter !== "Todos") {
+            const day = t.rawDate.getDate().toString().padStart(2, "0");
+            if (day !== dayFilter) return false;
+          }
+          if (monthFilter !== "Todos") {
+            const month = (t.rawDate.getMonth() + 1).toString();
+            if (month !== monthFilter) return false;
+          }
+          if (yearFilter !== "Todos") {
+            const year = t.rawDate.getFullYear().toString();
+            if (year !== yearFilter) return false;
+          }
+        } else {
+          // For new-style, just check day filter (month/year already handled)
+          if (dayFilter !== "Todos") {
+            const day = t.rawDate.getDate().toString().padStart(2, "0");
+            if (day !== dayFilter) return false;
+          }
+        }
+
+        return true;
+      });
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, dayFilter, monthFilter, yearFilter]);
+
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    const uniqueYears = [...new Set([currentYear, ...transactions.map((t) => t.rawDate.getFullYear())])];
+    const allYears = transactionsData.flatMap((t) => {
+      const date = parseISO(t.date);
+      if (t.is_installment && t.total_installments && !t.is_generated_installment) {
+        // For installments, include all years the installment spans
+        const startYear = date.getFullYear();
+        const endDate = addMonths(date, (t.total_installments - (t.installment_number || 1)));
+        const endYear = endDate.getFullYear();
+        const years = [];
+        for (let y = startYear; y <= endYear; y++) {
+          years.push(y);
+        }
+        return years;
+      }
+      return [date.getFullYear()];
+    });
+    const uniqueYears = [...new Set([currentYear, ...allYears])];
     return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
-  }, [transactions]);
-
-  const filteredTransactions = transactions.filter((t) => {
-    if (search && !t.description.toLowerCase().includes(search.toLowerCase())) {
-      return false;
-    }
-    if (personFilter !== "Todos" && t.person !== personFilter) return false;
-    if (forWhoFilter !== "Todos" && t.forWho !== forWhoFilter) return false;
-    if (categoryFilter !== "Todas" && t.category !== categoryFilter) return false;
-    if (bankFilter !== "Todos" && t.bank !== bankFilter) return false;
-    if (paymentFilter !== "Todos" && t.paymentMethod !== paymentFilter) return false;
-    if (typeFilter !== "Todos") {
-      const isIncome = typeFilter === "Receita";
-      if ((t.type === "income") !== isIncome) return false;
-    }
-    if (coupleFilter !== "Todos") {
-      const isCouple = coupleFilter === "Sim";
-      if (t.isCouple !== isCouple) return false;
-    }
-    if (installmentFilter !== "Todos") {
-      const isInstallment = installmentFilter === "Sim";
-      if (t.isInstallment !== isInstallment) return false;
-    }
-    // Date filters by day, month, year
-    if (dayFilter !== "Todos") {
-      const day = t.rawDate.getDate().toString().padStart(2, "0");
-      if (day !== dayFilter) return false;
-    }
-    if (monthFilter !== "Todos") {
-      const month = (t.rawDate.getMonth() + 1).toString();
-      if (month !== monthFilter) return false;
-    }
-    if (yearFilter !== "Todos") {
-      const year = t.rawDate.getFullYear().toString();
-      if (year !== yearFilter) return false;
-    }
-    return true;
-  });
+  }, [transactionsData]);
 
   const handleDeleteClick = (id: string) => {
     const tx = transactionsData.find((t) => t.id === id);
@@ -229,7 +345,7 @@ export default function Transactions() {
   };
 
   const handleRowClick = (id: string) => {
-    const tx = transactions.find((t) => t.id === id);
+    const tx = filteredTransactions.find((t) => t.id === id);
     if (tx) {
       setSelectedTransactionDetails({
         id: tx.id,
