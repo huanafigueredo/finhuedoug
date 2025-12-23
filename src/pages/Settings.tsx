@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,8 @@ import {
   Trash2,
   Users,
   ChevronRight,
+  UserCircle,
+  Save,
 } from "lucide-react";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
@@ -53,6 +55,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { useAddCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
 import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@/hooks/useSubcategoriesMutations";
+import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
 import { useToast } from "@/hooks/use-toast";
 
 interface ConfigItem {
@@ -81,6 +84,20 @@ export default function Settings() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ section: string; id: string; name: string } | null>(null);
 
+  // User settings for editable names
+  const { data: userSettings, isLoading: settingsLoading } = useUserSettings();
+  const updateUserSettings = useUpdateUserSettings();
+  const [person1Name, setPerson1Name] = useState("Huana");
+  const [person2Name, setPerson2Name] = useState("Douglas");
+
+  // Sync person names with settings
+  useEffect(() => {
+    if (userSettings) {
+      setPerson1Name(userSettings.person_1_name || "Huana");
+      setPerson2Name(userSettings.person_2_name || "Douglas");
+    }
+  }, [userSettings]);
+
   // Data from Supabase
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
@@ -104,6 +121,25 @@ export default function Settings() {
   const addSubcategory = useAddSubcategory();
   const updateSubcategory = useUpdateSubcategory();
   const deleteSubcategory = useDeleteSubcategory();
+
+  const handleSaveNames = async () => {
+    try {
+      await updateUserSettings.mutateAsync({
+        person_1_name: person1Name.trim() || "Huana",
+        person_2_name: person2Name.trim() || "Douglas",
+      });
+      toast({
+        title: "Nomes atualizados!",
+        description: "Os nomes foram salvos com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error?.message || "Não foi possível salvar os nomes.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Group subcategories by category
   const subcategoriesByCategory = subcategories.reduce((acc, sub) => {
@@ -380,6 +416,58 @@ export default function Settings() {
                   </AccordionContent>
                 </AccordionItem>
               ))}
+
+              {/* Person Names */}
+              <AccordionItem
+                value="person-names"
+                className="rounded-2xl bg-card border border-border shadow-card overflow-hidden"
+              >
+                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/30">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <UserCircle className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="font-display text-lg font-semibold text-foreground">
+                      Nomes das Pessoas
+                    </span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Personalize os nomes usados nos lançamentos e relatórios.
+                    </p>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Pessoa 1</Label>
+                        <Input
+                          value={person1Name}
+                          onChange={(e) => setPerson1Name(e.target.value)}
+                          placeholder="Nome da pessoa 1"
+                          maxLength={50}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Pessoa 2</Label>
+                        <Input
+                          value={person2Name}
+                          onChange={(e) => setPerson2Name(e.target.value)}
+                          placeholder="Nome da pessoa 2"
+                          maxLength={50}
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleSaveNames}
+                      disabled={updateUserSettings.isPending}
+                      className="w-full mt-4"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {updateUserSettings.isPending ? "Salvando..." : "Salvar Nomes"}
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
               {/* Initial Balances */}
               <AccordionItem
