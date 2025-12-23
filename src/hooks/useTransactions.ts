@@ -110,22 +110,35 @@ export function useCreateTransaction() {
       if (!user) throw new Error("User not authenticated");
 
       // Remove start_from_installment from the data we send to the database (it's only used client-side)
-      const { start_from_installment, ...transactionData } = transaction;
+      const { start_from_installment, modo_valor_informado, ...transactionData } = transaction;
 
-      // If it's an installment transaction, create multiple records
+      // If it's an installment transaction, create a SINGLE record (dynamic installment calculation)
       if (transactionData.is_installment && transactionData.total_installments && transactionData.total_installments > 1) {
-        const installmentValue = transactionData.total_value / transactionData.total_installments;
-        const baseDate = new Date(transactionData.date);
         const startFrom = start_from_installment || 1;
         
-        // Create the first installment (starting from startFrom)
-        const { data: parentData, error: parentError } = await supabase
+        // Calculate installment value based on input mode
+        let totalValue: number;
+        let installmentValue: number;
+        
+        if (modo_valor_informado === "installment") {
+          // User informed installment value, calculate total
+          installmentValue = transactionData.total_value;
+          totalValue = installmentValue * transactionData.total_installments;
+        } else {
+          // User informed total value, calculate installment
+          totalValue = transactionData.total_value;
+          installmentValue = totalValue / transactionData.total_installments;
+        }
+        
+        // Create a SINGLE record for the entire installment purchase
+        // The date is the first installment date
+        // installment_number stores the starting installment (for purchases already in progress)
+        const { data, error } = await supabase
           .from("transactions")
           .insert({
             ...transactionData,
             user_id: user.id,
-            description: `${transactionData.description} (Parcela ${startFrom}/${transactionData.total_installments})`,
-            total_value: installmentValue,
+            total_value: totalValue,
             installment_number: startFrom,
             installment_value: installmentValue,
             is_generated_installment: false,
@@ -133,42 +146,12 @@ export function useCreateTransaction() {
           .select()
           .single();
 
-        if (parentError) {
-          console.error("Transaction insert error:", parentError);
-          throw parentError;
+        if (error) {
+          console.error("Transaction insert error:", error);
+          throw error;
         }
 
-        // Create remaining installments (from startFrom+1 to total)
-        const childInstallments = [];
-        for (let i = startFrom + 1; i <= transactionData.total_installments; i++) {
-          // When starting from a specific installment, date offset is relative to startFrom
-          const monthOffset = i - startFrom;
-          const installmentDate = addMonths(baseDate, monthOffset);
-          childInstallments.push({
-            ...transactionData,
-            user_id: user.id,
-            date: installmentDate.toISOString().split("T")[0],
-            description: `${transactionData.description} (Parcela ${i}/${transactionData.total_installments})`,
-            total_value: installmentValue,
-            installment_number: i,
-            installment_value: installmentValue,
-            parent_transaction_id: parentData.id,
-            is_generated_installment: true,
-          });
-        }
-
-        if (childInstallments.length > 0) {
-          const { error: childError } = await supabase
-            .from("transactions")
-            .insert(childInstallments);
-
-          if (childError) {
-            console.error("Child installments insert error:", childError);
-            throw childError;
-          }
-        }
-
-        return parentData;
+        return data;
       }
 
       // If it's a recurring income transaction
