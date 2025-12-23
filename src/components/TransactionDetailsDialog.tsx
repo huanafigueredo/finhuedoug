@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { addMonths, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -210,6 +212,9 @@ export function TransactionDetailsDialog({
               )}
             </div>
 
+            {/* Bloco B2 - Observações (movido para após valor) */}
+            <ObservacoesSection observacao={transaction.observacao} />
+
             {/* Bloco C - Informações principais em grade */}
             <div className="grid grid-cols-2 gap-3">
               <DetailItem 
@@ -246,54 +251,10 @@ export function TransactionDetailsDialog({
             )}
 
             {hasInstallment && (
-              <div className={cn(
-                "p-4 rounded-xl",
-                isLastInstallment ? "bg-success/10 border border-success/20" : "bg-secondary/50"
-              )}>
-                <div className="flex items-center gap-2 mb-2">
-                  {isLastInstallment ? (
-                    <PartyPopper className="w-4 h-4 text-success" />
-                  ) : (
-                    <CreditCard className="w-4 h-4 text-muted-foreground" />
-                  )}
-                  <span className={cn(
-                    "text-sm font-medium",
-                    isLastInstallment ? "text-success" : "text-foreground"
-                  )}>
-                    {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Parcela atual</span>
-                  <span className={cn(
-                    "text-lg font-semibold",
-                    isLastInstallment ? "text-success" : "text-foreground"
-                  )}>
-                    {transaction.installmentNumber}/{transaction.totalInstallments}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <div className="h-2 rounded-full bg-border overflow-hidden">
-                    <div 
-                      className={cn(
-                        "h-full transition-all duration-300",
-                        isLastInstallment ? "bg-success" : "bg-primary"
-                      )}
-                      style={{ 
-                        width: `${(transaction.installmentNumber! / transaction.totalInstallments!) * 100}%` 
-                      }}
-                    />
-                  </div>
-                  <p className={cn(
-                    "text-xs mt-1",
-                    isLastInstallment ? "text-success font-medium" : "text-muted-foreground"
-                  )}>
-                    {isLastInstallment 
-                      ? "Parabéns! Você quitou este parcelamento!" 
-                      : `${transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes`}
-                  </p>
-                </div>
-              </div>
+              <InstallmentSection 
+                transaction={transaction}
+                isLastInstallment={isLastInstallment}
+              />
             )}
 
             {/* Bloco E - Comprovantes */}
@@ -307,22 +268,7 @@ export function TransactionDetailsDialog({
               statusExtracao={transaction.status_extracao}
             />
 
-            {/* Bloco G - Observações */}
-            <div className="p-4 rounded-xl bg-secondary/50">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">Observações</span>
-              </div>
-              {transaction.observacao && transaction.observacao.trim().length > 0 ? (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-                  {transaction.observacao}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground/60 italic">
-                  Sem observações
-                </p>
-              )}
-            </div>
+            {/* Bloco G - Observações removido - agora está após o valor */}
           </div>
         </ScrollArea>
 
@@ -387,6 +333,142 @@ function DetailItem({
       )}>
         {value || "Não informado"}
       </p>
+    </div>
+  );
+}
+
+function ObservacoesSection({ observacao }: { observacao?: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasContent = observacao && observacao.trim().length > 0;
+  const isLong = hasContent && observacao.length > 200;
+
+  return (
+    <div className="p-4 rounded-xl bg-secondary/50">
+      <div className="flex items-center gap-2 mb-2">
+        <FileText className="w-4 h-4 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">Observações</span>
+      </div>
+      {hasContent ? (
+        <div>
+          <p className={cn(
+            "text-sm text-muted-foreground whitespace-pre-wrap break-words",
+            !expanded && isLong && "line-clamp-4"
+          )}>
+            {observacao}
+          </p>
+          {isLong && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs text-primary hover:underline mt-1"
+            >
+              {expanded ? "Ver menos" : "Ver mais"}
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground/60 italic">
+          Sem observações
+        </p>
+      )}
+    </div>
+  );
+}
+
+function InstallmentSection({ 
+  transaction, 
+  isLastInstallment 
+}: { 
+  transaction: TransactionDetails;
+  isLastInstallment: boolean | undefined;
+}) {
+  // Calculate end date: date of first installment + (total - 1) months
+  const calculateEndDate = () => {
+    if (!transaction.date || !transaction.totalInstallments || !transaction.installmentNumber) {
+      return null;
+    }
+    
+    try {
+      // Parse the current transaction date
+      const parts = transaction.date.split('/');
+      if (parts.length !== 3) return null;
+      
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      
+      const currentDate = new Date(year, month, day);
+      
+      // Calculate how many months until the last installment
+      const monthsToAdd = transaction.totalInstallments - transaction.installmentNumber;
+      const endDate = addMonths(currentDate, monthsToAdd);
+      
+      return format(endDate, "MMM/yyyy", { locale: ptBR });
+    } catch {
+      return null;
+    }
+  };
+
+  const endDate = calculateEndDate();
+
+  return (
+    <div className={cn(
+      "p-4 rounded-xl",
+      isLastInstallment ? "bg-success/10 border border-success/20" : "bg-secondary/50"
+    )}>
+      <div className="flex items-center gap-2 mb-2">
+        {isLastInstallment ? (
+          <PartyPopper className="w-4 h-4 text-success" />
+        ) : (
+          <CreditCard className="w-4 h-4 text-muted-foreground" />
+        )}
+        <span className={cn(
+          "text-sm font-medium",
+          isLastInstallment ? "text-success" : "text-foreground"
+        )}>
+          {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Parcela atual</span>
+        <span className={cn(
+          "text-lg font-semibold",
+          isLastInstallment ? "text-success" : "text-foreground"
+        )}>
+          {transaction.installmentNumber}/{transaction.totalInstallments}
+        </span>
+      </div>
+      
+      {/* Termina em */}
+      {endDate && !isLastInstallment && (
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
+          <span className="text-sm text-muted-foreground">Termina em</span>
+          <span className="text-sm font-medium text-foreground capitalize">
+            {endDate}
+          </span>
+        </div>
+      )}
+      
+      <div className="mt-2">
+        <div className="h-2 rounded-full bg-border overflow-hidden">
+          <div 
+            className={cn(
+              "h-full transition-all duration-300",
+              isLastInstallment ? "bg-success" : "bg-primary"
+            )}
+            style={{ 
+              width: `${(transaction.installmentNumber! / transaction.totalInstallments!) * 100}%` 
+            }}
+          />
+        </div>
+        <p className={cn(
+          "text-xs mt-1",
+          isLastInstallment ? "text-success font-medium" : "text-muted-foreground"
+        )}>
+          {isLastInstallment 
+            ? "Parabéns! Você quitou este parcelamento!" 
+            : `${transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes`}
+        </p>
+      </div>
     </div>
   );
 }
