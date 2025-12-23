@@ -46,6 +46,7 @@ export interface TransactionDetails {
   isInstallment?: boolean;
   installmentNumber?: number;
   totalInstallments?: number;
+  installmentValue?: number;
   tags?: string[];
   resumo_curto?: string;
   status_extracao?: string;
@@ -381,6 +382,13 @@ function InstallmentSection({
   transaction: TransactionDetails;
   isLastInstallment: boolean | undefined;
 }) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
   // Calculate end date: date of first installment + (total - 1) months
   const calculateEndDate = () => {
     if (!transaction.date || !transaction.totalInstallments || !transaction.installmentNumber) {
@@ -409,6 +417,7 @@ function InstallmentSection({
   };
 
   const endDate = calculateEndDate();
+  const installmentValue = transaction.installmentValue || (transaction.totalValue / (transaction.totalInstallments || 1));
 
   return (
     <div className={cn(
@@ -428,13 +437,26 @@ function InstallmentSection({
           {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
         </span>
       </div>
+
+      {/* Valor da parcela */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs sm:text-sm text-muted-foreground">Valor da parcela</span>
+        <span className={cn(
+          "text-base sm:text-lg font-bold",
+          isLastInstallment ? "text-success" : "text-primary"
+        )}>
+          {formatCurrency(installmentValue)}
+        </span>
+      </div>
+
+      {/* Parcela atual */}
       <div className="flex items-center justify-between">
         <span className="text-xs sm:text-sm text-muted-foreground">Parcela atual</span>
         <span className={cn(
-          "text-base sm:text-lg font-semibold",
+          "text-sm sm:text-base font-semibold",
           isLastInstallment ? "text-success" : "text-foreground"
         )}>
-          {transaction.installmentNumber}/{transaction.totalInstallments}
+          {transaction.installmentNumber} de {transaction.totalInstallments}
         </span>
       </div>
       
