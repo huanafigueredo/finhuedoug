@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, Menu, X, LogOut } from "lucide-react";
+import { Heart, Menu, X, LogOut, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ const navItems = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Lançamentos", path: "/lancamentos" },
   { label: "Contas", path: "/contas" },
+  { label: "Chat IA", path: "/chat-ia", icon: Sparkles },
   { label: "Pessoas", path: "/pessoas" },
   { label: "Configurações", path: "/config" },
 ];
@@ -40,12 +41,13 @@ export function Header() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300",
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5",
                   location.pathname === item.path
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
               >
+                {item.icon && <item.icon className="w-4 h-4" />}
                 {item.label}
               </Link>
             ))}

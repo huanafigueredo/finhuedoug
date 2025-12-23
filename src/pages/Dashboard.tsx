@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MetricCard } from "@/components/shared/MetricCard";
@@ -23,6 +24,7 @@ import {
   FileText,
   AlertCircle,
   Calendar,
+  Sparkles,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -196,6 +198,13 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-3">
+              <Link to="/chat-ia">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Perguntar ao Chat IA
+                </Button>
+              </Link>
+              
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger className="w-36">
                   <SelectValue placeholder="Mês" />

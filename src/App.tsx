@@ -14,6 +14,7 @@ import NewTransaction from "./pages/NewTransaction";
 import People from "./pages/People";
 import Settings from "./pages/Settings";
 import Contas from "./pages/Contas";
+import ChatIA from "./pages/ChatIA";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,9 @@ const App = () => (
             } />
             <Route path="/contas" element={
               <ProtectedRoute><Contas /></ProtectedRoute>
+            } />
+            <Route path="/chat-ia" element={
+              <ProtectedRoute><ChatIA /></ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>
