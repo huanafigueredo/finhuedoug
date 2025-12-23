@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { usePersonNames } from "@/hooks/useUserSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Send, 
@@ -54,26 +55,28 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-const quickSuggestions = [
-  "Quanto gastei este mês?",
-  "Quanto o Douglas gastou no crédito este mês?",
-  "Total do casal no mês atual",
-  "Top 10 gastos do mês",
-  "Gastos por categoria no mês atual",
-  "Parcelamentos ativos e quanto falta",
-  "Contas a vencer nos próximos 7 dias",
-];
 
 export default function ChatIA() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { person1, person2 } = usePersonNames();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [expandedTransactions, setExpandedTransactions] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const quickSuggestions = [
+    "Quanto gastei este mês?",
+    `Quanto o ${person2} gastou no crédito este mês?`,
+    "Total do casal no mês atual",
+    "Top 10 gastos do mês",
+    "Gastos por categoria no mês atual",
+    "Parcelamentos ativos e quanto falta",
+    "Contas a vencer nos próximos 7 dias",
+  ];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

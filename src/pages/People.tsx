@@ -83,9 +83,9 @@ export default function People() {
     filteredTransactions
       .filter((t) => t.type === "expense" && t.bank_id)
       .forEach((t) => {
-        if (t.for_who === "Huana") {
+        if (t.for_who === metrics.person1Name) {
           person1BankIds.add(t.bank_id!);
-        } else if (t.for_who === "Douglas") {
+        } else if (t.for_who === metrics.person2Name) {
           person2BankIds.add(t.bank_id!);
         }
       });
@@ -99,7 +99,7 @@ export default function People() {
       .map((b) => ({ id: b.id, name: b.name, color: b.color || "#6B7280" }));
 
     return { person1Banks, person2Banks };
-  }, [filteredTransactions, banks]);
+  }, [filteredTransactions, banks, metrics.person1Name, metrics.person2Name]);
 
   const handleAddBank = (personName: string) => {
     setSelectedPerson(personName);
@@ -138,20 +138,20 @@ export default function People() {
   const people = [
     {
       id: "1",
-      name: "Huana",
+      name: metrics.person1Name,
       avatar: "",
-      personalExpenses: formatCurrency(metrics.huanaIndividualExpenses),
+      personalExpenses: formatCurrency(metrics.person1IndividualExpenses),
       coupleShareExpenses: formatCurrency(metrics.halfCoupleExpenses),
-      totalExpenses: formatCurrency(metrics.huanaTotalExpenses),
+      totalExpenses: formatCurrency(metrics.person1TotalExpenses),
       banks: personBanks.person1Banks,
     },
     {
       id: "2",
-      name: "Douglas",
+      name: metrics.person2Name,
       avatar: "",
-      personalExpenses: formatCurrency(metrics.douglasIndividualExpenses),
+      personalExpenses: formatCurrency(metrics.person2IndividualExpenses),
       coupleShareExpenses: formatCurrency(metrics.halfCoupleExpenses),
-      totalExpenses: formatCurrency(metrics.douglasTotalExpenses),
+      totalExpenses: formatCurrency(metrics.person2TotalExpenses),
       banks: personBanks.person2Banks,
     },
   ];
@@ -169,7 +169,7 @@ export default function People() {
               <span className="text-sm font-medium text-primary">O Casal</span>
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Huana e Douglas
+              {metrics.person1Name} e {metrics.person2Name}
             </h1>
             <p className="text-muted-foreground max-w-md mx-auto">
               Gerencie os perfis e bancos de cada pessoa do casal

@@ -258,32 +258,32 @@ export default function Dashboard() {
           {/* Metric Cards - Row 2: Per Person */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <MetricCard
-              title="Gastos Huana"
-              value={formatCurrency(metrics.huanaTotalExpenses)}
+              title={`Gastos ${metrics.person1Name}`}
+              value={formatCurrency(metrics.person1TotalExpenses)}
               subtitle="Individual + metade do casal"
               icon={Users}
               variant="default"
             />
             <MetricCard
-              title="Gastos Douglas"
-              value={formatCurrency(metrics.douglasTotalExpenses)}
+              title={`Gastos ${metrics.person2Name}`}
+              value={formatCurrency(metrics.person2TotalExpenses)}
               subtitle="Individual + metade do casal"
               icon={Users}
               variant="default"
             />
             <MetricCard
-              title="Saldo do mês Huana"
-              value={formatCurrency(metrics.huanaBalance)}
-              subtitle={`Receitas: ${formatCurrency(metrics.huanaIncome)}`}
+              title={`Saldo do mês ${metrics.person1Name}`}
+              value={formatCurrency(metrics.person1Balance)}
+              subtitle={`Receitas: ${formatCurrency(metrics.person1Income)}`}
               icon={Wallet}
-              variant={metrics.huanaBalance >= 0 ? "success" : "primary"}
+              variant={metrics.person1Balance >= 0 ? "success" : "primary"}
             />
             <MetricCard
-              title="Saldo do mês Douglas"
-              value={formatCurrency(metrics.douglasBalance)}
-              subtitle={`Receitas: ${formatCurrency(metrics.douglasIncome)}`}
+              title={`Saldo do mês ${metrics.person2Name}`}
+              value={formatCurrency(metrics.person2Balance)}
+              subtitle={`Receitas: ${formatCurrency(metrics.person2Income)}`}
               icon={Wallet}
-              variant={metrics.douglasBalance >= 0 ? "success" : "primary"}
+              variant={metrics.person2Balance >= 0 ? "success" : "primary"}
             />
           </div>
 
