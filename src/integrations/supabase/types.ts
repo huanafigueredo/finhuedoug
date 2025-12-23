@@ -394,6 +394,7 @@ export type Database = {
           is_generated_installment: boolean | null
           is_installment: boolean | null
           is_recurring: boolean | null
+          modo_valor_informado: string | null
           observacao: string | null
           origem: string | null
           paid_by: string | null
@@ -433,6 +434,7 @@ export type Database = {
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
           is_recurring?: boolean | null
+          modo_valor_informado?: string | null
           observacao?: string | null
           origem?: string | null
           paid_by?: string | null
@@ -472,6 +474,7 @@ export type Database = {
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
           is_recurring?: boolean | null
+          modo_valor_informado?: string | null
           observacao?: string | null
           origem?: string | null
           paid_by?: string | null
