@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, Download, Loader2, Heart } from "lucide-react";
 
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -607,6 +607,42 @@ export default function Transactions() {
                         </td>
                         <td colSpan={3}></td>
                       </tr>
+                      {/* Total por pessoa (casal) */}
+                      {filteredTransactions.some(t => t.isCouple) && (
+                        <tr className="border-t border-border bg-primary/5">
+                          <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
+                            <span className="flex items-center justify-end gap-1.5">
+                              <Heart className="w-4 h-4 text-primary fill-primary" />
+                              Total por Pessoa (Casal):
+                            </span>
+                          </td>
+                          <td colSpan={1}></td>
+                          <td className="px-4 py-4 text-sm font-bold text-primary">
+                            {(() => {
+                              const getPerPersonValue = (t: typeof filteredTransactions[0]) => {
+                                if (!t.isCouple) return 0;
+                                if (t.isInstallment && t.installmentValue) {
+                                  return t.installmentValue / 2;
+                                }
+                                return t.valuePerPerson;
+                              };
+                              const incomePerPerson = filteredTransactions
+                                .filter(t => t.type === "income" && t.isCouple)
+                                .reduce((sum, t) => sum + getPerPersonValue(t), 0);
+                              const expensesPerPerson = filteredTransactions
+                                .filter(t => t.type === "expense" && t.isCouple)
+                                .reduce((sum, t) => sum + getPerPersonValue(t), 0);
+                              const balancePerPerson = incomePerPerson - expensesPerPerson;
+                              return (
+                                <span className={balancePerPerson >= 0 ? "text-success" : "text-destructive"}>
+                                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balancePerPerson)}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td colSpan={2}></td>
+                        </tr>
+                      )}
                     </tfoot>
                   )}
                 </table>
