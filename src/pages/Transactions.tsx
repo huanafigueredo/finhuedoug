@@ -108,6 +108,7 @@ export default function Transactions() {
     isInstallment: t.is_installment || false,
     installmentNumber: t.installment_number || undefined,
     totalInstallments: t.total_installments || undefined,
+    installmentValue: t.installment_value ? Number(t.installment_value) : undefined,
     tags: t.tags || [],
     resumo_curto: t.resumo_curto || undefined,
     status_extracao: t.status_extracao || undefined,
