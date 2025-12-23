@@ -168,19 +168,19 @@ export function TransactionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 overflow-hidden sm:w-full">
         {/* Bloco A - Cabeçalho */}
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
-          <div className="flex items-start justify-between gap-4">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border">
+          <div className="flex items-start justify-between gap-2 sm:gap-4">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl font-bold text-foreground line-clamp-2">
+              <DialogTitle className="text-lg sm:text-xl font-bold text-foreground line-clamp-2">
                 Detalhes do lançamento
               </DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
                 {transaction.description}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <Badge variant={transaction.type} />
               {transaction.isCouple && (
                 <Heart className="w-4 h-4 text-primary fill-primary" />
@@ -189,23 +189,23 @@ export function TransactionDetailsDialog({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-200px)]">
-          <div className="px-6 py-4 space-y-4">
+        <ScrollArea className="max-h-[calc(90vh-180px)] sm:max-h-[calc(90vh-200px)]">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
             {/* Bloco B - Valores */}
-            <div className="p-4 rounded-xl bg-secondary/50">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Valor total</span>
+            <div className="p-3 sm:p-4 rounded-xl bg-secondary/50">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Valor total</span>
                 <span className={cn(
-                  "text-2xl font-bold",
+                  "text-xl sm:text-2xl font-bold text-right",
                   transaction.type === "income" ? "text-success" : "text-foreground"
                 )}>
                   {formatCurrency(transaction.totalValue)}
                 </span>
               </div>
               {transaction.isCouple && (
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-                  <span className="text-sm text-muted-foreground">Por pessoa</span>
-                  <span className="text-lg font-medium text-muted-foreground">
+                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border">
+                  <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Por pessoa</span>
+                  <span className="text-base sm:text-lg font-medium text-muted-foreground text-right">
                     {formatCurrency(transaction.valuePerPerson)}
                   </span>
                 </div>
@@ -216,7 +216,7 @@ export function TransactionDetailsDialog({
             <ObservacoesSection observacao={transaction.observacao} />
 
             {/* Bloco C - Informações principais em grade */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <DetailItem 
                 icon={Calendar}
                 label="Data"
@@ -241,12 +241,12 @@ export function TransactionDetailsDialog({
 
             {/* Bloco D - Informações adicionais */}
             {(transaction.subcategory && transaction.subcategory !== "-") && (
-              <div className="p-4 rounded-xl bg-secondary/50">
+              <div className="p-3 sm:p-4 rounded-xl bg-secondary/50">
                 <div className="flex items-center gap-2 mb-1">
                   <Tag className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Subcategoria</span>
+                  <span className="text-xs sm:text-sm font-medium text-foreground">Subcategoria</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{transaction.subcategory}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{transaction.subcategory}</p>
               </div>
             )}
 
@@ -267,36 +267,36 @@ export function TransactionDetailsDialog({
               resumoCurto={transaction.resumo_curto}
               statusExtracao={transaction.status_extracao}
             />
-
-            {/* Bloco G - Observações removido - agora está após o valor */}
           </div>
         </ScrollArea>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t border-border flex items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex items-center justify-between gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={handleCopyDetails}
-            className="gap-2"
+            className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2.5 sm:px-3"
           >
-            <Copy className="w-4 h-4" />
-            Copiar detalhes
+            <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Copiar detalhes</span>
+            <span className="xs:hidden">Copiar</span>
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
+              className="text-xs sm:text-sm px-2.5 sm:px-3"
             >
               Fechar
             </Button>
             <Button
               size="sm"
               onClick={handleEdit}
-              className="gap-2"
+              className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2.5 sm:px-3"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Editar
             </Button>
           </div>
@@ -316,19 +316,19 @@ function DetailItem({
   value?: string;
 }) {
   return (
-    <div className="p-3 rounded-lg bg-secondary/50">
-      <div className="flex items-center gap-2 mb-1">
+    <div className="p-2.5 sm:p-3 rounded-lg bg-secondary/50">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
         <Icon className={cn(
-          "w-3.5 h-3.5",
+          "w-3 h-3 sm:w-3.5 sm:h-3.5",
           value ? "text-muted-foreground" : "text-muted-foreground/50"
         )} />
         <span className={cn(
-          "text-xs",
+          "text-[10px] sm:text-xs",
           value ? "text-muted-foreground" : "text-muted-foreground/50"
         )}>{label}</span>
       </div>
       <p className={cn(
-        "text-sm truncate",
+        "text-xs sm:text-sm truncate",
         value ? "font-medium text-foreground" : "text-muted-foreground/50"
       )}>
         {value || "Não informado"}
@@ -343,15 +343,15 @@ function ObservacoesSection({ observacao }: { observacao?: string | null }) {
   const isLong = hasContent && observacao.length > 200;
 
   return (
-    <div className="p-4 rounded-xl bg-secondary/50">
-      <div className="flex items-center gap-2 mb-2">
-        <FileText className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm font-medium text-foreground">Observações</span>
+    <div className="p-3 sm:p-4 rounded-xl bg-secondary/50">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+        <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+        <span className="text-xs sm:text-sm font-medium text-foreground">Observações</span>
       </div>
       {hasContent ? (
         <div>
           <p className={cn(
-            "text-sm text-muted-foreground whitespace-pre-wrap break-words",
+            "text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap break-words",
             !expanded && isLong && "line-clamp-4"
           )}>
             {observacao}
@@ -359,14 +359,14 @@ function ObservacoesSection({ observacao }: { observacao?: string | null }) {
           {isLong && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-xs text-primary hover:underline mt-1"
+              className="text-[10px] sm:text-xs text-primary hover:underline mt-1"
             >
               {expanded ? "Ver menos" : "Ver mais"}
             </button>
           )}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground/60 italic">
+        <p className="text-xs sm:text-sm text-muted-foreground/60 italic">
           Sem observações
         </p>
       )}
@@ -412,26 +412,26 @@ function InstallmentSection({
 
   return (
     <div className={cn(
-      "p-4 rounded-xl",
+      "p-3 sm:p-4 rounded-xl",
       isLastInstallment ? "bg-success/10 border border-success/20" : "bg-secondary/50"
     )}>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
         {isLastInstallment ? (
-          <PartyPopper className="w-4 h-4 text-success" />
+          <PartyPopper className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success" />
         ) : (
-          <CreditCard className="w-4 h-4 text-muted-foreground" />
+          <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
         )}
         <span className={cn(
-          "text-sm font-medium",
+          "text-xs sm:text-sm font-medium",
           isLastInstallment ? "text-success" : "text-foreground"
         )}>
           {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
         </span>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Parcela atual</span>
+        <span className="text-xs sm:text-sm text-muted-foreground">Parcela atual</span>
         <span className={cn(
-          "text-lg font-semibold",
+          "text-base sm:text-lg font-semibold",
           isLastInstallment ? "text-success" : "text-foreground"
         )}>
           {transaction.installmentNumber}/{transaction.totalInstallments}
@@ -441,15 +441,15 @@ function InstallmentSection({
       {/* Termina em */}
       {endDate && !isLastInstallment && (
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-          <span className="text-sm text-muted-foreground">Termina em</span>
-          <span className="text-sm font-medium text-foreground capitalize">
+          <span className="text-xs sm:text-sm text-muted-foreground">Termina em</span>
+          <span className="text-xs sm:text-sm font-medium text-foreground capitalize">
             {endDate}
           </span>
         </div>
       )}
       
       <div className="mt-2">
-        <div className="h-2 rounded-full bg-border overflow-hidden">
+        <div className="h-1.5 sm:h-2 rounded-full bg-border overflow-hidden">
           <div 
             className={cn(
               "h-full transition-all duration-300",
@@ -461,7 +461,7 @@ function InstallmentSection({
           />
         </div>
         <p className={cn(
-          "text-xs mt-1",
+          "text-[10px] sm:text-xs mt-1",
           isLastInstallment ? "text-success font-medium" : "text-muted-foreground"
         )}>
           {isLastInstallment 
