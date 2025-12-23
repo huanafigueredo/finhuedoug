@@ -37,6 +37,16 @@ import { useCreateTransaction, useUpdateTransaction, useTransactions } from "@/h
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
+import {
+  parseCurrencyToCents,
+  centsToReais,
+  reaisToCents,
+  formatCentsToDisplay,
+  formatCurrencyInput,
+  calculateInstallmentCents,
+  calculateTotalFromInstallmentCents,
+  validateInstallmentValues,
+} from "@/lib/currency";
 
 const transactionSchema = z.object({
   date: z.date().optional(),
@@ -123,6 +133,12 @@ export function TransactionFormModal({
   
   // Value mode: "total" or "installment"
   const [valueMode, setValueMode] = useState<"total" | "installment">("total");
+  
+  // Track if we're editing an existing installment (prevents recalculation)
+  const [isEditingInstallment, setIsEditingInstallment] = useState(false);
+  // Store original values for installment transactions being edited
+  const [originalTotalValueCents, setOriginalTotalValueCents] = useState<number | null>(null);
+  const [originalInstallmentValueCents, setOriginalInstallmentValueCents] = useState<number | null>(null);
 
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringDay, setRecurringDay] = useState<number>(1);
@@ -169,6 +185,9 @@ export function TransactionFormModal({
         setIsAlreadyStarted(false);
         setStartFromInstallment(1);
         setValueMode("total");
+        setIsEditingInstallment(false);
+        setOriginalTotalValueCents(null);
+        setOriginalInstallmentValueCents(null);
         setIsRecurring(false);
         setRecurringDay(1);
         setRecurringDuration("indefinite");
@@ -198,10 +217,37 @@ export function TransactionFormModal({
         setPaidBy(transaction.paid_by || "");
         setForWho(transaction.for_who || "");
         setIsCouple(transaction.is_couple || false);
-        setValue(transaction.total_value.toString().replace(".", ","));
         setIncomeOrigin(transaction.income_origin || "");
         setIsInstallment(transaction.is_installment || false);
         setTotalInstallments(transaction.total_installments || 2);
+        
+        // Check if this is a new-style installment transaction (single record with installment_value)
+        const isNewStyleInstallment = transaction.is_installment && 
+          transaction.installment_value && 
+          transaction.installment_value > 0 &&
+          !transaction.is_generated_installment;
+        
+        if (isEditMode && isNewStyleInstallment) {
+          // For new-style installment editing:
+          // - Show installment value in the input field
+          // - Store original values to prevent recalculation
+          // - Set mode to "installment" so user sees/edits the installment value
+          const installmentValueCents = reaisToCents(transaction.installment_value!);
+          const totalValueCents = reaisToCents(transaction.total_value);
+          
+          setIsEditingInstallment(true);
+          setOriginalTotalValueCents(totalValueCents);
+          setOriginalInstallmentValueCents(installmentValueCents);
+          setValueMode("installment");
+          // Display the installment value, not the total
+          setValue(formatCentsToDisplay(installmentValueCents));
+        } else {
+          // For old-style or non-installment transactions, use total_value as before
+          setIsEditingInstallment(false);
+          setOriginalTotalValueCents(null);
+          setOriginalInstallmentValueCents(null);
+          setValue(formatCentsToDisplay(reaisToCents(transaction.total_value)));
+        }
         
         // Carregar novos campos
         setFormaPagamento((transaction as any).forma_pagamento || "");
@@ -225,15 +271,50 @@ export function TransactionFormModal({
     }
   }, [isEditMode, isDuplicateMode, loadId, transactionsData, transactionsLoading, banks, paymentMethods, categoriesData, isInitialized, open]);
 
-  const numericValue = parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+  // Parse input value to cents
+  const inputValueCents = parseCurrencyToCents(value);
+  const numericValue = centsToReais(inputValueCents);
   
-  // Calculate total and installment values based on mode
-  const totalValue = valueMode === "total" 
-    ? numericValue 
-    : numericValue * totalInstallments;
-  const installmentValue = valueMode === "installment" 
-    ? numericValue 
-    : (isInstallment && totalInstallments > 1 ? numericValue / totalInstallments : numericValue);
+  // Calculate total and installment values based on mode and edit state
+  let totalValueCents: number;
+  let installmentValueCents: number;
+  
+  if (isEditingInstallment && isEditMode) {
+    // When editing an existing installment transaction:
+    // - The user is editing the installment value (input field shows installment)
+    // - We preserve the original total value unless user explicitly changes installment count
+    // - If user changes the installment value, recalculate total = new_installment * count
+    if (inputValueCents !== originalInstallmentValueCents) {
+      // User changed the installment value, recalculate total
+      installmentValueCents = inputValueCents;
+      totalValueCents = calculateTotalFromInstallmentCents(installmentValueCents, totalInstallments);
+    } else {
+      // User didn't change the value, keep originals
+      totalValueCents = originalTotalValueCents || inputValueCents;
+      installmentValueCents = originalInstallmentValueCents || inputValueCents;
+    }
+  } else if (valueMode === "installment") {
+    // User is entering installment value, calculate total
+    installmentValueCents = inputValueCents;
+    totalValueCents = calculateTotalFromInstallmentCents(installmentValueCents, totalInstallments);
+  } else {
+    // User is entering total value, calculate installment
+    totalValueCents = inputValueCents;
+    installmentValueCents = isInstallment && totalInstallments > 1 
+      ? calculateInstallmentCents(totalValueCents, totalInstallments)
+      : totalValueCents;
+  }
+  
+  // Validate installment values to prevent errors
+  if (isInstallment && totalInstallments > 1) {
+    const validated = validateInstallmentValues(totalValueCents, installmentValueCents, totalInstallments);
+    totalValueCents = validated.totalCents;
+    installmentValueCents = validated.installmentCents;
+  }
+  
+  // Convert to reais for compatibility with existing code
+  const totalValue = centsToReais(totalValueCents);
+  const installmentValue = centsToReais(installmentValueCents);
   const valuePerPerson = isCouple ? totalValue / 2 : totalValue;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -378,22 +459,11 @@ export function TransactionFormModal({
     }).format(value);
   };
 
-  const formatCurrencyMask = (input: string): string => {
-    const digits = input.replace(/\D/g, "");
-    if (!digits) return "";
-    const cents = parseInt(digits, 10);
-    const reais = cents / 100;
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(reais);
-  };
-
   const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCurrencyMask(e.target.value);
+    const formatted = formatCurrencyInput(e.target.value);
     setValue(formatted);
-    const num = parseFloat(formatted.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
-    if (num > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
+    const cents = parseCurrencyToCents(formatted);
+    if (cents > 0) setFieldErrors(prev => ({ ...prev, value: undefined }));
   };
 
   const handleValueFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -734,11 +804,25 @@ export function TransactionFormModal({
               {/* Value - For Expense */}
               {type === "expense" && (
                 <div className="space-y-2">
+                  {/* Info banner when editing an existing installment */}
+                  {isEditingInstallment && isEditMode && (
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-2">
+                      <p className="text-sm text-amber-700 dark:text-amber-400">
+                        <strong>Editando parcela:</strong> O campo abaixo mostra o valor da parcela mensal.
+                        {originalTotalValueCents && (
+                          <span className="block mt-1">
+                            Valor total da compra: <strong>{formatCentsToDisplay(originalTotalValueCents)}</strong>
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <Label htmlFor="value">
                       {isInstallment && valueMode === "installment" ? "Valor da Parcela" : "Valor Total"} <span className="text-destructive">*</span>
                     </Label>
-                    {isInstallment && (
+                    {isInstallment && !isEditingInstallment && (
                       <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg self-start sm:self-auto">
                         <button
                           type="button"
@@ -777,8 +861,8 @@ export function TransactionFormModal({
                   />
                   {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
                   
-                  {/* Show calculated total when in installment mode */}
-                  {isInstallment && valueMode === "installment" && numericValue > 0 && (
+                  {/* Show calculated total when in installment mode (not when editing existing) */}
+                  {isInstallment && valueMode === "installment" && numericValue > 0 && !isEditingInstallment && (
                     <div className="p-3 rounded-lg bg-secondary/50 border border-border">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Valor total da compra</span>
