@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
-import { Heart, MoreVertical, Pencil, Trash2, CreditCard, Copy, MessageSquare, Info } from "lucide-react";
+import { Heart, MoreVertical, Pencil, Trash2, Copy, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +14,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export interface Transaction {
   id: string;
@@ -126,12 +121,11 @@ export function TransactionRow({
           <span className="text-xs text-muted-foreground">-</span>
         )}
       </td>
+      {/* Value Column - now shows installment value for installments */}
       <td className="px-2 py-4 text-sm font-medium text-foreground whitespace-nowrap text-right">
         {formatCurrency(transaction.totalValue)}
       </td>
-      <td className="px-2 py-4 text-sm font-medium whitespace-nowrap text-right">
-        <InstallmentValueCell transaction={transaction} formatCurrency={formatCurrency} />
-      </td>
+      {/* Per Person Column */}
       <td className="px-2 py-4 text-sm text-muted-foreground whitespace-nowrap text-right">
         {transaction.isCouple ? formatCurrency(transaction.valuePerPerson) : "-"}
       </td>
@@ -166,82 +160,4 @@ export function TransactionRow({
       </td>
     </tr>
   );
-}
-
-// Component for displaying installment value column
-function InstallmentValueCell({ 
-  transaction, 
-  formatCurrency 
-}: { 
-  transaction: Transaction; 
-  formatCurrency: (value: number) => string;
-}) {
-  // For installment transactions, show the installment value
-  // For non-installment, show the same as total value
-  const displayValue = transaction.isInstallment && transaction.installmentValue
-    ? transaction.installmentValue
-    : transaction.totalValue;
-  
-  const isCoupleInstallment = transaction.isCouple && transaction.isInstallment && 
-    transaction.installmentNumber && transaction.totalInstallments;
-  
-  const installmentValuePerPerson = isCoupleInstallment && transaction.installmentValue
-    ? transaction.installmentValue / 2
-    : transaction.valuePerPerson;
-
-  // If it's a couple + installment, show popover with details
-  if (isCoupleInstallment) {
-    return (
-      <div className="flex items-center gap-1.5">
-        <span>{formatCurrency(displayValue)}</span>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button 
-              className="text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Info className="w-3.5 h-3.5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="w-64 p-3" 
-            align="start"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Heart className="w-3.5 h-3.5 text-primary fill-primary" />
-                Detalhes do Parcelamento
-              </h4>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Valor total da compra</span>
-                  <span className="font-medium text-foreground">{formatCurrency(transaction.totalValue)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Valor da parcela</span>
-                  <span className="font-medium text-foreground">{formatCurrency(displayValue)}</span>
-                </div>
-                <div className="flex justify-between border-t border-border pt-1.5">
-                  <span className="text-muted-foreground">Parcela por pessoa</span>
-                  <span className="font-medium text-primary">{formatCurrency(installmentValuePerPerson)}</span>
-                </div>
-                <div className="flex justify-between items-center pt-1">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <CreditCard className="w-3 h-3" />
-                    Status
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {transaction.installmentNumber}/{transaction.totalInstallments}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-    );
-  }
-
-  return <span>{formatCurrency(displayValue)}</span>;
 }
