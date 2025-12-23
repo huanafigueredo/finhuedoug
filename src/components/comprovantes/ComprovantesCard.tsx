@@ -141,45 +141,46 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
 
   return (
     <>
-      <Card className="p-4 bg-secondary/50">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-foreground">Comprovantes</h4>
-          <div className="flex gap-2">
+      <Card className="p-3 sm:p-4 bg-secondary/50">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3">
+          <h4 className="text-xs sm:text-sm font-medium text-foreground">Comprovantes</h4>
+          <div className="flex gap-1.5 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowQrScanner(true)}
               disabled={isUploading}
-              className="gap-1.5 text-xs"
+              className="gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
               title="Escanear QR Code com câmera"
             >
-              <Camera className="w-3.5 h-3.5" />
-              Câmera
+              <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden xs:inline">Câmera</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowManualQrInput(true)}
               disabled={isUploading}
-              className="gap-1.5 text-xs"
+              className="gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
               title="Inserir URL do QR manualmente"
             >
-              <QrCode className="w-3.5 h-3.5" />
-              URL
+              <QrCode className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden xs:inline">URL</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="gap-1.5 text-xs"
+              className="gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
             >
               {isUploading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
               ) : (
-                <Upload className="w-3.5 h-3.5" />
+                <Upload className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               )}
-              Foto/PDF
+              <span className="hidden xs:inline">Foto/PDF</span>
+              <span className="xs:hidden">Foto</span>
             </Button>
             <Input
               ref={fileInputRef}
@@ -192,50 +193,50 @@ export function ComprovantesCard({ lancamentoId, onQrScanned }: ComprovantesCard
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-3 sm:py-4">
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-muted-foreground" />
           </div>
         ) : comprovantes && comprovantes.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             {comprovantes.map((comprovante) => (
               <div 
                 key={comprovante.id} 
-                className="flex items-center justify-between p-2 rounded-lg bg-background/50"
+                className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg bg-background/50"
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   {getFileIcon(comprovante.file_type)}
-                  <span className="text-xs text-foreground truncate max-w-[150px]">
+                  <span className="text-[10px] sm:text-xs text-foreground truncate max-w-[100px] sm:max-w-[150px]">
                     {comprovante.file_name}
                   </span>
                   {comprovante.nfe_qr_url && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                    <span className="text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded bg-primary/10 text-primary">
                       NFC-e
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-6 w-6 sm:h-7 sm:w-7"
                     onClick={() => setPreviewDialog({ open: true, comprovante })}
                   >
-                    <Eye className="w-3.5 h-3.5" />
+                    <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    className="h-6 w-6 sm:h-7 sm:w-7 text-destructive hover:text-destructive"
                     onClick={() => setDeleteDialog({ open: true, comprovante })}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </Button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground/60 italic text-center py-2">
+          <p className="text-[10px] sm:text-xs text-muted-foreground/60 italic text-center py-2">
             Nenhum comprovante anexado
           </p>
         )}

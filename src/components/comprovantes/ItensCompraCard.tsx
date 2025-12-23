@@ -197,27 +197,27 @@ export function ItensCompraCard({
 
   return (
     <>
-      <Card className="p-4 bg-secondary/50">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4 text-muted-foreground" />
-            <h4 className="text-sm font-medium text-foreground">Itens da compra</h4>
+      <Card className="p-3 sm:p-4 bg-secondary/50">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+            <h4 className="text-xs sm:text-sm font-medium text-foreground">Itens da compra</h4>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={handleExtract}
             disabled={isExtracting || !hasComprovantes}
-            className="gap-1.5 text-xs"
+            className="gap-1 sm:gap-1.5 text-[10px] sm:text-xs h-7 sm:h-8 w-full sm:w-auto"
           >
             {isExtracting ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin" />
                 Processando...
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5" />
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 Extrair com IA
               </>
             )}
@@ -226,14 +226,14 @@ export function ItensCompraCard({
 
         {/* Tags display */}
         {tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
+          <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3">
             {tags.map((tag, index) => (
               <Badge 
                 key={index} 
                 variant="secondary"
-                className="text-xs px-2 py-0.5"
+                className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5"
               >
-                <Tag className="w-3 h-3 mr-1" />
+                <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                 {tag}
               </Badge>
             ))}
@@ -242,18 +242,18 @@ export function ItensCompraCard({
 
         {/* Items list */}
         {isLoadingItens ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-3 sm:py-4">
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-muted-foreground" />
           </div>
         ) : itens && itens.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="space-y-1 sm:space-y-1.5">
             {itens.map((item) => (
               <div 
                 key={item.id} 
-                className="flex items-center justify-between text-xs p-2 rounded bg-background/50"
+                className="flex items-center justify-between text-[10px] sm:text-xs p-1.5 sm:p-2 rounded bg-background/50"
               >
-                <span className="text-foreground">{item.nome_item}</span>
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="text-foreground truncate max-w-[120px] sm:max-w-none">{item.nome_item}</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground shrink-0">
                   {item.quantidade && (
                     <span>{item.quantidade}x</span>
                   )}
@@ -265,17 +265,17 @@ export function ItensCompraCard({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground/60 italic text-center py-2">
+          <p className="text-[10px] sm:text-xs text-muted-foreground/60 italic text-center py-2">
             {hasComprovantes 
-              ? 'Clique em "Extrair com IA" para processar os comprovantes'
-              : 'Anexe um comprovante para extrair os itens'
+              ? 'Clique em "Extrair com IA" para processar'
+              : 'Anexe um comprovante para extrair'
             }
           </p>
         )}
 
         {/* Resumo curto */}
         {resumoCurto && (
-          <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border">
             📝 {resumoCurto}
           </p>
         )}
@@ -283,34 +283,37 @@ export function ItensCompraCard({
 
       {/* Review Modal */}
       <Dialog open={reviewModal.open} onOpenChange={(open) => setReviewModal({ open })}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-lg max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
+            <DialogTitle className="flex items-center gap-1.5 sm:gap-2 text-base sm:text-lg">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               Revisar itens extraídos
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+          <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 pr-1 sm:pr-2">
             {/* Items list */}
             <div>
-              <h5 className="text-sm font-medium mb-2">Itens ({reviewModal.data?.itens.filter(i => i.selected).length || 0} selecionados)</h5>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              <h5 className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
+                Itens ({reviewModal.data?.itens.filter(i => i.selected).length || 0} selecionados)
+              </h5>
+              <div className="space-y-1.5 sm:space-y-2 max-h-[150px] sm:max-h-[200px] overflow-y-auto">
                 {reviewModal.data?.itens.map((item, index) => (
                   <div 
                     key={index} 
-                    className="flex items-center gap-2 p-2 rounded-lg bg-secondary/50"
+                    className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-secondary/50"
                   >
                     <Checkbox
                       checked={item.selected}
                       onCheckedChange={() => toggleItemSelection(index)}
+                      className="h-4 w-4 sm:h-5 sm:w-5"
                     />
                     <Input
                       value={item.nome}
                       onChange={(e) => updateItemName(index, e.target.value)}
-                      className="flex-1 h-8 text-sm"
+                      className="flex-1 h-7 sm:h-8 text-xs sm:text-sm"
                     />
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground shrink-0">
                       {item.quantidade && <span>{item.quantidade}x</span>}
                       {item.valor && <span>R$ {item.valor.toFixed(2)}</span>}
                     </div>
@@ -321,33 +324,33 @@ export function ItensCompraCard({
 
             {/* Tags */}
             <div>
-              <h5 className="text-sm font-medium mb-2">
+              <h5 className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                 Tags sugeridas ({reviewModal.data?.tags.length || 0}/5)
               </h5>
-              <div className="flex flex-wrap gap-1.5 mb-2">
+              <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-2">
                 {reviewModal.data?.tags.map((tag, index) => (
                   <Badge 
                     key={index} 
                     variant="secondary"
-                    className="text-xs px-2 py-0.5 pr-1 gap-1"
+                    className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 pr-1 gap-0.5 sm:gap-1"
                   >
                     {tag}
                     <button
                       onClick={() => removeTag(tag)}
-                      className="ml-1 hover:bg-destructive/20 rounded p-0.5"
+                      className="ml-0.5 sm:ml-1 hover:bg-destructive/20 rounded p-0.5"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     </button>
                   </Badge>
                 ))}
               </div>
               {(reviewModal.data?.tags.length || 0) < 5 && (
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 sm:gap-2">
                   <Input
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Adicionar tag..."
-                    className="h-8 text-sm"
+                    className="h-7 sm:h-8 text-xs sm:text-sm"
                     onKeyDown={(e) => e.key === 'Enter' && addTag()}
                   />
                   <Button
@@ -355,8 +358,9 @@ export function ItensCompraCard({
                     size="sm"
                     onClick={addTag}
                     disabled={!newTag.trim()}
+                    className="h-7 sm:h-8 w-7 sm:w-8 p-0"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </Button>
                 </div>
               )}
@@ -364,7 +368,7 @@ export function ItensCompraCard({
 
             {/* Resumo */}
             <div>
-              <h5 className="text-sm font-medium mb-2">Resumo curto</h5>
+              <h5 className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">Resumo curto</h5>
               <Input
                 value={reviewModal.data?.resumoCurto || ''}
                 onChange={(e) => {
@@ -374,42 +378,45 @@ export function ItensCompraCard({
                     data: { ...reviewModal.data, resumoCurto: e.target.value }
                   });
                 }}
-                className="h-8 text-sm"
+                className="h-7 sm:h-8 text-xs sm:text-sm"
                 maxLength={100}
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                 {reviewModal.data?.resumoCurto?.length || 0}/100 caracteres
               </p>
             </div>
 
             {/* Add to observacao */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Checkbox
                 id="add-obs"
                 checked={adicionarResumoObs}
                 onCheckedChange={(checked) => setAdicionarResumoObs(checked as boolean)}
+                className="h-4 w-4 sm:h-5 sm:w-5"
               />
-              <label htmlFor="add-obs" className="text-sm text-muted-foreground cursor-pointer">
+              <label htmlFor="add-obs" className="text-xs sm:text-sm text-muted-foreground cursor-pointer">
                 Adicionar resumo nas observações
               </label>
             </div>
           </div>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-3 sm:mt-4 flex-row gap-2 sm:gap-0">
             <Button
               variant="ghost"
               onClick={() => setReviewModal({ open: false })}
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSaveReview}
               disabled={saveItensExtraidos.isPending}
+              className="flex-1 sm:flex-none text-xs sm:text-sm h-8 sm:h-9"
             >
               {saveItensExtraidos.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin mr-1.5 sm:mr-2" />
               ) : null}
-              Confirmar e salvar
+              Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>
