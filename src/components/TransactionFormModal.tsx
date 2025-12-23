@@ -63,6 +63,29 @@ const recurringDurationOptions = [
   { value: "12", label: "12 meses" },
 ];
 
+const formasPagamento = [
+  { value: "credito", label: "Crédito" },
+  { value: "debito", label: "Débito" },
+  { value: "pix", label: "Pix" },
+  { value: "boleto", label: "Boleto" },
+  { value: "dinheiro", label: "Dinheiro" },
+  { value: "transferencia", label: "Transferência" },
+];
+
+const instituicoesFinanceiras = [
+  { value: "nubank", label: "Nubank" },
+  { value: "inter", label: "Inter" },
+  { value: "itau", label: "Itaú" },
+  { value: "bradesco", label: "Bradesco" },
+  { value: "santander", label: "Santander" },
+  { value: "caixa", label: "Caixa" },
+  { value: "bb", label: "Banco do Brasil" },
+  { value: "c6", label: "C6 Bank" },
+  { value: "picpay", label: "PicPay" },
+  { value: "mercadopago", label: "Mercado Pago" },
+  { value: "outro", label: "Outro" },
+];
+
 interface TransactionFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -121,6 +144,11 @@ export function TransactionFormModal({
   const [recurringDay, setRecurringDay] = useState<number>(1);
   const [recurringDuration, setRecurringDuration] = useState<string>("indefinite");
 
+  // Novos campos para forma de pagamento e instituição
+  const [formaPagamento, setFormaPagamento] = useState("");
+  const [instituicao, setInstituicao] = useState("");
+  const [cartao, setCartao] = useState("");
+
   interface FieldErrors {
     date?: string;
     description?: string;
@@ -159,6 +187,9 @@ export function TransactionFormModal({
         setIsRecurring(false);
         setRecurringDay(1);
         setRecurringDuration("indefinite");
+        setFormaPagamento("");
+        setInstituicao("");
+        setCartao("");
         setFieldErrors({});
         setIsInitialized(false);
         setShowSuccess(false);
@@ -186,6 +217,11 @@ export function TransactionFormModal({
         setIncomeOrigin(transaction.income_origin || "");
         setIsInstallment(transaction.is_installment || false);
         setTotalInstallments(transaction.total_installments || 2);
+        
+        // Carregar novos campos
+        setFormaPagamento((transaction as any).forma_pagamento || "");
+        setInstituicao((transaction as any).instituicao || "");
+        setCartao((transaction as any).cartao || "");
         
         const bankRecord = banks.find(b => b.id === transaction.bank_id);
         if (bankRecord) setBank(bankRecord.name);
@@ -286,6 +322,10 @@ export function TransactionFormModal({
         is_recurring: type === "income" && isRecurring,
         recurring_day: type === "income" && isRecurring ? recurringDay : undefined,
         recurring_duration: type === "income" && isRecurring ? recurringDuration : undefined,
+        // Novos campos
+        forma_pagamento: formaPagamento || undefined,
+        instituicao: instituicao || undefined,
+        cartao: cartao || undefined,
       };
 
       if (isEditMode && editId) {
@@ -845,42 +885,89 @@ export function TransactionFormModal({
 
               {/* Bank & Payment - Only for Expenses */}
               {type === "expense" && (
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Banco Pagador</Label>
-                    <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {banks.map((b) => (
-                          <SelectItem key={b.id} value={b.name}>
-                            <div className="flex items-center gap-2">
-                              {b.color && (
-                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: b.color }} />
-                              )}
-                              {b.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Banco Pagador</Label>
+                      <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={banksLoading ? "Carregando..." : "Selecione"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map((b) => (
+                            <SelectItem key={b.id} value={b.name}>
+                              <div className="flex items-center gap-2">
+                                {b.color && (
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: b.color }} />
+                                )}
+                                {b.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Forma de Pagamento (legado)</Label>
+                      <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={paymentMethodsLoading ? "Carregando..." : "Selecione"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods.map((p) => (
+                            <SelectItem key={p.id} value={p.name}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Forma de Pagamento</Label>
-                    <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={paymentMethodsLoading ? "Carregando..." : "Selecione"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {paymentMethods.map((p) => (
-                          <SelectItem key={p.id} value={p.name}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Novos campos para Chat IA */}
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>Tipo de Pagamento</Label>
+                      <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formasPagamento.map((f) => (
+                            <SelectItem key={f.value} value={f.value}>
+                              {f.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Instituição</Label>
+                      <Select value={instituicao} onValueChange={setInstituicao}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {instituicoesFinanceiras.map((i) => (
+                            <SelectItem key={i.value} value={i.value}>
+                              {i.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Nome do Cartão</Label>
+                      <Input
+                        placeholder="Ex: Nubank Ultravioleta"
+                        value={cartao}
+                        onChange={(e) => setCartao(e.target.value)}
+                        maxLength={50}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
