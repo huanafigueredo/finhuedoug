@@ -26,6 +26,7 @@ export interface TransactionInsert {
   parent_transaction_id?: string;
   is_generated_installment?: boolean;
   start_from_installment?: number; // New field for already started purchases
+  modo_valor_informado?: "total" | "installment"; // New field for value input mode
   // Recurring fields
   is_recurring?: boolean;
   recurring_day?: number;

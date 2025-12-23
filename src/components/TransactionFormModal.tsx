@@ -311,6 +311,7 @@ export function TransactionFormModal({
         total_installments: isInstallment ? totalInstallments : undefined,
         installment_value: isInstallment ? installmentValue : undefined,
         start_from_installment: isInstallment && isAlreadyStarted ? startFromInstallment : undefined,
+        modo_valor_informado: isInstallment ? valueMode : undefined,
         is_recurring: type === "income" && isRecurring,
         recurring_day: type === "income" && isRecurring ? recurringDay : undefined,
         recurring_duration: type === "income" && isRecurring ? recurringDuration : undefined,
@@ -733,17 +734,17 @@ export function TransactionFormModal({
               {/* Value - For Expense */}
               {type === "expense" && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <Label htmlFor="value">
                       {isInstallment && valueMode === "installment" ? "Valor da Parcela" : "Valor Total"} <span className="text-destructive">*</span>
                     </Label>
                     {isInstallment && (
-                      <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg self-start sm:self-auto">
                         <button
                           type="button"
                           onClick={() => setValueMode("total")}
                           className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                            "px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all",
                             valueMode === "total"
                               ? "bg-primary text-primary-foreground shadow-sm"
                               : "text-muted-foreground hover:text-foreground"
@@ -755,7 +756,7 @@ export function TransactionFormModal({
                           type="button"
                           onClick={() => setValueMode("installment")}
                           className={cn(
-                            "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                            "px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all",
                             valueMode === "installment"
                               ? "bg-primary text-primary-foreground shadow-sm"
                               : "text-muted-foreground hover:text-foreground"
