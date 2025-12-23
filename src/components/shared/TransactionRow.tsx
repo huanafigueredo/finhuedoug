@@ -83,22 +83,22 @@ export function TransactionRow({
       )}
       onClick={handleRowClick}
     >
-      <td className="px-4 py-4 text-sm text-muted-foreground whitespace-nowrap">
+      <td className="px-3 py-4 text-sm text-muted-foreground whitespace-nowrap">
         {transaction.date}
       </td>
-      <td className="px-4 py-4">
+      <td className="px-3 py-4">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm font-medium text-foreground truncate">
             {transaction.description}
           </span>
           {transaction.isCouple && (
-            <Heart className="w-4 h-4 text-primary fill-primary" />
+            <Heart className="w-4 h-4 text-primary fill-primary shrink-0" />
           )}
           {hasObservacao && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground/70" />
+                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground/70 shrink-0" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Tem observação</p>
@@ -108,40 +108,37 @@ export function TransactionRow({
           )}
         </div>
       </td>
-      <td className="px-4 py-4 text-sm text-foreground">{transaction.person}</td>
-      <td className="px-4 py-4 text-sm text-muted-foreground">
+      <td className="px-3 py-4 text-sm text-foreground truncate">{transaction.person}</td>
+      <td className="px-3 py-4 text-sm text-muted-foreground truncate">
         {transaction.category}
       </td>
-      <td className="px-4 py-4 text-sm text-muted-foreground">{transaction.bank}</td>
-      <td className="px-4 py-4 text-sm text-muted-foreground">
+      <td className="px-3 py-4 text-sm text-muted-foreground truncate">{transaction.bank}</td>
+      <td className="px-3 py-4 text-sm text-muted-foreground truncate">
         {transaction.paymentMethod}
       </td>
       {/* Installment Column */}
-      <td className="px-4 py-4">
+      <td className="px-2 py-4">
         {transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments ? (
-          <div className="flex items-center gap-1.5">
-            <CreditCard className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {transaction.installmentNumber}/{transaction.totalInstallments}
-            </span>
-          </div>
+          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+            {transaction.installmentNumber}/{transaction.totalInstallments}
+          </span>
         ) : (
           <span className="text-xs text-muted-foreground">-</span>
         )}
       </td>
-      <td className="px-4 py-4 text-sm font-medium text-foreground whitespace-nowrap">
+      <td className="px-2 py-4 text-sm font-medium text-foreground whitespace-nowrap text-right">
         {formatCurrency(transaction.totalValue)}
       </td>
-      <td className="px-4 py-4 text-sm font-medium text-foreground whitespace-nowrap">
+      <td className="px-2 py-4 text-sm font-medium whitespace-nowrap text-right">
         <InstallmentValueCell transaction={transaction} formatCurrency={formatCurrency} />
       </td>
-      <td className="px-4 py-4 text-sm text-muted-foreground whitespace-nowrap">
+      <td className="px-2 py-4 text-sm text-muted-foreground whitespace-nowrap text-right">
         {transaction.isCouple ? formatCurrency(transaction.valuePerPerson) : "-"}
       </td>
-      <td className="px-4 py-4">
+      <td className="px-2 py-4">
         <Badge variant={transaction.type} />
       </td>
-      <td className="px-4 py-4" data-actions-dropdown>
+      <td className="px-2 py-4" data-actions-dropdown>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
