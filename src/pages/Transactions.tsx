@@ -118,7 +118,7 @@ export default function Transactions() {
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
   const categories = ["Todas", ...categoriesData.map((c) => c.name)];
 
-  // Transform and filter transactions with dynamic installment calculation
+// Transform and filter transactions with dynamic installment calculation
   const filteredTransactions = useMemo(() => {
     const filterMonthNum = monthFilter !== "Todos" ? parseInt(monthFilter) : null;
     const filterYearNum = yearFilter !== "Todos" ? parseInt(yearFilter) : null;
@@ -126,6 +126,9 @@ export default function Transactions() {
     return transactionsData
       .map((t) => {
         const rawDate = parseISO(t.date);
+        
+        // New-style: single record for installment, calculate dynamically
+        // installment_number = parcela inicial (onde começou)
         const isNewStyleInstallment = t.is_installment && 
           !t.is_generated_installment && 
           !t.parent_transaction_id &&
@@ -150,6 +153,10 @@ export default function Transactions() {
           // Calculate the date for this specific installment
           const monthsFromStart = result.currentInstallment - startInstallment;
           const installmentDate = addMonths(rawDate, monthsFromStart);
+          
+          // For table display: use installment value as the "main" value
+          const installmentValue = t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!;
+          const valuePerPerson = t.is_couple ? installmentValue / 2 : installmentValue;
 
           return {
             id: t.id,
@@ -163,18 +170,24 @@ export default function Transactions() {
             subcategory: t.subcategory || "-",
             bank: t.bank_name || "-",
             paymentMethod: t.payment_method_name || "-",
-            totalValue: Number(t.total_value),
-            valuePerPerson: t.is_couple ? Number(t.installment_value || t.total_value) / 2 : Number(t.installment_value || t.total_value),
+            // For new-style, totalValue in table = installment value (what shows in the month)
+            totalValue: installmentValue,
+            valuePerPerson: valuePerPerson,
             isCouple: t.is_couple || false,
             type: t.type as "income" | "expense",
             isInstallment: true,
             installmentNumber: result.currentInstallment,
             totalInstallments: t.total_installments,
-            installmentValue: t.installment_value ? Number(t.installment_value) : undefined,
+            // Keep real total for details dialog
+            realTotalValue: Number(t.total_value),
+            installmentValue: installmentValue,
             tags: t.tags || [],
             resumo_curto: t.resumo_curto || undefined,
             status_extracao: t.status_extracao || undefined,
             isNewStyleInstallment: true,
+            // Store first installment date for details dialog
+            firstInstallmentDate: rawDate,
+            startInstallment: startInstallment,
           };
         }
 
@@ -199,10 +212,13 @@ export default function Transactions() {
           installmentNumber: t.installment_number || undefined,
           totalInstallments: t.total_installments || undefined,
           installmentValue: t.installment_value ? Number(t.installment_value) : undefined,
+          realTotalValue: Number(t.total_value),
           tags: t.tags || [],
           resumo_curto: t.resumo_curto || undefined,
           status_extracao: t.status_extracao || undefined,
           isNewStyleInstallment: false,
+          firstInstallmentDate: undefined,
+          startInstallment: undefined,
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null)
@@ -358,7 +374,8 @@ export default function Transactions() {
         subcategory: tx.subcategory,
         bank: tx.bank,
         paymentMethod: tx.paymentMethod,
-        totalValue: tx.totalValue,
+        // For details, show the REAL total value for installments
+        totalValue: tx.isNewStyleInstallment ? (tx.realTotalValue || tx.totalValue) : tx.totalValue,
         valuePerPerson: tx.valuePerPerson,
         isCouple: tx.isCouple,
         type: tx.type,
@@ -369,7 +386,10 @@ export default function Transactions() {
         tags: tx.tags || [],
         resumo_curto: tx.resumo_curto,
         status_extracao: tx.status_extracao,
-      });
+        // Pass additional info for new-style installments
+        firstInstallmentDate: tx.firstInstallmentDate,
+        startInstallment: tx.startInstallment,
+      } as any);
       setDetailsDialogOpen(true);
     }
   };
@@ -646,9 +666,6 @@ export default function Transactions() {
                       <th className="w-[95px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Valor
                       </th>
-                      <th className="w-[95px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Vlr Parc.
-                      </th>
                       <th className="w-[90px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         P/ Pessoa
                       </th>
@@ -676,14 +693,14 @@ export default function Transactions() {
                     <tfoot className="bg-secondary/50 border-t border-border">
                       {/* Total do Mês - destaque principal */}
                       <tr className="bg-primary/10 border-b border-border">
-                        <td colSpan={8} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
-                          Total do Mês (Fatura):
+                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
+                          Total do Mês:
                         </td>
                         <td className="px-2 py-3 text-sm font-bold text-primary text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.reduce((sum, t) => {
-                              const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
-                              return sum + (t.type === "expense" ? value : 0);
+                              // totalValue now already contains installment value for new-style
+                              return sum + (t.type === "expense" ? t.totalValue : 0);
                             }, 0)
                           )}
                         </td>
@@ -693,17 +710,9 @@ export default function Transactions() {
                         <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                           Despesas:
                         </td>
-                        <td className="px-2 py-3 text-sm text-muted-foreground text-right">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
-                          )}
-                        </td>
                         <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => {
-                              const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
-                              return sum + value;
-                            }, 0)
+                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
                           )}
                         </td>
                         <td colSpan={3}></td>
@@ -712,17 +721,9 @@ export default function Transactions() {
                         <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                           Receitas:
                         </td>
-                        <td className="px-2 py-3 text-sm text-muted-foreground text-right">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
-                          )}
-                        </td>
                         <td className="px-2 py-3 text-sm font-medium text-success text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => {
-                              const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
-                              return sum + value;
-                            }, 0)
+                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
                           )}
                         </td>
                         <td colSpan={3}></td>
@@ -731,24 +732,10 @@ export default function Transactions() {
                         <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                           Saldo:
                         </td>
-                        <td className="px-2 py-3 text-sm text-right">
+                        <td className="px-2 py-3 text-sm font-medium text-right">
                           {(() => {
                             const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
                             const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
-                            const balance = income - expenses;
-                            return (
-                              <span className={balance >= 0 ? "text-success" : "text-destructive"}>
-                                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balance)}
-                              </span>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-2 py-3 text-sm font-medium text-right">
-                          {(() => {
-                            const getInstallmentValue = (t: typeof filteredTransactions[0]) => 
-                              t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
-                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + getInstallmentValue(t), 0);
-                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + getInstallmentValue(t), 0);
                             const balance = income - expenses;
                             return (
                               <span className={balance >= 0 ? "text-success" : "text-destructive"}>
@@ -762,7 +749,7 @@ export default function Transactions() {
                       {/* Total por pessoa (casal) */}
                       {filteredTransactions.some(t => t.isCouple) && (
                         <tr className="border-t border-border bg-primary/5">
-                          <td colSpan={9} className="px-3 py-3 text-right text-sm font-medium text-foreground">
+                          <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
                             <span className="flex items-center justify-end gap-1.5">
                               <Heart className="w-4 h-4 text-primary fill-primary" />
                               Por Pessoa (Casal):
@@ -770,19 +757,12 @@ export default function Transactions() {
                           </td>
                           <td className="px-2 py-3 text-sm font-bold text-primary text-right">
                             {(() => {
-                              const getPerPersonValue = (t: typeof filteredTransactions[0]) => {
-                                if (!t.isCouple) return 0;
-                                if (t.isInstallment && t.installmentValue) {
-                                  return t.installmentValue / 2;
-                                }
-                                return t.valuePerPerson;
-                              };
                               const incomePerPerson = filteredTransactions
                                 .filter(t => t.type === "income" && t.isCouple)
-                                .reduce((sum, t) => sum + getPerPersonValue(t), 0);
+                                .reduce((sum, t) => sum + t.valuePerPerson, 0);
                               const expensesPerPerson = filteredTransactions
                                 .filter(t => t.type === "expense" && t.isCouple)
-                                .reduce((sum, t) => sum + getPerPersonValue(t), 0);
+                                .reduce((sum, t) => sum + t.valuePerPerson, 0);
                               const balancePerPerson = incomePerPerson - expensesPerPerson;
                               return (
                                 <span className={balancePerPerson >= 0 ? "text-success" : "text-destructive"}>

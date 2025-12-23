@@ -50,6 +50,9 @@ export interface TransactionDetails {
   tags?: string[];
   resumo_curto?: string;
   status_extracao?: string;
+  // New fields for dynamic installments
+  firstInstallmentDate?: Date;
+  startInstallment?: number;
 }
 
 interface TransactionDetailsDialogProps {
@@ -389,14 +392,26 @@ function InstallmentSection({
     }).format(value);
   };
 
-  // Calculate end date: date of first installment + (total - 1) months
+  // Calculate end date based on first installment date
   const calculateEndDate = () => {
-    if (!transaction.date || !transaction.totalInstallments || !transaction.installmentNumber) {
+    if (!transaction.totalInstallments || !transaction.installmentNumber) {
       return null;
     }
     
     try {
-      // Parse the current transaction date
+      let baseDate: Date;
+      
+      // If we have the first installment date (new style), use it
+      if (transaction.firstInstallmentDate) {
+        baseDate = transaction.firstInstallmentDate;
+        const startInstallment = transaction.startInstallment || 1;
+        // Calculate months from start to end
+        const monthsToEnd = transaction.totalInstallments - startInstallment;
+        const endDate = addMonths(baseDate, monthsToEnd);
+        return format(endDate, "MMM/yyyy", { locale: ptBR });
+      }
+      
+      // Fallback: parse the current transaction date
       const parts = transaction.date.split('/');
       if (parts.length !== 3) return null;
       
@@ -435,6 +450,14 @@ function InstallmentSection({
           isLastInstallment ? "text-success" : "text-foreground"
         )}>
           {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
+        </span>
+      </div>
+
+      {/* Valor total da compra */}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs sm:text-sm text-muted-foreground">Valor total da compra</span>
+        <span className="text-base sm:text-lg font-bold text-foreground">
+          {formatCurrency(transaction.totalValue)}
         </span>
       </div>
 
