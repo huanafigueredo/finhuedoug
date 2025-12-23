@@ -377,16 +377,19 @@ export type Database = {
       transactions: {
         Row: {
           bank_id: string | null
+          cartao: string | null
           category: string | null
           conta_agendada_id: string | null
           created_at: string | null
           date: string
           description: string
           for_who: string | null
+          forma_pagamento: string | null
           id: string
           income_origin: string | null
           installment_number: number | null
           installment_value: number | null
+          instituicao: string | null
           is_couple: boolean | null
           is_generated_installment: boolean | null
           is_installment: boolean | null
@@ -413,16 +416,19 @@ export type Database = {
         }
         Insert: {
           bank_id?: string | null
+          cartao?: string | null
           category?: string | null
           conta_agendada_id?: string | null
           created_at?: string | null
           date: string
           description: string
           for_who?: string | null
+          forma_pagamento?: string | null
           id?: string
           income_origin?: string | null
           installment_number?: number | null
           installment_value?: number | null
+          instituicao?: string | null
           is_couple?: boolean | null
           is_generated_installment?: boolean | null
           is_installment?: boolean | null
@@ -449,16 +455,19 @@ export type Database = {
         }
         Update: {
           bank_id?: string | null
+          cartao?: string | null
           category?: string | null
           conta_agendada_id?: string | null
           created_at?: string | null
           date?: string
           description?: string
           for_who?: string | null
+          forma_pagamento?: string | null
           id?: string
           income_origin?: string | null
           installment_number?: number | null
           installment_value?: number | null
+          instituicao?: string | null
           is_couple?: boolean | null
           is_generated_installment?: boolean | null
           is_installment?: boolean | null

@@ -2,3 +2,6 @@ project_id = "zpkiayaliicipxcjetqh"
 
 [functions.extrair-itens-comprovante]
 verify_jwt = true
+
+[functions.query-finance]
+verify_jwt = true
