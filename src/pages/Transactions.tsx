@@ -530,6 +530,9 @@ export default function Transactions() {
                         Valor
                       </th>
                       <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Valor Parcela
+                      </th>
+                      <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Por Pessoa
                       </th>
                       <th className="px-4 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -558,13 +561,15 @@ export default function Transactions() {
                         <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
                           Total Despesas:
                         </td>
+                        <td className="px-4 py-4 text-sm font-bold text-muted-foreground">
+                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
+                          )}
+                        </td>
                         <td className="px-4 py-4 text-sm font-bold text-primary">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => {
-                              // For couple + installment: use installment value
-                              const value = (t.isCouple && t.isInstallment && t.installmentValue) 
-                                ? t.installmentValue 
-                                : t.totalValue;
+                              const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
                               return sum + value;
                             }, 0)
                           )}
@@ -575,12 +580,15 @@ export default function Transactions() {
                         <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
                           Total Receitas:
                         </td>
+                        <td className="px-4 py-4 text-sm font-bold text-muted-foreground">
+                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
+                          )}
+                        </td>
                         <td className="px-4 py-4 text-sm font-bold text-success">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => {
-                              const value = (t.isCouple && t.isInstallment && t.installmentValue) 
-                                ? t.installmentValue 
-                                : t.totalValue;
+                              const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
                               return sum + value;
                             }, 0)
                           )}
@@ -593,10 +601,22 @@ export default function Transactions() {
                         </td>
                         <td className="px-4 py-4 text-sm font-bold">
                           {(() => {
-                            const getDisplayValue = (t: typeof filteredTransactions[0]) => 
-                              (t.isCouple && t.isInstallment && t.installmentValue) ? t.installmentValue : t.totalValue;
-                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + getDisplayValue(t), 0);
-                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + getDisplayValue(t), 0);
+                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
+                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
+                            const balance = income - expenses;
+                            return (
+                              <span className={balance >= 0 ? "text-success" : "text-destructive"}>
+                                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balance)}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-4 py-4 text-sm font-bold">
+                          {(() => {
+                            const getInstallmentValue = (t: typeof filteredTransactions[0]) => 
+                              t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
+                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + getInstallmentValue(t), 0);
+                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + getInstallmentValue(t), 0);
                             const balance = income - expenses;
                             return (
                               <span className={balance >= 0 ? "text-success" : "text-destructive"}>
@@ -616,7 +636,7 @@ export default function Transactions() {
                               Total por Pessoa (Casal):
                             </span>
                           </td>
-                          <td colSpan={1}></td>
+                          <td colSpan={2}></td>
                           <td className="px-4 py-4 text-sm font-bold text-primary">
                             {(() => {
                               const getPerPersonValue = (t: typeof filteredTransactions[0]) => {
