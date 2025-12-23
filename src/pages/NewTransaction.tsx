@@ -106,6 +106,9 @@ export default function NewTransaction() {
   const [totalInstallments, setTotalInstallments] = useState<number>(2);
   const [isAlreadyStarted, setIsAlreadyStarted] = useState(false);
   const [startFromInstallment, setStartFromInstallment] = useState<number>(1);
+  
+  // Value mode: "total" or "installment"
+  const [valueMode, setValueMode] = useState<"total" | "installment">("total");
 
   // Recurring income fields
   const [isRecurring, setIsRecurring] = useState(false);
@@ -166,8 +169,15 @@ export default function NewTransaction() {
   }, [isEditMode, isDuplicateMode, loadId, transactionsData, transactionsLoading, banks, paymentMethods, categoriesData, isInitialized]);
 
   const numericValue = parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
-  const valuePerPerson = isCouple ? numericValue / 2 : numericValue;
-  const installmentValue = isInstallment && totalInstallments > 1 ? numericValue / totalInstallments : numericValue;
+  
+  // Calculate total and installment values based on mode
+  const totalValue = valueMode === "total" 
+    ? numericValue 
+    : numericValue * totalInstallments;
+  const installmentValue = valueMode === "installment" 
+    ? numericValue 
+    : (isInstallment && totalInstallments > 1 ? numericValue / totalInstallments : numericValue);
+  const valuePerPerson = isCouple ? totalValue / 2 : totalValue;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,7 +208,7 @@ export default function NewTransaction() {
       date,
       description: description.trim(),
       type,
-      value: numericValue,
+      value: totalValue,
       category: category || undefined,
       subcategory: subcategory || undefined,
       paidBy: paidBy || undefined,
@@ -234,7 +244,7 @@ export default function NewTransaction() {
         type,
         category: category || undefined,
         subcategory: subcategory || undefined,
-        total_value: numericValue,
+        total_value: totalValue,
         value_per_person: valuePerPerson,
         is_couple: isCouple,
         paid_by: paidBy || undefined,
@@ -698,7 +708,39 @@ export default function NewTransaction() {
               {/* Value - For Expense (after Couple Toggle) */}
               {type === "expense" && (
                 <div className="space-y-2">
-                  <Label htmlFor="value">Valor Total <span className="text-destructive">*</span></Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="value">
+                      {isInstallment && valueMode === "installment" ? "Valor da Parcela" : "Valor Total"} <span className="text-destructive">*</span>
+                    </Label>
+                    {isInstallment && (
+                      <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setValueMode("total")}
+                          className={cn(
+                            "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                            valueMode === "total"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Total
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setValueMode("installment")}
+                          className={cn(
+                            "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                            valueMode === "installment"
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Parcela
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <Input
                     id="value"
                     placeholder="R$ 0,00"
@@ -708,6 +750,16 @@ export default function NewTransaction() {
                     className={cn("text-2xl font-semibold h-14", fieldErrors.value && "border-destructive")}
                   />
                   {fieldErrors.value && <p className="text-sm text-destructive">{fieldErrors.value}</p>}
+                  
+                  {/* Show calculated total when in installment mode */}
+                  {isInstallment && valueMode === "installment" && numericValue > 0 && (
+                    <div className="p-3 rounded-lg bg-secondary/50 border border-border">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Valor total da compra</span>
+                        <span className="font-semibold text-foreground">{formatCurrency(totalValue)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -738,7 +790,13 @@ export default function NewTransaction() {
                         </p>
                       </div>
                     </div>
-                    <Switch checked={isInstallment} onCheckedChange={setIsInstallment} />
+                    <Switch 
+                      checked={isInstallment} 
+                      onCheckedChange={(checked) => {
+                        setIsInstallment(checked);
+                        if (!checked) setValueMode("total");
+                      }} 
+                    />
                   </div>
 
                   {isInstallment && (
@@ -762,7 +820,11 @@ export default function NewTransaction() {
                           <SelectContent>
                             {installmentOptions.map((n) => (
                               <SelectItem key={n} value={n.toString()}>
-                                {n}x de {numericValue > 0 ? formatCurrency(numericValue / n) : "R$ 0,00"}
+                                {n}x de {numericValue > 0 
+                                  ? valueMode === "installment" 
+                                    ? formatCurrency(numericValue) 
+                                    : formatCurrency(numericValue / n) 
+                                  : "R$ 0,00"}
                               </SelectItem>
                             ))}
                           </SelectContent>
