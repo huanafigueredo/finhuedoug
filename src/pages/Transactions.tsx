@@ -557,6 +557,21 @@ export default function Transactions() {
                   </tbody>
                   {filteredTransactions.length > 0 && (
                     <tfoot className="bg-secondary/50 border-t border-border">
+                      {/* Total do Mês - destaque principal */}
+                      <tr className="bg-primary/10 border-b border-border">
+                        <td colSpan={8} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
+                          Total do Mês (Valor que entra na fatura):
+                        </td>
+                        <td className="px-4 py-4 text-sm font-bold text-primary">
+                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                            filteredTransactions.reduce((sum, t) => {
+                              const value = t.isInstallment && t.installmentValue ? t.installmentValue : t.totalValue;
+                              return sum + (t.type === "expense" ? -value : value);
+                            }, 0) * -1
+                          )}
+                        </td>
+                        <td colSpan={3}></td>
+                      </tr>
                       <tr>
                         <td colSpan={7} className="px-4 py-4 text-right text-sm font-semibold text-foreground">
                           Total Despesas:
