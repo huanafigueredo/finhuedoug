@@ -560,7 +560,13 @@ export default function Transactions() {
                         </td>
                         <td className="px-4 py-4 text-sm font-bold text-primary">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
+                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => {
+                              // For couple + installment: use installment value
+                              const value = (t.isCouple && t.isInstallment && t.installmentValue) 
+                                ? t.installmentValue 
+                                : t.totalValue;
+                              return sum + value;
+                            }, 0)
                           )}
                         </td>
                         <td colSpan={3}></td>
@@ -571,7 +577,12 @@ export default function Transactions() {
                         </td>
                         <td className="px-4 py-4 text-sm font-bold text-success">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
+                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => {
+                              const value = (t.isCouple && t.isInstallment && t.installmentValue) 
+                                ? t.installmentValue 
+                                : t.totalValue;
+                              return sum + value;
+                            }, 0)
                           )}
                         </td>
                         <td colSpan={3}></td>
@@ -582,8 +593,10 @@ export default function Transactions() {
                         </td>
                         <td className="px-4 py-4 text-sm font-bold">
                           {(() => {
-                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
-                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
+                            const getDisplayValue = (t: typeof filteredTransactions[0]) => 
+                              (t.isCouple && t.isInstallment && t.installmentValue) ? t.installmentValue : t.totalValue;
+                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + getDisplayValue(t), 0);
+                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + getDisplayValue(t), 0);
                             const balance = income - expenses;
                             return (
                               <span className={balance >= 0 ? "text-success" : "text-destructive"}>
