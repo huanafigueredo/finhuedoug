@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +16,15 @@ import {
   Copy,
   User,
   Tag,
-  FileText
+  FileText,
+  PartyPopper
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ComprovantesCard } from "@/components/comprovantes/ComprovantesCard";
 import { ItensCompraCard } from "@/components/comprovantes/ItensCompraCard";
 import { useItensLancamento } from "@/hooks/useComprovantes";
+import confetti from 'canvas-confetti';
 
 export interface TransactionDetails {
   id: string;
@@ -61,6 +64,40 @@ export function TransactionDetailsDialog({
 }: TransactionDetailsDialogProps) {
   const { toast } = useToast();
   const { data: itensLancamento } = useItensLancamento(transaction?.id);
+  const [showCelebration, setShowCelebration] = useState(false);
+
+  // Check if this is the last installment and show celebration
+  const isLastInstallment = transaction?.isInstallment && 
+    transaction?.installmentNumber === transaction?.totalInstallments;
+
+  // Trigger celebration for last installment (only once per session)
+  useEffect(() => {
+    if (open && isLastInstallment && transaction?.id) {
+      const celebratedKey = `installment_celebrated_${transaction.id}`;
+      const alreadyCelebrated = sessionStorage.getItem(celebratedKey);
+      
+      if (!alreadyCelebrated) {
+        setShowCelebration(true);
+        sessionStorage.setItem(celebratedKey, 'true');
+        
+        // Trigger confetti animation
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+        
+        // Show celebration toast
+        toast({
+          title: "🎉 Obaa, sua última parcela chegou!!",
+          description: "Parabéns por quitar este parcelamento!",
+        });
+        
+        // Hide celebration after animation
+        setTimeout(() => setShowCelebration(false), 3000);
+      }
+    }
+  }, [open, isLastInstallment, transaction?.id, toast]);
 
   if (!transaction) return null;
 
@@ -209,28 +246,51 @@ export function TransactionDetailsDialog({
             )}
 
             {hasInstallment && (
-              <div className="p-4 rounded-xl bg-secondary/50">
+              <div className={cn(
+                "p-4 rounded-xl",
+                isLastInstallment ? "bg-success/10 border border-success/20" : "bg-secondary/50"
+              )}>
                 <div className="flex items-center gap-2 mb-2">
-                  <CreditCard className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Parcelamento</span>
+                  {isLastInstallment ? (
+                    <PartyPopper className="w-4 h-4 text-success" />
+                  ) : (
+                    <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  )}
+                  <span className={cn(
+                    "text-sm font-medium",
+                    isLastInstallment ? "text-success" : "text-foreground"
+                  )}>
+                    {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Parcela atual</span>
-                  <span className="text-lg font-semibold text-foreground">
+                  <span className={cn(
+                    "text-lg font-semibold",
+                    isLastInstallment ? "text-success" : "text-foreground"
+                  )}>
                     {transaction.installmentNumber}/{transaction.totalInstallments}
                   </span>
                 </div>
                 <div className="mt-2">
                   <div className="h-2 rounded-full bg-border overflow-hidden">
                     <div 
-                      className="h-full bg-primary transition-all duration-300"
+                      className={cn(
+                        "h-full transition-all duration-300",
+                        isLastInstallment ? "bg-success" : "bg-primary"
+                      )}
                       style={{ 
                         width: `${(transaction.installmentNumber! / transaction.totalInstallments!) * 100}%` 
                       }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes
+                  <p className={cn(
+                    "text-xs mt-1",
+                    isLastInstallment ? "text-success font-medium" : "text-muted-foreground"
+                  )}>
+                    {isLastInstallment 
+                      ? "Parabéns! Você quitou este parcelamento!" 
+                      : `${transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes`}
                   </p>
                 </div>
               </div>

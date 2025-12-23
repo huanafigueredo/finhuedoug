@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import DOMPurify from "dompurify";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -112,7 +113,6 @@ export default function ChatIA() {
       const { data, error } = await supabase.functions.invoke("query-finance", {
         body: {
           messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: "user", content: messageText }],
-          userId: user?.id,
         },
       });
 
@@ -252,9 +252,11 @@ export default function ChatIA() {
                       <div 
                         className="prose prose-sm dark:prose-invert max-w-none"
                         dangerouslySetInnerHTML={{ 
-                          __html: message.content
-                            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                            .replace(/\n/g, "<br />")
+                          __html: DOMPurify.sanitize(
+                            message.content
+                              .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                              .replace(/\n/g, "<br />")
+                          )
                         }}
                       />
 
