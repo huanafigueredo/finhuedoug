@@ -26,12 +26,17 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Get redirect path from query params
+  const redirectTo = searchParams.get('redirect') 
+    ? decodeURIComponent(searchParams.get('redirect')!) 
+    : '/dashboard';
+
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !authLoading) {
-      navigate('/dashboard', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, redirectTo]);
 
   const handleLogin = async () => {
     const { error } = await signIn(email, password);
@@ -64,7 +69,7 @@ const Login = () => {
         title: 'Bem-vindo(a)! 💕',
         description: 'Acesso liberado ao CasalFin',
       });
-      navigate('/dashboard', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
   };
 

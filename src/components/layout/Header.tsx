@@ -34,24 +34,26 @@ export function Header() {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5",
-                  location.pathname === item.path
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                )}
-              >
-                {item.icon && <item.icon className="w-4 h-4" />}
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Desktop Navigation - só aparece quando autenticado */}
+          {isAuthenticated && (
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5",
+                    location.pathname === item.path
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  )}
+                >
+                  {item.icon && <item.icon className="w-4 h-4" />}
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-3">
@@ -85,7 +87,8 @@ export function Header() {
         {isOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <nav className="flex flex-col gap-1">
-              {navItems.map((item) => (
+              {/* Links de navegação só aparecem quando autenticado */}
+              {isAuthenticated && navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
