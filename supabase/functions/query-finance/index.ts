@@ -41,6 +41,15 @@ interface QueryFilters {
   contas_pendentes?: boolean;
 }
 
+// Helper function to get correct transaction value (handles installments)
+function getTransactionValue(t: any): number {
+  // For new-style installments (single record), use installment_value
+  if (t.is_installment && !t.is_generated_installment && t.installment_value) {
+    return Number(t.installment_value);
+  }
+  return Number(t.total_value || 0);
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   
@@ -262,7 +271,8 @@ Se for pergunta de conversa geral:
         id, date, description, type, total_value, category, subcategory,
         for_who, paid_by, is_couple, bank_id, payment_method_id,
         is_installment, installment_number, total_installments, installment_value,
-        observacao, banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
+        is_generated_installment, observacao, 
+        banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
       `)
       .eq("user_id", userId)
       .order("date", { ascending: false });
@@ -340,24 +350,24 @@ Se for pergunta de conversa geral:
       throw new Error("Database query failed");
     }
 
-    // Calculate metrics
+    // Calculate metrics using correct values for installments
     const txList = transactions || [];
     let total = 0;
     let count = txList.length;
 
     if (filters.metrica === "soma" || !filters.metrica) {
-      total = txList.reduce((sum, t) => sum + Number(t.total_value || 0), 0);
+      total = txList.reduce((sum, t) => sum + getTransactionValue(t), 0);
     } else if (filters.metrica === "media") {
-      total = count > 0 ? txList.reduce((sum, t) => sum + Number(t.total_value || 0), 0) / count : 0;
+      total = count > 0 ? txList.reduce((sum, t) => sum + getTransactionValue(t), 0) / count : 0;
     } else if (filters.metrica === "max") {
-      total = Math.max(...txList.map(t => Number(t.total_value || 0)), 0);
+      total = Math.max(...txList.map(t => getTransactionValue(t)), 0);
     } else if (filters.metrica === "min") {
-      total = count > 0 ? Math.min(...txList.map(t => Number(t.total_value || 0))) : 0;
+      total = count > 0 ? Math.min(...txList.map(t => getTransactionValue(t))) : 0;
     } else if (filters.metrica === "contagem") {
       total = count;
     }
 
-    // Group by if needed
+    // Group by if needed, using correct values for installments
     let groupedData: Record<string, number> | null = null;
     if (filters.agrupar_por) {
       groupedData = {};
@@ -370,7 +380,7 @@ Se for pergunta de conversa geral:
         } else {
           key = (t as any)[filters.agrupar_por] || "Sem categoria";
         }
-        groupedData[key] = (groupedData[key] || 0) + Number(t.total_value || 0);
+        groupedData[key] = (groupedData[key] || 0) + getTransactionValue(t);
       }
     }
 
@@ -385,11 +395,13 @@ Se for pergunta de conversa geral:
         id: t.id,
         date: t.date,
         description: t.description,
-        value: t.total_value,
+        value: getTransactionValue(t),
         category: t.category,
         for_who: t.for_who,
         bank_name: (t as any).banks?.name,
         payment_method: (t as any).payment_methods?.name,
+        is_installment: t.is_installment,
+        installment_info: t.is_installment ? `${t.installment_number}/${t.total_installments}` : null,
       })),
     };
 
@@ -439,7 +451,7 @@ Gere uma resposta amigável com o resultado.`,
         id: t.id,
         date: t.date,
         description: t.description,
-        value: t.total_value,
+        value: getTransactionValue(t),
         category: t.category,
         subcategory: t.subcategory,
         for_who: t.for_who,
