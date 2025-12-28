@@ -80,6 +80,16 @@ export default function Dashboard() {
     });
   }, [transactions, monthIndex, year]);
 
+  // Helper: get the value to use for a transaction in a specific month
+  const getMonthValue = (t: any): number => {
+    // New-style installment: single record with installment_value
+    if (t.is_installment && t.installment_value && !t.is_generated_installment) {
+      return Number(t.installment_value);
+    }
+    // Regular transaction or old-style installment
+    return Number(t.total_value);
+  };
+
   // Category breakdown
   const categoryData = useMemo(() => {
     const categoryMap: Record<string, number> = {};
@@ -88,7 +98,7 @@ export default function Dashboard() {
       .filter((t) => t.type === "expense" && t.category)
       .forEach((t) => {
         const cat = t.category || "Outros";
-        categoryMap[cat] = (categoryMap[cat] || 0) + t.total_value;
+        categoryMap[cat] = (categoryMap[cat] || 0) + getMonthValue(t);
       });
 
     const colors = [
@@ -121,7 +131,7 @@ export default function Dashboard() {
         if (!bankMap[bankName]) {
           bankMap[bankName] = { value: 0, color: bankColor };
         }
-        bankMap[bankName].value += t.total_value;
+        bankMap[bankName].value += getMonthValue(t);
       });
 
     return Object.entries(bankMap).map(([name, { value, color }]) => ({
@@ -136,13 +146,16 @@ export default function Dashboard() {
     return [...filteredTransactions]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
-      .map((t) => ({
-        id: t.id,
-        description: t.description,
-        value: t.type === "income" ? t.total_value : -t.total_value,
-        date: format(parseISO(t.date), "dd/MM", { locale: ptBR }),
-        isCouple: t.is_couple || false,
-      }));
+      .map((t) => {
+        const monthValue = getMonthValue(t);
+        return {
+          id: t.id,
+          description: t.description,
+          value: t.type === "income" ? monthValue : -monthValue,
+          date: format(parseISO(t.date), "dd/MM", { locale: ptBR }),
+          isCouple: t.is_couple || false,
+        };
+      });
   }, [filteredTransactions]);
 
   // Evolution data (last 6 months) - simplified version
@@ -167,7 +180,13 @@ export default function Dashboard() {
 
       const expenses = monthTransactions
         .filter((t) => t.type === "expense")
-        .reduce((sum, t) => sum + t.total_value, 0);
+        .reduce((sum, t) => {
+          // Use installment_value for new-style installments
+          if (t.is_installment && t.installment_value && !t.is_generated_installment) {
+            return sum + Number(t.installment_value);
+          }
+          return sum + Number(t.total_value);
+        }, 0);
 
       result.push({
         name: months[monthIdx].substring(0, 3),
