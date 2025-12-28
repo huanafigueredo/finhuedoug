@@ -116,7 +116,31 @@ export default function ChatIA() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific error codes
+        const errorContext = error.context || {};
+        const status = errorContext.status || error.status;
+        
+        if (status === 429) {
+          toast({
+            title: "Limite atingido",
+            description: "Aguarde alguns segundos antes de enviar outra mensagem.",
+            variant: "destructive",
+          });
+          throw new Error("Limite de requisições atingido. Tente novamente em alguns segundos.");
+        }
+        
+        if (status === 402) {
+          toast({
+            title: "Créditos insuficientes",
+            description: "Adicione créditos à sua conta para continuar usando o Chat IA.",
+            variant: "destructive",
+          });
+          throw new Error("Créditos insuficientes. Adicione créditos para continuar.");
+        }
+        
+        throw error;
+      }
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -134,16 +158,20 @@ export default function ChatIA() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error("Chat error:", error);
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível processar sua pergunta.",
-        variant: "destructive",
-      });
+      
+      // Only show generic toast if not already shown for specific errors
+      if (!error.message?.includes("Limite") && !error.message?.includes("Créditos")) {
+        toast({
+          title: "Erro",
+          description: error.message || "Não foi possível processar sua pergunta.",
+          variant: "destructive",
+        });
+      }
       
       const errorMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: "Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente.",
+        content: error.message || "Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
