@@ -213,9 +213,10 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
 
 interface SavingsGoalsCardProps {
   className?: string;
+  showConfigLink?: boolean;
 }
 
-export function SavingsGoalsCard({ className }: SavingsGoalsCardProps) {
+export function SavingsGoalsCard({ className, showConfigLink = true }: SavingsGoalsCardProps) {
   const { data: goals = [], isLoading } = useSavingsGoals();
 
   if (isLoading) {
@@ -257,12 +258,14 @@ export function SavingsGoalsCard({ className }: SavingsGoalsCardProps) {
             <p className="text-sm text-muted-foreground mb-3">
               Nenhuma meta definida
             </p>
-            <Link
-              to="/configuracoes"
-              className="text-sm text-primary hover:underline"
-            >
-              Criar metas →
-            </Link>
+            {showConfigLink && (
+              <Link
+                to="/metas"
+                className="text-sm text-primary hover:underline"
+              >
+                Criar metas →
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -291,12 +294,14 @@ export function SavingsGoalsCard({ className }: SavingsGoalsCardProps) {
             </div>
             Metas de Economia
           </CardTitle>
-          <Link
-            to="/configuracoes"
-            className="text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
-            Gerenciar
-          </Link>
+          {showConfigLink && (
+            <Link
+              to="/metas"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Gerenciar
+            </Link>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

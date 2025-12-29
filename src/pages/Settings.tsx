@@ -317,11 +317,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-3xl">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
           {/* Header */}
           <div className="mb-8">
             <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
@@ -616,8 +613,4 @@ export default function Settings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Footer />
-    </div>
-  );
-}
+    </AppLayout>

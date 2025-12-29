@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 interface BudgetProgressCardProps {
   summary: BudgetSummary;
   className?: string;
+  showConfigLink?: boolean;
 }
 
 const formatCurrency = (valueInCents: number) => {
@@ -106,7 +107,7 @@ function BudgetItem({ item }: { item: BudgetProgress }) {
   );
 }
 
-export function BudgetProgressCard({ summary, className }: BudgetProgressCardProps) {
+export function BudgetProgressCard({ summary, className, showConfigLink = true }: BudgetProgressCardProps) {
   const { budgetProgress, totalBudgeted, totalSpent, totalRemaining } = summary;
 
   if (budgetProgress.length === 0) {
@@ -128,12 +129,14 @@ export function BudgetProgressCard({ summary, className }: BudgetProgressCardPro
             <p className="text-sm text-muted-foreground mb-3">
               Nenhum orçamento definido
             </p>
-            <Link 
-              to="/config" 
-              className="text-sm text-primary hover:underline"
-            >
-              Configurar orçamentos →
-            </Link>
+            {showConfigLink && (
+              <Link 
+                to="/orcamentos" 
+                className="text-sm text-primary hover:underline"
+              >
+                Configurar orçamentos →
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -150,12 +153,14 @@ export function BudgetProgressCard({ summary, className }: BudgetProgressCardPro
             </div>
             Orçamento do Mês
           </CardTitle>
-          <Link 
-            to="/config" 
-            className="text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
-            Editar
-          </Link>
+          {showConfigLink && (
+            <Link 
+              to="/orcamentos" 
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Editar
+            </Link>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
