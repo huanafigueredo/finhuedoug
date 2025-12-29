@@ -1,6 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SavingsGoalsCard } from "@/components/savings/SavingsGoalsCard";
 import { SavingsGoalsConfigSection } from "@/components/savings/SavingsGoalsConfigSection";
+import { Accordion } from "@/components/ui/accordion";
 
 export default function Metas() {
   return (
@@ -29,7 +30,9 @@ export default function Metas() {
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
               Gerenciar Metas
             </h2>
-            <SavingsGoalsConfigSection />
+            <Accordion type="single" collapsible defaultValue="savings-goals">
+              <SavingsGoalsConfigSection />
+            </Accordion>
           </div>
         </div>
       </div>
