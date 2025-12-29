@@ -112,7 +112,6 @@ export function useContasAgendadasMutations() {
 
       const recorrencia = conta.recorrencia as Recorrencia;
 
-      // 2. Create the transaction
       const { data: transaction, error: txError } = await supabase
         .from("transactions")
         .insert({
@@ -130,7 +129,7 @@ export function useContasAgendadasMutations() {
           observacao: observacao || recorrencia.observacao_padrao,
           origem: "recorrente",
           conta_agendada_id: contaId,
-        })
+        } as any)
         .select()
         .single();
 
