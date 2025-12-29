@@ -547,7 +547,9 @@ export default function People() {
             </div>
           </div>
         </div>
-      </div>
-    </AppLayout>
+      </main>
+
+      <Footer />
+    </div>
   );
 }
