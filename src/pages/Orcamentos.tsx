@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Accordion } from "@/components/ui/accordion";
 
 const months = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -86,7 +87,9 @@ export default function Orcamentos() {
             <h2 className="font-display text-xl font-semibold text-foreground mb-4">
               Configurar Limites
             </h2>
-            <BudgetConfigSection />
+            <Accordion type="single" collapsible defaultValue="budgets">
+              <BudgetConfigSection />
+            </Accordion>
           </div>
         </div>
       </div>
