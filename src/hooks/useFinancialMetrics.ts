@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { parseISO } from "date-fns";
+import { parseISO, differenceInMonths } from "date-fns";
 import { usePersonNames } from "./useUserSettings";
 
 export interface FinancialMetrics {
@@ -42,6 +42,8 @@ interface Transaction {
   is_couple?: boolean | null;
   is_installment?: boolean | null;
   installment_value?: number | null;
+  installment_number?: number | null;
+  total_installments?: number | null;
   is_generated_installment?: boolean | null;
   [key: string]: any;
 }
@@ -58,6 +60,48 @@ function getTransactionMonthValue(t: Transaction): number {
   return Number(t.total_value);
 }
 
+// Helper function to calculate installment info for a given filter month/year
+function calculateInstallmentForMonth(
+  firstInstallmentDate: Date,
+  startInstallment: number,
+  totalInstallments: number,
+  filterMonth: number,
+  filterYear: number
+): { currentInstallment: number; isInRange: boolean } | null {
+  const firstMonth = firstInstallmentDate.getMonth() + 1;
+  const firstYear = firstInstallmentDate.getFullYear();
+  
+  const filterDate = new Date(filterYear, filterMonth - 1, 1);
+  const firstDate = new Date(firstYear, firstMonth - 1, 1);
+  const monthsDiff = differenceInMonths(filterDate, firstDate);
+  
+  const currentInstallment = startInstallment + monthsDiff;
+  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
+  
+  return { currentInstallment, isInRange };
+}
+
+// Check if transaction should appear in the filtered month
+function shouldShowInMonth(t: Transaction, filterMonth: number, filterYear: number): boolean {
+  const rawDate = parseISO(t.date);
+  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
+  
+  if (isNewStyleInstallment) {
+    const startInstallment = t.installment_number || 1;
+    const result = calculateInstallmentForMonth(
+      rawDate,
+      startInstallment,
+      t.total_installments!,
+      filterMonth + 1, // filterMonth is 0-indexed, function expects 1-indexed
+      filterYear
+    );
+    return result?.isInRange ?? false;
+  }
+  
+  // Regular transaction - match by date
+  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
+}
+
 export function useFinancialMetrics(
   transactions: Transaction[],
   selectedMonth?: number, // 0-indexed
@@ -66,14 +110,11 @@ export function useFinancialMetrics(
   const { person1, person2 } = usePersonNames();
   
   return useMemo(() => {
-    // Filter transactions by month/year if provided
+    // Filter transactions by month/year if provided (including dynamic installments)
     let filtered = transactions;
     
     if (selectedMonth !== undefined && selectedYear !== undefined) {
-      filtered = transactions.filter((t) => {
-        const date = parseISO(t.date);
-        return date.getMonth() === selectedMonth && date.getFullYear() === selectedYear;
-      });
+      filtered = transactions.filter((t) => shouldShowInMonth(t, selectedMonth, selectedYear));
     }
 
     // Total expenses (all) - use month value for installments
