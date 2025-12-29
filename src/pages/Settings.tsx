@@ -58,6 +58,7 @@ import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
 import { useToast } from "@/hooks/use-toast";
 import { BudgetConfigSection } from "@/components/budget/BudgetConfigSection";
+import { SavingsGoalsConfigSection } from "@/components/savings/SavingsGoalsConfigSection";
 
 interface ConfigItem {
   id: string;
@@ -420,6 +421,9 @@ export default function Settings() {
 
               {/* Budget Config Section */}
               <BudgetConfigSection />
+
+              {/* Savings Goals Config Section */}
+              <SavingsGoalsConfigSection />
 
               {/* Person Names */}
               <AccordionItem

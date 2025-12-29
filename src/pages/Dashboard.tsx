@@ -7,6 +7,7 @@ import { MetricCard } from "@/components/shared/MetricCard";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
 import { BudgetProgressCard } from "@/components/budget/BudgetProgressCard";
+import { SavingsGoalsCard } from "@/components/savings/SavingsGoalsCard";
 import {
   Select,
   SelectContent,
@@ -313,7 +314,7 @@ export default function Dashboard() {
 
           {/* Charts Row */}
           {hasData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
                 <PieChart data={categoryData} title="Divisão por Categoria" />
               </div>
@@ -331,6 +332,9 @@ export default function Dashboard() {
               </div>
               <div className="animate-fade-up opacity-0" style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}>
                 <BudgetProgressCard summary={budgetSummary} />
+              </div>
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
+                <SavingsGoalsCard />
               </div>
             </div>
           ) : (

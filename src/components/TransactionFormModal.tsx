@@ -37,6 +37,7 @@ import { useCreateTransaction, useUpdateTransaction, useTransactions } from "@/h
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
+import { useBudgetAlert } from "@/hooks/useBudgetAlert";
 import {
   parseCurrencyToCents,
   centsToReais,
@@ -103,6 +104,7 @@ export function TransactionFormModal({
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
+  const { checkBudgetAlert } = useBudgetAlert();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
@@ -361,6 +363,28 @@ export function TransactionFormModal({
         variant: "destructive",
       });
       return;
+    }
+
+    // Verificar alerta de orçamento antes de salvar (apenas para despesas novas)
+    if (type === "expense" && category && !isEditMode) {
+      const valueToCheck = isInstallment && totalInstallments > 1 
+        ? reaisToCents(installmentValue) 
+        : reaisToCents(totalValue);
+      
+      const budgetAlert = checkBudgetAlert(
+        category,
+        valueToCheck,
+        format(date || new Date(), "yyyy-MM-dd")
+      );
+
+      if (budgetAlert) {
+        toast({
+          title: budgetAlert.status === "exceeded" ? "⚠️ Orçamento ultrapassado!" : "⚡ Atenção ao orçamento",
+          description: budgetAlert.message,
+          variant: budgetAlert.status === "exceeded" ? "destructive" : "default",
+          duration: 6000,
+        });
+      }
     }
 
     setIsSaving(true);
