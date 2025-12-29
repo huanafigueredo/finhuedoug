@@ -57,6 +57,7 @@ import { useAddCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/us
 import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@/hooks/useSubcategoriesMutations";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
 import { useToast } from "@/hooks/use-toast";
+import { BudgetConfigSection } from "@/components/budget/BudgetConfigSection";
 
 interface ConfigItem {
   id: string;
@@ -416,6 +417,9 @@ export default function Settings() {
                   </AccordionContent>
                 </AccordionItem>
               ))}
+
+              {/* Budget Config Section */}
+              <BudgetConfigSection />
 
               {/* Person Names */}
               <AccordionItem
