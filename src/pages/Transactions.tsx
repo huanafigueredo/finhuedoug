@@ -14,9 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Loader2, Heart, FileDown } from "lucide-react";
+import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X } from "lucide-react";
 import { exportTransactionsToPdf } from "@/lib/exportPdf";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { usePersonNames } from "@/hooks/useUserSettings";
 
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -35,8 +38,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const persons = ["Todos", "Huana", "Douglas"];
-const forWhoOptions = ["Todos", "Huana", "Douglas", "Casal", "Empresa"];
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];
@@ -66,19 +67,14 @@ function calculateInstallmentForMonth(
   filterMonth: number,
   filterYear: number
 ): { currentInstallment: number; isInRange: boolean } | null {
-  // Calculate the month/year of the first installment
   const firstMonth = firstInstallmentDate.getMonth() + 1;
   const firstYear = firstInstallmentDate.getFullYear();
   
-  // Calculate how many months from first installment to filter date
   const filterDate = new Date(filterYear, filterMonth - 1, 1);
   const firstDate = new Date(firstYear, firstMonth - 1, 1);
   const monthsDiff = differenceInMonths(filterDate, firstDate);
   
-  // Calculate the installment number for this month
   const currentInstallment = startInstallment + monthsDiff;
-  
-  // Check if this installment is within the valid range
   const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
   
   return { currentInstallment, isInRange };
@@ -91,7 +87,12 @@ export default function Transactions() {
   const { data: banksData = [] } = useBanks();
   const { data: paymentMethodsData = [] } = usePaymentMethods();
   const { data: categoriesData = [] } = useCategories();
+  const { members } = usePersonNames();
   const deleteTransaction = useDeleteTransaction();
+
+  // Dynamic persons from couple_members
+  const persons = ["Todos", ...members.map(m => m.name)];
+  const forWhoOptions = ["Todos", ...members.map(m => m.name), "Casal", "Empresa"];
 
   const [search, setSearch] = useState("");
   const [personFilter, setPersonFilter] = useState("Todos");
@@ -106,6 +107,8 @@ export default function Transactions() {
   const [dayFilter, setDayFilter] = useState("Todos");
   const [monthFilter, setMonthFilter] = useState((currentDate.getMonth() + 1).toString());
   const [yearFilter, setYearFilter] = useState(currentDate.getFullYear().toString());
+  const [showFilters, setShowFilters] = useState(false);
+  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
@@ -122,7 +125,36 @@ export default function Transactions() {
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
   const categories = ["Todas", ...categoriesData.map((c) => c.name)];
 
-// Transform and filter transactions with dynamic installment calculation
+  // Count active filters
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (personFilter !== "Todos") count++;
+    if (forWhoFilter !== "Todos") count++;
+    if (categoryFilter !== "Todas") count++;
+    if (bankFilter !== "Todos") count++;
+    if (paymentFilter !== "Todos") count++;
+    if (typeFilter !== "Todos") count++;
+    if (coupleFilter !== "Todos") count++;
+    if (installmentFilter !== "Todos") count++;
+    if (dayFilter !== "Todos") count++;
+    return count;
+  }, [personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, dayFilter]);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setPersonFilter("Todos");
+    setForWhoFilter("Todos");
+    setCategoryFilter("Todas");
+    setBankFilter("Todos");
+    setPaymentFilter("Todos");
+    setTypeFilter("Todos");
+    setCoupleFilter("Todos");
+    setInstallmentFilter("Todos");
+    setDayFilter("Todos");
+    setSearch("");
+  };
+
+  // Transform and filter transactions with dynamic installment calculation
   const filteredTransactions = useMemo(() => {
     const filterMonthNum = monthFilter !== "Todos" ? parseInt(monthFilter) : null;
     const filterYearNum = yearFilter !== "Todos" ? parseInt(yearFilter) : null;
@@ -131,15 +163,12 @@ export default function Transactions() {
       .map((t) => {
         const rawDate = parseISO(t.date);
         
-        // New-style: single record for installment, calculate dynamically
-        // installment_number = parcela inicial (onde começou)
         const isNewStyleInstallment = t.is_installment && 
           !t.is_generated_installment && 
           !t.parent_transaction_id &&
           t.total_installments && 
           t.total_installments > 1;
 
-        // For new-style installments (single record), calculate dynamic installment
         if (isNewStyleInstallment && filterMonthNum && filterYearNum) {
           const startInstallment = t.installment_number || 1;
           const result = calculateInstallmentForMonth(
@@ -151,14 +180,12 @@ export default function Transactions() {
           );
 
           if (!result || !result.isInRange) {
-            return null; // This installment doesn't appear in this month
+            return null;
           }
 
-          // Calculate the date for this specific installment
           const monthsFromStart = result.currentInstallment - startInstallment;
           const installmentDate = addMonths(rawDate, monthsFromStart);
           
-          // For table display: use installment value as the "main" value
           const installmentValue = t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!;
           const valuePerPerson = t.is_couple ? installmentValue / 2 : installmentValue;
 
@@ -174,7 +201,6 @@ export default function Transactions() {
             subcategory: t.subcategory || "-",
             bank: t.bank_name || "-",
             paymentMethod: t.payment_method_name || "-",
-            // For new-style, totalValue in table = installment value (what shows in the month)
             totalValue: installmentValue,
             valuePerPerson: valuePerPerson,
             isCouple: t.is_couple || false,
@@ -182,20 +208,17 @@ export default function Transactions() {
             isInstallment: true,
             installmentNumber: result.currentInstallment,
             totalInstallments: t.total_installments,
-            // Keep real total for details dialog
             realTotalValue: Number(t.total_value),
             installmentValue: installmentValue,
             tags: t.tags || [],
             resumo_curto: t.resumo_curto || undefined,
             status_extracao: t.status_extracao || undefined,
             isNewStyleInstallment: true,
-            // Store first installment date for details dialog
             firstInstallmentDate: rawDate,
             startInstallment: startInstallment,
           };
         }
 
-        // For old-style installments (multiple records) or non-installments
         return {
           id: t.id,
           date: format(rawDate, "dd/MM/yyyy"),
@@ -227,7 +250,6 @@ export default function Transactions() {
       })
       .filter((t): t is NonNullable<typeof t> => t !== null)
       .filter((t) => {
-        // Apply other filters
         if (search && !t.description.toLowerCase().includes(search.toLowerCase())) {
           return false;
         }
@@ -249,8 +271,6 @@ export default function Transactions() {
           if (t.isInstallment !== isInstallment) return false;
         }
 
-        // Date filters - for new-style installments, date is already calculated
-        // For old-style, filter by rawDate
         if (!t.isNewStyleInstallment) {
           if (dayFilter !== "Todos") {
             const day = t.rawDate.getDate().toString().padStart(2, "0");
@@ -265,7 +285,6 @@ export default function Transactions() {
             if (year !== yearFilter) return false;
           }
         } else {
-          // For new-style, just check day filter (month/year already handled)
           if (dayFilter !== "Todos") {
             const day = t.rawDate.getDate().toString().padStart(2, "0");
             if (day !== dayFilter) return false;
@@ -281,7 +300,6 @@ export default function Transactions() {
     const allYears = transactionsData.flatMap((t) => {
       const date = parseISO(t.date);
       if (t.is_installment && t.total_installments && !t.is_generated_installment) {
-        // For installments, include all years the installment spans
         const startYear = date.getFullYear();
         const endDate = addMonths(date, (t.total_installments - (t.installment_number || 1)));
         const endYear = endDate.getFullYear();
@@ -296,6 +314,18 @@ export default function Transactions() {
     const uniqueYears = [...new Set([currentYear, ...allYears])];
     return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
   }, [transactionsData]);
+
+  // Calculate summary
+  const summary = useMemo(() => {
+    const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
+    const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
+    return {
+      expenses,
+      income,
+      balance: income - expenses,
+      count: filteredTransactions.length
+    };
+  }, [filteredTransactions]);
 
   const handleDeleteClick = (id: string) => {
     const tx = transactionsData.find((t) => t.id === id);
@@ -378,7 +408,6 @@ export default function Transactions() {
         subcategory: tx.subcategory,
         bank: tx.bank,
         paymentMethod: tx.paymentMethod,
-        // For details, show the REAL total value for installments
         totalValue: tx.isNewStyleInstallment ? (tx.realTotalValue || tx.totalValue) : tx.totalValue,
         valuePerPerson: tx.valuePerPerson,
         isCouple: tx.isCouple,
@@ -390,7 +419,6 @@ export default function Transactions() {
         tags: tx.tags || [],
         resumo_curto: tx.resumo_curto,
         status_extracao: tx.status_extracao,
-        // Pass additional info for new-style installments
         firstInstallmentDate: tx.firstInstallmentDate,
         startInstallment: tx.startInstallment,
       } as any);
@@ -403,122 +431,96 @@ export default function Transactions() {
     handleEditClick(id);
   };
 
+  const handleExportPdf = () => {
+    const totalExpenses = summary.expenses;
+    const totalIncome = summary.income;
+    
+    exportTransactionsToPdf(
+      filteredTransactions.map(t => ({
+        date: t.date,
+        description: t.description,
+        person: t.person,
+        forWho: t.forWho,
+        category: t.category,
+        bank: t.bank,
+        paymentMethod: t.paymentMethod,
+        totalValue: t.totalValue,
+        type: t.type,
+        isInstallment: t.isInstallment,
+        installmentNumber: t.installmentNumber,
+        totalInstallments: t.totalInstallments,
+      })),
+      {
+        month: monthFilter,
+        year: yearFilter,
+        category: categoryFilter,
+        type: typeFilter,
+        person: personFilter,
+      },
+      {
+        totalExpenses,
+        totalIncome,
+        balance: totalIncome - totalExpenses,
+      }
+    );
+    toast({
+      title: "PDF exportado",
+      description: "O relatório foi baixado com sucesso.",
+    });
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  };
+
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Lançamentos
-              </h1>
-              <p className="text-muted-foreground">
-                Gerencie todas as transações do casal
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  const totalExpenses = filteredTransactions
-                    .filter(t => t.type === "expense")
-                    .reduce((sum, t) => sum + t.totalValue, 0);
-                  const totalIncome = filteredTransactions
-                    .filter(t => t.type === "income")
-                    .reduce((sum, t) => sum + t.totalValue, 0);
-                  
-                  exportTransactionsToPdf(
-                    filteredTransactions.map(t => ({
-                      date: t.date,
-                      description: t.description,
-                      person: t.person,
-                      forWho: t.forWho,
-                      category: t.category,
-                      bank: t.bank,
-                      paymentMethod: t.paymentMethod,
-                      totalValue: t.totalValue,
-                      type: t.type,
-                      isInstallment: t.isInstallment,
-                      installmentNumber: t.installmentNumber,
-                      totalInstallments: t.totalInstallments,
-                    })),
-                    {
-                      month: monthFilter,
-                      year: yearFilter,
-                      category: categoryFilter,
-                      type: typeFilter,
-                      person: personFilter,
-                    },
-                    {
-                      totalExpenses,
-                      totalIncome,
-                      balance: totalIncome - totalExpenses,
-                    }
-                  );
-                  toast({
-                    title: "PDF exportado",
-                    description: "O relatório foi baixado com sucesso.",
-                  });
-                }}
-                disabled={filteredTransactions.length === 0}
-              >
-                <FileDown className="w-4 h-4 mr-2" />
-                Exportar PDF
-              </Button>
-              <Button size="sm" onClick={() => {
-                setEditTransactionId(null);
-                setDuplicateTransactionId(null);
-                setNewTransactionModalOpen(true);
-              }}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Lançamento
-              </Button>
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="p-6 rounded-2xl bg-card border border-border shadow-card mb-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Filtros</span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-              <div className="col-span-2 sm:col-span-1 space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Buscar</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+      <div className="min-h-screen pb-32 md:pb-8">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          {/* Header */}
+          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+                  Lançamentos
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  {summary.count} {summary.count === 1 ? 'transação' : 'transações'}
+                </p>
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Dia</label>
-                <Select value={dayFilter} onValueChange={setDayFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Dia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {days.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              
+              {/* Desktop buttons */}
+              <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleExportPdf}
+                  disabled={filteredTransactions.length === 0}
+                  className="gap-2"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Exportar PDF
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => {
+                    setEditTransactionId(null);
+                    setDuplicateTransactionId(null);
+                    setNewTransactionModalOpen(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Novo Lançamento
+                </Button>
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Mês</label>
+            {/* Main filters row - Month/Year + Search */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex gap-2 flex-shrink-0">
                 <Select value={monthFilter} onValueChange={setMonthFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-[120px] sm:w-[130px] h-10">
                     <SelectValue placeholder="Mês" />
                   </SelectTrigger>
                   <SelectContent>
@@ -529,12 +531,9 @@ export default function Transactions() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Ano</label>
+                
                 <Select value={yearFilter} onValueChange={setYearFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-[90px] h-10">
                     <SelectValue placeholder="Ano" />
                   </SelectTrigger>
                   <SelectContent>
@@ -547,144 +546,245 @@ export default function Transactions() {
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Pessoa</label>
-                <Select value={personFilter} onValueChange={setPersonFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pessoa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {persons.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-              </Select>
-              </div>
+              <div className="flex gap-2 flex-1">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 h-10"
+                  />
+                  {search && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setSearch("")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Para Quem</label>
-                <Select value={forWhoFilter} onValueChange={setForWhoFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Para Quem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {forWhoOptions.map((f) => (
-                      <SelectItem key={f} value={f}>
-                        {f}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Casal</label>
-                <Select value={coupleFilter} onValueChange={setCoupleFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Casal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {coupleOptions.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Categoria</label>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Banco</label>
-                <Select value={bankFilter} onValueChange={setBankFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Banco" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {banks.map((b) => (
-                      <SelectItem key={b} value={b}>
-                        {b}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
-                <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pagamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Tipo</label>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {types.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Parcelado</label>
-                <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Parcelado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {installmentOptions.map((i) => (
-                      <SelectItem key={i} value={i}>
-                        {i}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Filter toggle button */}
+                <Button
+                  variant={showFilters || activeFiltersCount > 0 ? "secondary" : "outline"}
+                  size="default"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="gap-1.5 h-10 px-3"
+                >
+                  <Filter className="h-4 w-4" />
+                  <span className="hidden sm:inline">Filtros</span>
+                  {activeFiltersCount > 0 && (
+                    <Badge variant="default" className="h-5 px-1.5 text-xs ml-0.5">
+                      {activeFiltersCount}
+                    </Badge>
+                  )}
+                  {showFilters ? (
+                    <ChevronUp className="h-3.5 w-3.5 hidden sm:block" />
+                  ) : (
+                    <ChevronDown className="h-3.5 w-3.5 hidden sm:block" />
+                  )}
+                </Button>
               </div>
             </div>
+
+            {/* Collapsible Advanced Filters */}
+            <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+              <CollapsibleContent>
+                <div className="p-4 rounded-xl bg-card border border-border shadow-sm space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Dia</label>
+                      <Select value={dayFilter} onValueChange={setDayFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Dia" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {days.map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Pessoa</label>
+                      <Select value={personFilter} onValueChange={setPersonFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Pessoa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {persons.map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {p}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Para Quem</label>
+                      <Select value={forWhoFilter} onValueChange={setForWhoFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Para Quem" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {forWhoOptions.map((f) => (
+                            <SelectItem key={f} value={f}>
+                              {f}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Categoria</label>
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Categoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Banco</label>
+                      <Select value={bankFilter} onValueChange={setBankFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Banco" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map((b) => (
+                            <SelectItem key={b} value={b}>
+                              {b}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Pagamento</label>
+                      <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Pagamento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentMethods.map((p) => (
+                            <SelectItem key={p} value={p}>
+                              {p}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+                      <Select value={typeFilter} onValueChange={setTypeFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {types.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Casal</label>
+                      <Select value={coupleFilter} onValueChange={setCoupleFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Casal" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {coupleOptions.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Parcelado</label>
+                      <Select value={installmentFilter} onValueChange={setInstallmentFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Parcelado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {installmentOptions.map((i) => (
+                            <SelectItem key={i} value={i}>
+                              {i}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {activeFiltersCount > 0 && (
+                    <div className="flex justify-end pt-2 border-t border-border">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="text-muted-foreground hover:text-foreground gap-1.5"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Limpar filtros
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
 
+          {/* Transactions List */}
           <div className="rounded-2xl bg-card border border-border shadow-card overflow-hidden">
             {transactionsLoading ? (
               <div className="p-12 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
+            ) : filteredTransactions.length === 0 ? (
+              <div className="p-8 sm:p-12 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Nenhum lançamento encontrado
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditTransactionId(null);
+                    setDuplicateTransactionId(null);
+                    setNewTransactionModalOpen(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Criar lançamento
+                </Button>
+              </div>
             ) : isMobile ? (
               /* Mobile: Cards Layout */
-              <div className="p-4 space-y-3">
+              <div className="p-3 space-y-2">
                 {filteredTransactions.map((transaction) => (
                   <TransactionCard
                     key={transaction.id}
@@ -695,67 +795,6 @@ export default function Transactions() {
                     onClick={handleRowClick}
                   />
                 ))}
-                
-                {/* Mobile Summary */}
-                {filteredTransactions.length > 0 && (
-                  <div className="mt-4 p-4 rounded-xl bg-secondary/50 space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-medium text-muted-foreground">Total do Mês:</span>
-                      <span className="font-bold text-primary">
-                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                          filteredTransactions.reduce((sum, t) => sum + (t.type === "expense" ? t.totalValue : 0), 0)
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Despesas:</span>
-                      <span className="font-medium text-foreground">
-                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                          filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Receitas:</span>
-                      <span className="font-medium text-success">
-                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                          filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
-                      <span className="text-muted-foreground">Saldo:</span>
-                      {(() => {
-                        const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
-                        const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
-                        const balance = income - expenses;
-                        return (
-                          <span className={cn("font-medium", balance >= 0 ? "text-success" : "text-destructive")}>
-                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balance)}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    {filteredTransactions.some(t => t.isCouple) && (
-                      <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Heart className="w-3.5 h-3.5 text-primary fill-primary" />
-                          P/ Pessoa:
-                        </span>
-                        {(() => {
-                          const incomePerPerson = filteredTransactions.filter(t => t.type === "income" && t.isCouple).reduce((sum, t) => sum + t.valuePerPerson, 0);
-                          const expensesPerPerson = filteredTransactions.filter(t => t.type === "expense" && t.isCouple).reduce((sum, t) => sum + t.valuePerPerson, 0);
-                          const balancePerPerson = incomePerPerson - expensesPerPerson;
-                          return (
-                            <span className={cn("font-bold", balancePerPerson >= 0 ? "text-success" : "text-destructive")}>
-                              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balancePerPerson)}
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             ) : (
               /* Desktop: Table Layout */
@@ -810,108 +849,118 @@ export default function Transactions() {
                       />
                     ))}
                   </tbody>
-                  {filteredTransactions.length > 0 && (
-                    <tfoot className="bg-secondary/50 border-t border-border">
-                      {/* Total do Mês - destaque principal */}
-                      <tr className="bg-primary/10 border-b border-border">
-                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
-                          Total do Mês:
+                  <tfoot className="bg-secondary/50 border-t border-border">
+                    <tr className="bg-primary/10 border-b border-border">
+                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
+                        Total do Mês:
+                      </td>
+                      <td className="px-2 py-3 text-sm font-bold text-primary text-right">
+                        {formatCurrency(summary.expenses)}
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                    <tr>
+                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
+                        Despesas:
+                      </td>
+                      <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
+                        {formatCurrency(summary.expenses)}
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                    <tr>
+                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
+                        Receitas:
+                      </td>
+                      <td className="px-2 py-3 text-sm font-medium text-success text-right">
+                        {formatCurrency(summary.income)}
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                    <tr className="border-t border-border">
+                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
+                        Saldo:
+                      </td>
+                      <td className="px-2 py-3 text-sm font-medium text-right">
+                        <span className={summary.balance >= 0 ? "text-success" : "text-destructive"}>
+                          {formatCurrency(summary.balance)}
+                        </span>
+                      </td>
+                      <td colSpan={3}></td>
+                    </tr>
+                    {filteredTransactions.some(t => t.isCouple) && (
+                      <tr className="border-t border-border bg-primary/5">
+                        <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
+                          <span className="flex items-center justify-end gap-1.5">
+                            <Heart className="w-4 h-4 text-primary fill-primary" />
+                            Por Pessoa (Casal):
+                          </span>
                         </td>
                         <td className="px-2 py-3 text-sm font-bold text-primary text-right">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.reduce((sum, t) => {
-                              return sum + (t.type === "expense" ? t.totalValue : 0);
-                            }, 0)
-                          )}
-                        </td>
-                        <td colSpan={3}></td>
-                      </tr>
-                      <tr>
-                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                          Despesas:
-                        </td>
-                        <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
-                          )}
-                        </td>
-                        <td colSpan={3}></td>
-                      </tr>
-                      <tr>
-                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                          Receitas:
-                        </td>
-                        <td className="px-2 py-3 text-sm font-medium text-success text-right">
-                          {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-                            filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
-                          )}
-                        </td>
-                        <td colSpan={3}></td>
-                      </tr>
-                      <tr className="border-t border-border">
-                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                          Saldo:
-                        </td>
-                        <td className="px-2 py-3 text-sm font-medium text-right">
                           {(() => {
-                            const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
-                            const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
-                            const balance = income - expenses;
+                            const incomePerPerson = filteredTransactions
+                              .filter(t => t.type === "income" && t.isCouple)
+                              .reduce((sum, t) => sum + t.valuePerPerson, 0);
+                            const expensesPerPerson = filteredTransactions
+                              .filter(t => t.type === "expense" && t.isCouple)
+                              .reduce((sum, t) => sum + t.valuePerPerson, 0);
+                            const balancePerPerson = incomePerPerson - expensesPerPerson;
                             return (
-                              <span className={balance >= 0 ? "text-success" : "text-destructive"}>
-                                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balance)}
+                              <span className={balancePerPerson >= 0 ? "text-success" : "text-destructive"}>
+                                {formatCurrency(balancePerPerson)}
                               </span>
                             );
                           })()}
                         </td>
-                        <td colSpan={3}></td>
+                        <td colSpan={2}></td>
                       </tr>
-                      {/* Total por pessoa (casal) */}
-                      {filteredTransactions.some(t => t.isCouple) && (
-                        <tr className="border-t border-border bg-primary/5">
-                          <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
-                            <span className="flex items-center justify-end gap-1.5">
-                              <Heart className="w-4 h-4 text-primary fill-primary" />
-                              Por Pessoa (Casal):
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-sm font-bold text-primary text-right">
-                            {(() => {
-                              const incomePerPerson = filteredTransactions
-                                .filter(t => t.type === "income" && t.isCouple)
-                                .reduce((sum, t) => sum + t.valuePerPerson, 0);
-                              const expensesPerPerson = filteredTransactions
-                                .filter(t => t.type === "expense" && t.isCouple)
-                                .reduce((sum, t) => sum + t.valuePerPerson, 0);
-                              const balancePerPerson = incomePerPerson - expensesPerPerson;
-                              return (
-                                <span className={balancePerPerson >= 0 ? "text-success" : "text-destructive"}>
-                                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balancePerPerson)}
-                                </span>
-                              );
-                            })()}
-                          </td>
-                          <td colSpan={2}></td>
-                        </tr>
-                      )}
-                    </tfoot>
-                  )}
+                    )}
+                  </tfoot>
                 </table>
-              </div>
-            )}
-
-            {!transactionsLoading && filteredTransactions.length === 0 && (
-              <div className="p-12 text-center">
-                <p className="text-muted-foreground">
-                  Nenhum lançamento encontrado
-                </p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Mobile Fixed Footer with Summary */}
+        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-card/95 backdrop-blur-sm border-t border-border z-40">
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <div className="flex-1 text-center">
+              <p className="text-[10px] text-muted-foreground leading-tight">Despesas</p>
+              <p className="text-sm font-semibold text-destructive">{formatCurrency(summary.expenses)}</p>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="flex-1 text-center">
+              <p className="text-[10px] text-muted-foreground leading-tight">Receitas</p>
+              <p className="text-sm font-semibold text-success">{formatCurrency(summary.income)}</p>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="flex-1 text-center">
+              <p className="text-[10px] text-muted-foreground leading-tight">Saldo</p>
+              <p className={cn("text-sm font-semibold", summary.balance >= 0 ? "text-primary" : "text-destructive")}>
+                {formatCurrency(summary.balance)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile FAB */}
+        <Button
+          onClick={() => {
+            setEditTransactionId(null);
+            setDuplicateTransactionId(null);
+            setNewTransactionModalOpen(true);
+          }}
+          size="lg"
+          className="fixed bottom-16 right-4 md:hidden h-14 w-14 rounded-full shadow-lg z-50"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir lançamento?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -926,11 +975,11 @@ export default function Transactions() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
             </AlertDialogAction>
@@ -940,7 +989,7 @@ export default function Transactions() {
 
       {/* Duplicate Confirmation Dialog */}
       <AlertDialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle>Duplicar lançamento parcelado?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -949,9 +998,9 @@ export default function Transactions() {
               Deseja continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDuplicate}>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDuplicate} className="w-full sm:w-auto">
               Duplicar
             </AlertDialogAction>
           </AlertDialogFooter>
