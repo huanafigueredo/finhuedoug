@@ -17,7 +17,7 @@ import {
   Wallet,
   TrendingUp,
   TrendingDown,
-  Users,
+  User,
   CreditCard,
   Heart,
   ArrowUpRight,
@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Calendar,
   Sparkles,
+  PiggyBank,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -275,33 +276,33 @@ export default function Dashboard() {
           </div>
 
           {/* Metric Cards - Row 2: Per Person */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
             <MetricCard
               title={`Gastos ${metrics.person1Name}`}
               value={formatCurrency(metrics.person1TotalExpenses)}
               subtitle="Individual + metade casal"
-              icon={Users}
-              variant="default"
+              icon={User}
+              variant="primary"
             />
             <MetricCard
               title={`Gastos ${metrics.person2Name}`}
               value={formatCurrency(metrics.person2TotalExpenses)}
               subtitle="Individual + metade casal"
-              icon={Users}
-              variant="default"
+              icon={User}
+              variant="primary"
             />
             <MetricCard
               title={`Saldo ${metrics.person1Name}`}
               value={formatCurrency(metrics.person1Balance)}
               subtitle={`Rec: ${formatCurrency(metrics.person1Income)}`}
-              icon={Wallet}
+              icon={PiggyBank}
               variant={metrics.person1Balance >= 0 ? "success" : "primary"}
             />
             <MetricCard
               title={`Saldo ${metrics.person2Name}`}
               value={formatCurrency(metrics.person2Balance)}
               subtitle={`Rec: ${formatCurrency(metrics.person2Income)}`}
-              icon={Wallet}
+              icon={PiggyBank}
               variant={metrics.person2Balance >= 0 ? "success" : "primary"}
             />
           </div>
