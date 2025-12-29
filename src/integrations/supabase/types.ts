@@ -544,7 +544,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          person_1_avatar_url: string | null
           person_1_name: string
+          person_2_avatar_url: string | null
           person_2_name: string
           updated_at: string
           user_id: string
@@ -552,7 +554,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          person_1_avatar_url?: string | null
           person_1_name?: string
+          person_2_avatar_url?: string | null
           person_2_name?: string
           updated_at?: string
           user_id: string
@@ -560,7 +564,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          person_1_avatar_url?: string | null
           person_1_name?: string
+          person_2_avatar_url?: string | null
           person_2_name?: string
           updated_at?: string
           user_id?: string

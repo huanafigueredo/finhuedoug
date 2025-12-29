@@ -29,8 +29,10 @@ import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AvatarUpload } from "@/components/shared/AvatarUpload";
+import { usePersonNames } from "@/hooks/useUserSettings";
 
-// Import avatars
+// Import fallback avatars
 import avatarPerson1 from "@/assets/avatar-person1.jpg";
 import avatarPerson2 from "@/assets/avatar-person2.jpg";
 
@@ -57,8 +59,8 @@ function getTransactionMonthValue(t: any): number {
   return Number(t.total_value);
 }
 
-// Avatar component with fallback
-function PersonAvatar({ name, avatar, size = "lg" }: { name: string; avatar?: string; size?: "sm" | "md" | "lg" }) {
+// Simple avatar display component (non-editable)
+function PersonAvatar({ name, avatar, size = "lg" }: { name: string; avatar?: string | null; size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
     sm: "w-10 h-10 text-sm",
     md: "w-14 h-14 text-lg",
@@ -225,11 +227,23 @@ export default function People() {
     return monthsData;
   };
 
-  // Get avatar based on person
+  // Get custom avatar URLs from settings
+  const personSettings = usePersonNames();
+  
+  // Get avatar based on person (custom or fallback)
   const getAvatar = (personName: string) => {
-    if (personName === metrics.person1Name) return avatarPerson1;
-    if (personName === metrics.person2Name) return avatarPerson2;
+    if (personName === metrics.person1Name) {
+      return personSettings.person1Avatar || avatarPerson1;
+    }
+    if (personName === metrics.person2Name) {
+      return personSettings.person2Avatar || avatarPerson2;
+    }
     return undefined;
+  };
+  
+  // Get person number for upload component
+  const getPersonNumber = (personName: string): 1 | 2 => {
+    return personName === metrics.person1Name ? 1 : 2;
   };
 
   // Render person dashboard
@@ -249,13 +263,22 @@ export default function People() {
       <div className="space-y-6 sm:space-y-8">
         {/* Person Header with Avatar */}
         <div className="flex items-center gap-4 p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card animate-fade-up">
-          <PersonAvatar name={personName} avatar={getAvatar(personName)} size="lg" />
+          <AvatarUpload 
+            name={personName} 
+            avatar={getAvatar(personName)} 
+            personNumber={getPersonNumber(personName)}
+            size="lg"
+            editable={true}
+          />
           <div>
             <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground">
               {personName}
             </h2>
             <p className="text-sm text-muted-foreground">
               Resumo financeiro de {selectedMonth}/{selectedYear}
+            </p>
+            <p className="text-xs text-primary/70 mt-1">
+              Clique no avatar para alterar
             </p>
           </div>
         </div>
@@ -449,17 +472,28 @@ export default function People() {
           {/* Tabs for each person */}
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
             <TabsList className="grid w-full max-w-sm sm:max-w-md mx-auto grid-cols-2 mb-6 sm:mb-8 h-14 p-1.5 animate-fade-up" style={{ animationDelay: "150ms" }}>
-              <TabsTrigger value="person1" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink">
-                <PersonAvatar name={metrics.person1Name} avatar={avatarPerson1} size="sm" />
+              <TabsTrigger value="person1" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
+                <PersonAvatar 
+                  name={metrics.person1Name} 
+                  avatar={personSettings.person1Avatar || avatarPerson1} 
+                  size="sm" 
+                />
                 <span className="hidden sm:inline">{metrics.person1Name}</span>
               </TabsTrigger>
-              <TabsTrigger value="person2" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink">
-                <PersonAvatar name={metrics.person2Name} avatar={avatarPerson2} size="sm" />
+              <TabsTrigger value="person2" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
+                <PersonAvatar 
+                  name={metrics.person2Name} 
+                  avatar={personSettings.person2Avatar || avatarPerson2} 
+                  size="sm" 
+                />
                 <span className="hidden sm:inline">{metrics.person2Name}</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="person1" className="animate-fade-in">
+            <TabsContent 
+              value="person1" 
+              className="transition-all duration-500 ease-out data-[state=active]:animate-slide-in-right data-[state=inactive]:animate-fade-out"
+            >
               {renderPersonDashboard(
                 metrics.person1Name,
                 metrics.person1TotalExpenses,
@@ -469,7 +503,10 @@ export default function People() {
               )}
             </TabsContent>
 
-            <TabsContent value="person2" className="animate-fade-in">
+            <TabsContent 
+              value="person2" 
+              className="transition-all duration-500 ease-out data-[state=active]:animate-slide-in-left data-[state=inactive]:animate-fade-out"
+            >
               {renderPersonDashboard(
                 metrics.person2Name,
                 metrics.person2TotalExpenses,

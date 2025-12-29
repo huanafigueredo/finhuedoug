@@ -7,6 +7,8 @@ interface UserSettings {
   user_id: string;
   person_1_name: string;
   person_2_name: string;
+  person_1_avatar_url: string | null;
+  person_2_avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -81,5 +83,7 @@ export function usePersonNames() {
   return {
     person1: settings?.person_1_name || "Huana",
     person2: settings?.person_2_name || "Douglas",
+    person1Avatar: settings?.person_1_avatar_url || null,
+    person2Avatar: settings?.person_2_avatar_url || null,
   };
 }
