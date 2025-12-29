@@ -288,7 +288,6 @@ export default function People() {
           <MetricCard
             title="Despesas Totais"
             value={formatCurrency(totalExpenses)}
-            icon={TrendingDown}
             emoji="💸"
             variant="primary"
             delay={100}
@@ -296,7 +295,6 @@ export default function People() {
           <MetricCard
             title="Receitas"
             value={formatCurrency(income)}
-            icon={TrendingUp}
             emoji="💰"
             variant="success"
             delay={200}
@@ -304,7 +302,6 @@ export default function People() {
           <MetricCard
             title="Saldo"
             value={formatCurrency(balance)}
-            icon={PiggyBank}
             emoji={balance >= 0 ? "🎉" : "😅"}
             variant={balance >= 0 ? "success" : "primary"}
             delay={300}
@@ -312,7 +309,7 @@ export default function People() {
           <MetricCard
             title="Gastos Pessoais"
             value={formatCurrency(individualExpenses)}
-            icon={Receipt}
+            emoji="🧾"
             variant="info"
             delay={400}
           />
