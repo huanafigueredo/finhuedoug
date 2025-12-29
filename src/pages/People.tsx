@@ -29,7 +29,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
-import { usePersonNames } from "@/hooks/useUserSettings";
+import { usePersonNames } from "@/hooks/useCoupleMembers";
 
 // Import fallback avatars
 import avatarPerson1 from "@/assets/avatar-person1.jpg";
@@ -240,9 +240,15 @@ export default function People() {
     return undefined;
   };
   
-  // Get person number for upload component
-  const getPersonNumber = (personName: string): 1 | 2 => {
-    return personName === metrics.person1Name ? 1 : 2;
+  // Get member ID for upload component
+  const getMemberId = (personName: string): string | undefined => {
+    if (personName === metrics.person1Name) {
+      return personSettings.person1Id || undefined;
+    }
+    if (personName === metrics.person2Name) {
+      return personSettings.person2Id || undefined;
+    }
+    return undefined;
   };
 
   // Render person dashboard
@@ -265,7 +271,7 @@ export default function People() {
           <AvatarUpload 
             name={personName} 
             avatar={getAvatar(personName)} 
-            personNumber={getPersonNumber(personName)}
+            memberId={getMemberId(personName)}
             size="lg"
             editable={true}
           />

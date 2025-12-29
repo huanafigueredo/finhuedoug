@@ -33,17 +33,13 @@ import {
   Tag,
   CreditCard,
   Wallet,
-  PiggyBank,
   Plus,
   Pencil,
   Trash2,
   Users,
   ChevronRight,
   UserCircle,
-  Save,
   Settings as SettingsIcon,
-  Target,
-  TrendingUp,
 } from "lucide-react";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
@@ -52,10 +48,11 @@ import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { useAddCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
 import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@/hooks/useSubcategoriesMutations";
-import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
+import { useCoupleMembers, useAddCoupleMember, useUpdateCoupleMember, useDeleteCoupleMember } from "@/hooks/useCoupleMembers";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AvatarUpload } from "@/components/shared/AvatarUpload";
 
 interface ConfigItem {
   id: string;
@@ -91,19 +88,16 @@ export default function Settings() {
   // Section refs for scrolling
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // User settings for editable names
-  const { data: userSettings, isLoading: settingsLoading } = useUserSettings();
-  const updateUserSettings = useUpdateUserSettings();
-  const [person1Name, setPerson1Name] = useState("Huana");
-  const [person2Name, setPerson2Name] = useState("Douglas");
-
-  // Sync person names with settings
-  useEffect(() => {
-    if (userSettings) {
-      setPerson1Name(userSettings.person_1_name || "Huana");
-      setPerson2Name(userSettings.person_2_name || "Douglas");
-    }
-  }, [userSettings]);
+  // Couple members (dynamic people system)
+  const { data: coupleMembers = [], isLoading: coupleMembersLoading } = useCoupleMembers();
+  const addCoupleMember = useAddCoupleMember();
+  const updateCoupleMember = useUpdateCoupleMember();
+  const deleteCoupleMember = useDeleteCoupleMember();
+  
+  // People modal state
+  const [isPeopleDialogOpen, setIsPeopleDialogOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<{ id: string; name: string; avatar_url: string | null; position: number } | null>(null);
+  const [newPersonName, setNewPersonName] = useState("");
 
   // Data from Supabase
   const { data: banks = [], isLoading: banksLoading } = useBanks();
@@ -129,23 +123,38 @@ export default function Settings() {
   const updateSubcategory = useUpdateSubcategory();
   const deleteSubcategory = useDeleteSubcategory();
 
-  const handleSaveNames = async () => {
+  const openAddPersonDialog = () => {
+    setEditingPerson(null);
+    setNewPersonName("");
+    setIsPeopleDialogOpen(true);
+  };
+
+  const openEditPersonDialog = (person: { id: string; name: string; avatar_url: string | null; position: number }) => {
+    setEditingPerson(person);
+    setNewPersonName(person.name);
+    setIsPeopleDialogOpen(true);
+  };
+
+  const handleSavePerson = async () => {
+    if (!newPersonName.trim()) return;
+    
     try {
-      await updateUserSettings.mutateAsync({
-        person_1_name: person1Name.trim() || "Huana",
-        person_2_name: person2Name.trim() || "Douglas",
-      });
-      toast({
-        title: "Nomes atualizados!",
-        description: "Os nomes foram salvos com sucesso.",
-      });
+      if (editingPerson) {
+        await updateCoupleMember.mutateAsync({ id: editingPerson.id, name: newPersonName.trim() });
+        toast({ title: "Pessoa atualizada!", description: "Nome salvo com sucesso." });
+      } else {
+        await addCoupleMember.mutateAsync({ name: newPersonName.trim() });
+        toast({ title: "Pessoa adicionada!", description: "Nova pessoa criada com sucesso." });
+      }
+      setIsPeopleDialogOpen(false);
     } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error?.message || "Não foi possível salvar os nomes.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: error?.message || "Não foi possível salvar.", variant: "destructive" });
     }
+  };
+
+  const handleDeletePerson = async (id: string, name: string) => {
+    setItemToDelete({ section: "people", id, name });
+    setDeleteConfirmOpen(true);
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -246,7 +255,9 @@ export default function Settings() {
     const { section, id } = itemToDelete;
 
     try {
-      if (section === "banks") {
+      if (section === "people") {
+        await deleteCoupleMember.mutateAsync(id);
+      } else if (section === "banks") {
         await deleteBank.mutateAsync(id);
       } else if (section === "payment-methods") {
         await deletePaymentMethod.mutateAsync(id);
@@ -281,6 +292,7 @@ export default function Settings() {
 
   const getSectionLabel = (section: string) => {
     switch (section) {
+      case "people": return "Pessoa";
       case "banks": return "Bancos";
       case "payment-methods": return "Formas de Pagamento";
       case "recipients": return "Para Quem";
@@ -469,37 +481,59 @@ export default function Settings() {
             <SectionWrapper
               id="people"
               title="Pessoas"
-              description="Personalize os nomes usados nos lançamentos e relatórios."
+              description="Gerencie as pessoas do casal. Clique no avatar para alterar a foto."
             >
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Pessoa 1</Label>
-                  <Input
-                    value={person1Name}
-                    onChange={(e) => setPerson1Name(e.target.value)}
-                    placeholder="Nome da pessoa 1"
-                    maxLength={50}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Pessoa 2</Label>
-                  <Input
-                    value={person2Name}
-                    onChange={(e) => setPerson2Name(e.target.value)}
-                    placeholder="Nome da pessoa 2"
-                    maxLength={50}
-                  />
-                </div>
+              <div className="space-y-3">
+                {coupleMembersLoading ? (
+                  <p className="text-sm text-muted-foreground py-2">Carregando...</p>
+                ) : coupleMembers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-2">Nenhuma pessoa cadastrada. Adicione as pessoas do casal.</p>
+                ) : (
+                  coupleMembers.map((person) => (
+                    <div
+                      key={person.id}
+                      className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/30 hover:bg-muted/50 group transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <AvatarUpload
+                          name={person.name}
+                          avatar={person.avatar_url}
+                          memberId={person.id}
+                          size="md"
+                          editable={true}
+                        />
+                        <div>
+                          <span className="text-sm font-medium text-foreground">{person.name}</span>
+                          <p className="text-xs text-muted-foreground">Pessoa {person.position}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditPersonDialog(person)}
+                          className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePerson(person.id, person.name)}
+                          className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openAddPersonDialog}
+                  className="mt-3"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Pessoa
+                </Button>
               </div>
-              <Button 
-                onClick={handleSaveNames}
-                disabled={updateUserSettings.isPending}
-                className="mt-4"
-                size="sm"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {updateUserSettings.isPending ? "Salvando..." : "Salvar"}
-              </Button>
             </SectionWrapper>
 
             {/* Banks Section */}
@@ -635,6 +669,41 @@ export default function Settings() {
               </Button>
               <Button onClick={handleSave} disabled={!newItemName.trim() || isSaving}>
                 {isSaving ? "Salvando..." : editingItem ? "Salvar" : "Adicionar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* People Add/Edit Dialog */}
+      <Dialog open={isPeopleDialogOpen} onOpenChange={setIsPeopleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingPerson ? "Editar Pessoa" : "Adicionar Pessoa"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={newPersonName}
+                onChange={(e) => setNewPersonName(e.target.value)}
+                placeholder="Digite o nome..."
+                maxLength={50}
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setIsPeopleDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSavePerson} 
+                disabled={!newPersonName.trim() || addCoupleMember.isPending || updateCoupleMember.isPending}
+              >
+                {addCoupleMember.isPending || updateCoupleMember.isPending ? "Salvando..." : editingPerson ? "Salvar" : "Adicionar"}
               </Button>
             </div>
           </div>
