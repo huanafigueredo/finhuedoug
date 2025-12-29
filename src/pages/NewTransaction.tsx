@@ -459,7 +459,7 @@ export default function NewTransaction() {
                         {date ? format(date, "PPP", { locale: ptBR }) : "Selecione a data"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                    <PopoverContent className="w-auto p-0 z-[100] bg-popover" align="start">
                       <Calendar
                         mode="single"
                         selected={date}

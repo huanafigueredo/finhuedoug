@@ -550,7 +550,7 @@ export function TransactionFormModal({
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Data</Label>
-                  <Popover>
+                  <Popover modal={true}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -564,7 +564,7 @@ export function TransactionFormModal({
                         {date ? format(date, "PPP", { locale: ptBR }) : "Selecione a data"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
+                    <PopoverContent className="w-auto p-0 z-[100] bg-popover" align="start">
                       <Calendar
                         mode="single"
                         selected={date}
