@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_members: {
+        Row: {
+          account_id: string
+          created_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
       allowed_users: {
         Row: {
           user_id: string
@@ -277,24 +324,35 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_id: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
         }
         Insert: {
+          account_id?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
         }
         Update: {
+          account_id?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipients: {
         Row: {
@@ -447,6 +505,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          account_id: string | null
           bank_id: string | null
           cartao: string | null
           category: string | null
@@ -487,6 +546,7 @@ export type Database = {
           value_per_person: number | null
         }
         Insert: {
+          account_id?: string | null
           bank_id?: string | null
           cartao?: string | null
           category?: string | null
@@ -527,6 +587,7 @@ export type Database = {
           value_per_person?: number | null
         }
         Update: {
+          account_id?: string | null
           bank_id?: string | null
           cartao?: string | null
           category?: string | null
@@ -567,6 +628,13 @@ export type Database = {
           value_per_person?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_bank_id_fkey"
             columns: ["bank_id"]
