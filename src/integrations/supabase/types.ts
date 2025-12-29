@@ -505,7 +505,7 @@ export type Database = {
       }
       transactions: {
         Row: {
-          account_id: string | null
+          account_id: string
           bank_id: string | null
           cartao: string | null
           category: string | null
@@ -546,7 +546,7 @@ export type Database = {
           value_per_person: number | null
         }
         Insert: {
-          account_id?: string | null
+          account_id: string
           bank_id?: string | null
           cartao?: string | null
           category?: string | null
@@ -587,7 +587,7 @@ export type Database = {
           value_per_person?: number | null
         }
         Update: {
-          account_id?: string | null
+          account_id?: string
           bank_id?: string | null
           cartao?: string | null
           category?: string | null
