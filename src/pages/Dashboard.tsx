@@ -534,6 +534,7 @@ export default function Dashboard() {
                   Nenhum banco utilizado neste período
                 </p>
               )}
+            </div>
           </div>
         </div>
       </main>
