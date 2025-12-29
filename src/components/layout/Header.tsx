@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, Menu, X, LogOut, Sparkles } from "lucide-react";
+import { Heart, Menu, X, LogOut, Sparkles, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,20 +21,20 @@ export function Header() {
   const isAuthenticated = !!user;
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-lg border-b border-border/50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <Heart className="w-5 h-5 text-primary" />
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-pink group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+              <Wallet className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display text-xl font-semibold text-foreground">
+            <span className="font-display text-xl font-bold text-foreground">
               CasalFin
             </span>
           </Link>
 
-          {/* Desktop Navigation - só aparece quando autenticado */}
+          {/* Desktop Navigation */}
           {isAuthenticated && (
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => (
@@ -42,9 +42,9 @@ export function Header() {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-1.5",
+                    "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-1.5",
                     location.pathname === item.path
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   )}
                 >
@@ -60,23 +60,25 @@ export function Header() {
             {isAuthenticated ? (
               <>
                 <Link to="/novo">
-                  <Button size="sm">Novo Lançamento</Button>
+                  <Button size="sm" className="shadow-pink hover:shadow-lg transition-all duration-300">
+                    Novo Lançamento
+                  </Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={signOut}>
-                  <LogOut className="w-4 h-4 mr-1" />
+                <Button variant="outline" size="sm" onClick={signOut} className="gap-1.5">
+                  <LogOut className="w-4 h-4" />
                   Sair
                 </Button>
               </>
             ) : (
               <Link to="/login">
-                <Button size="sm">Entrar</Button>
+                <Button size="sm" className="shadow-pink">Entrar</Button>
               </Link>
             )}
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
+            className="md:hidden p-2 rounded-xl hover:bg-secondary transition-colors"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -85,37 +87,37 @@ export function Header() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-in">
+          <div className="md:hidden py-4 border-t border-border/50 animate-fade-in">
             <nav className="flex flex-col gap-1">
-              {/* Links de navegação só aparecem quando autenticado */}
               {isAuthenticated && navItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300",
+                    "px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2",
                     location.pathname === item.path
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   )}
                 >
+                  {item.icon && <item.icon className="w-4 h-4" />}
                   {item.label}
                 </Link>
               ))}
               {isAuthenticated ? (
                 <>
                   <Link to="/novo" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full mt-2">Novo Lançamento</Button>
+                    <Button className="w-full mt-2 shadow-pink">Novo Lançamento</Button>
                   </Link>
                   <Button variant="outline" className="w-full mt-2" onClick={() => { signOut(); setIsOpen(false); }}>
-                    <LogOut className="w-4 h-4 mr-1" />
+                    <LogOut className="w-4 h-4 mr-1.5" />
                     Sair
                   </Button>
                 </>
               ) : (
                 <Link to="/login" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full mt-2">Entrar</Button>
+                  <Button className="w-full mt-2 shadow-pink">Entrar</Button>
                 </Link>
               )}
             </nav>
