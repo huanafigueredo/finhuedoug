@@ -1044,9 +1044,7 @@ export default function NewTransaction() {
             </div>
           </form>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AppLayout>
   );
 }

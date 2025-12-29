@@ -15,6 +15,8 @@ import People from "./pages/People";
 import Settings from "./pages/Settings";
 import Contas from "./pages/Contas";
 import ChatIA from "./pages/ChatIA";
+import Orcamentos from "./pages/Orcamentos";
+import Metas from "./pages/Metas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +52,12 @@ const App = () => (
             } />
             <Route path="/chat-ia" element={
               <ProtectedRoute><ChatIA /></ProtectedRoute>
+            } />
+            <Route path="/orcamentos" element={
+              <ProtectedRoute><Orcamentos /></ProtectedRoute>
+            } />
+            <Route path="/metas" element={
+              <ProtectedRoute><Metas /></ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
           </Routes>

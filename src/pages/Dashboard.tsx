@@ -6,8 +6,6 @@ import { Footer } from "@/components/layout/Footer";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
-import { BudgetProgressCard } from "@/components/budget/BudgetProgressCard";
-import { SavingsGoalsCard } from "@/components/savings/SavingsGoalsCard";
 import {
   Select,
   SelectContent,
@@ -33,7 +31,6 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
-import { useBudgetProgress } from "@/hooks/useBudgetProgress";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -68,7 +65,7 @@ export default function Dashboard() {
   const year = parseInt(selectedYear);
 
   const metrics = useFinancialMetrics(transactions, monthIndex, year);
-  const budgetSummary = useBudgetProgress(transactions, monthIndex, year);
+  
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -314,36 +311,23 @@ export default function Dashboard() {
 
           {/* Charts Row */}
           {hasData ? (
-            <>
-              {/* First row: 3 charts */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
-                  <PieChart data={categoryData} title="Divisão por Categoria" />
-                </div>
-                <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
-                  <PieChart data={bankData} title="Divisão por Banco" />
-                </div>
-                <div className="animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
-                  <LineChart
-                    data={evolutionData}
-                    lines={[
-                      { dataKey: "total", color: "hsl(330, 75%, 55%)", name: "Total" },
-                    ]}
-                    title="Evolução Mensal"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+                <PieChart data={categoryData} title="Divisão por Categoria" />
               </div>
-              
-              {/* Second row: Budget and Savings */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div className="animate-fade-up opacity-0" style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}>
-                  <BudgetProgressCard summary={budgetSummary} />
-                </div>
-                <div className="animate-fade-up opacity-0" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
-                  <SavingsGoalsCard />
-                </div>
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
+                <PieChart data={bankData} title="Divisão por Banco" />
               </div>
-            </>
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
+                <LineChart
+                  data={evolutionData}
+                  lines={[
+                    { dataKey: "total", color: "hsl(330, 75%, 55%)", name: "Total" },
+                  ]}
+                  title="Evolução Mensal"
+                />
+              </div>
+            </div>
           ) : (
             <div className="p-8 sm:p-12 rounded-2xl bg-card border border-border/50 shadow-card mb-6 sm:mb-8 text-center animate-fade-up" style={{ animationDelay: "700ms" }}>
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
@@ -355,7 +339,7 @@ export default function Dashboard() {
               <p className="text-muted-foreground text-sm mb-4">
                 Comece adicionando suas receitas e despesas.
               </p>
-              <Link to="/novo-lancamento">
+              <Link to="/novo">
                 <Button className="gap-2">
                   Adicionar lançamento
                   <ArrowUpRight className="w-4 h-4" />
@@ -550,7 +534,6 @@ export default function Dashboard() {
                   Nenhum banco utilizado neste período
                 </p>
               )}
-            </div>
           </div>
         </div>
       </main>
