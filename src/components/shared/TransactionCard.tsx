@@ -38,8 +38,17 @@ export function TransactionCard({
   const touchStartY = useRef(0);
   const isHorizontalSwipe = useRef(false);
 
+  const hasTriggeredHaptic = useRef(false);
+
   const SWIPE_THRESHOLD = 80;
   const MAX_SWIPE = 140;
+
+  const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+    if ('vibrate' in navigator) {
+      const duration = style === 'light' ? 10 : style === 'medium' ? 20 : 30;
+      navigator.vibrate(duration);
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -77,11 +86,22 @@ export function TransactionCard({
 
     // Only allow left swipe (negative deltaX)
     const newOffset = Math.min(0, Math.max(-MAX_SWIPE, deltaX + swipeOffset));
+    
+    // Trigger haptic when crossing threshold
+    if (newOffset < -SWIPE_THRESHOLD && !hasTriggeredHaptic.current) {
+      hasTriggeredHaptic.current = true;
+      triggerHaptic('medium');
+    } else if (newOffset > -SWIPE_THRESHOLD && hasTriggeredHaptic.current) {
+      hasTriggeredHaptic.current = false;
+      triggerHaptic('light');
+    }
+    
     setSwipeOffset(newOffset);
   };
 
   const handleTouchEnd = () => {
     setIsSwiping(false);
+    hasTriggeredHaptic.current = false;
     
     // Snap to open or closed position
     if (swipeOffset < -SWIPE_THRESHOLD) {
@@ -92,6 +112,7 @@ export function TransactionCard({
   };
 
   const handleSwipeAction = (action: 'edit' | 'delete') => {
+    triggerHaptic('heavy');
     setSwipeOffset(0);
     if (action === 'edit') {
       onEdit?.(transaction.id);
