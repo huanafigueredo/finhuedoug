@@ -216,16 +216,16 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Link to="/chat-ia">
-                <Button variant="outline" size="sm" className="gap-2">
+                <Button variant="outline" size="sm" className="gap-2 text-xs sm:text-sm">
                   <Sparkles className="w-4 h-4" />
-                  Perguntar ao Chat IA
+                  <span className="hidden sm:inline">Perguntar ao</span> Chat IA
                 </Button>
               </Link>
               
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="w-28 sm:w-36">
                   <SelectValue placeholder="Mês" />
                 </SelectTrigger>
                 <SelectContent>
@@ -238,7 +238,7 @@ export default function Dashboard() {
               </Select>
 
               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-20 sm:w-24">
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
                 <SelectContent>
@@ -253,7 +253,7 @@ export default function Dashboard() {
           </div>
 
           {/* Metric Cards - Row 1: Totals */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <MetricCard
               title="Total de Despesas"
               value={formatCurrency(metrics.totalExpenses)}
@@ -275,32 +275,32 @@ export default function Dashboard() {
           </div>
 
           {/* Metric Cards - Row 2: Per Person */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
             <MetricCard
               title={`Gastos ${metrics.person1Name}`}
               value={formatCurrency(metrics.person1TotalExpenses)}
-              subtitle="Individual + metade do casal"
+              subtitle="Individual + metade casal"
               icon={Users}
               variant="default"
             />
             <MetricCard
               title={`Gastos ${metrics.person2Name}`}
               value={formatCurrency(metrics.person2TotalExpenses)}
-              subtitle="Individual + metade do casal"
+              subtitle="Individual + metade casal"
               icon={Users}
               variant="default"
             />
             <MetricCard
-              title={`Saldo do mês ${metrics.person1Name}`}
+              title={`Saldo ${metrics.person1Name}`}
               value={formatCurrency(metrics.person1Balance)}
-              subtitle={`Receitas: ${formatCurrency(metrics.person1Income)}`}
+              subtitle={`Rec: ${formatCurrency(metrics.person1Income)}`}
               icon={Wallet}
               variant={metrics.person1Balance >= 0 ? "success" : "primary"}
             />
             <MetricCard
-              title={`Saldo do mês ${metrics.person2Name}`}
+              title={`Saldo ${metrics.person2Name}`}
               value={formatCurrency(metrics.person2Balance)}
-              subtitle={`Receitas: ${formatCurrency(metrics.person2Income)}`}
+              subtitle={`Rec: ${formatCurrency(metrics.person2Income)}`}
               icon={Wallet}
               variant={metrics.person2Balance >= 0 ? "success" : "primary"}
             />
@@ -308,29 +308,31 @@ export default function Dashboard() {
 
           {/* Charts Row */}
           {hasData ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <PieChart data={categoryData} title="Divisão por Categoria" />
               <PieChart data={bankData} title="Divisão por Banco" />
-              <LineChart
-                data={evolutionData}
-                lines={[
-                  { dataKey: "total", color: "hsl(14, 56%, 62%)", name: "Total" },
-                ]}
-                title="Evolução Mensal"
-              />
+              <div className="md:col-span-2 lg:col-span-1">
+                <LineChart
+                  data={evolutionData}
+                  lines={[
+                    { dataKey: "total", color: "hsl(14, 56%, 62%)", name: "Total" },
+                  ]}
+                  title="Evolução Mensal"
+                />
+              </div>
             </div>
           ) : (
-            <div className="p-12 rounded-2xl bg-card border border-border shadow-card mb-8 text-center">
-              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-display text-lg font-semibold text-foreground mb-2">
+            <div className="p-8 sm:p-12 rounded-2xl bg-card border border-border shadow-card mb-6 sm:mb-8 text-center">
+              <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-display text-base sm:text-lg font-semibold text-foreground mb-2">
                 Nenhum lançamento encontrado
               </h3>
-              <p className="text-muted-foreground mb-4">
-                Comece adicionando suas receitas e despesas para ver os gráficos aqui.
+              <p className="text-muted-foreground text-sm mb-4">
+                Comece adicionando suas receitas e despesas.
               </p>
               <a
                 href="/novo-lancamento"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm"
               >
                 Adicionar lançamento
                 <ArrowUpRight className="w-4 h-4" />
@@ -339,9 +341,9 @@ export default function Dashboard() {
           )}
 
           {/* Bottom Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Contas a Vencer */}
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-card">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
                   <AlertCircle className="w-5 h-5 text-primary" />
@@ -391,7 +393,7 @@ export default function Dashboard() {
             </div>
 
             {/* Recent Transactions */}
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-card">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground">
                   Lançamentos Recentes
@@ -458,7 +460,7 @@ export default function Dashboard() {
             </div>
 
             {/* Banks Summary */}
-            <div className="p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-card md:col-span-2 lg:col-span-1">
               <h3 className="font-display text-lg font-semibold text-foreground mb-6">
                 Bancos Mais Utilizados
               </h3>
