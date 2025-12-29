@@ -19,7 +19,9 @@ import {
   TrendingUp, 
   Wallet,
   Heart,
-  ArrowRight
+  ArrowRight,
+  Receipt,
+  PiggyBank
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -224,27 +226,27 @@ export default function People() {
             value={formatCurrency(totalExpenses)}
             icon={TrendingDown}
             trend={{ value: 0, isPositive: false }}
-            className="bg-destructive/5 border-destructive/20"
+            variant="primary"
           />
           <MetricCard
             title="Receitas"
             value={formatCurrency(income)}
             icon={TrendingUp}
             trend={{ value: 0, isPositive: true }}
-            className="bg-success/5 border-success/20"
+            variant="success"
           />
           <MetricCard
             title="Saldo"
             value={formatCurrency(balance)}
-            icon={Wallet}
+            icon={PiggyBank}
             trend={{ value: 0, isPositive: balance >= 0 }}
-            className={balance >= 0 ? "bg-success/5 border-success/20" : "bg-destructive/5 border-destructive/20"}
+            variant={balance >= 0 ? "success" : "primary"}
           />
           <MetricCard
             title="Gastos Pessoais"
             value={formatCurrency(individualExpenses)}
-            icon={User}
-            className="bg-primary/5 border-primary/20"
+            icon={Receipt}
+            variant="accent"
           />
         </div>
 

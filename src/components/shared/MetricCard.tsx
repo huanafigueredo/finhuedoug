@@ -24,56 +24,69 @@ export function MetricCard({
   className,
 }: MetricCardProps) {
   const variants = {
-    default: "bg-card",
+    default: "bg-card border-border",
     primary: "bg-primary/5 border-primary/20",
     accent: "bg-accent/5 border-accent/20",
     success: "bg-success/5 border-success/20",
   };
 
-  const iconVariants = {
-    default: "bg-secondary text-muted-foreground",
-    primary: "bg-primary/10 text-primary",
-    accent: "bg-accent/10 text-accent",
-    success: "bg-success/10 text-success",
+  const iconBgVariants = {
+    default: "bg-muted/80",
+    primary: "bg-primary/15",
+    accent: "bg-accent/15",
+    success: "bg-success/15",
+  };
+
+  const iconColorVariants = {
+    default: "text-muted-foreground",
+    primary: "text-primary",
+    accent: "text-accent-foreground",
+    success: "text-success",
   };
 
   return (
     <div
       className={cn(
-        "p-6 rounded-2xl border shadow-card card-hover",
+        "relative p-4 sm:p-5 rounded-2xl border shadow-card overflow-hidden transition-all duration-200 hover:shadow-lg",
         variants[variant],
         className
       )}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-muted-foreground mb-1">
-            {title}
-          </p>
-          <p className="text-2xl md:text-3xl font-display font-semibold text-foreground">
-            {value}
-          </p>
-          {subtitle && (
-            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-          )}
-          {trend && (
-            <div className="flex items-center gap-1 mt-2">
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  trend.isPositive ? "text-success" : "text-destructive"
-                )}
-              >
-                {trend.isPositive ? "+" : ""}
-                {trend.value}%
-              </span>
-              <span className="text-xs text-muted-foreground">vs mês anterior</span>
-            </div>
-          )}
-        </div>
-        <div className={cn("p-3 rounded-xl", iconVariants[variant])}>
-          <Icon className="w-5 h-5" />
-        </div>
+      {/* Icon positioned top-right */}
+      <div 
+        className={cn(
+          "absolute top-3 right-3 sm:top-4 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center",
+          iconBgVariants[variant]
+        )}
+      >
+        <Icon className={cn("w-4 h-4 sm:w-5 sm:h-5", iconColorVariants[variant])} />
+      </div>
+
+      {/* Content */}
+      <div className="pr-12 sm:pr-14">
+        <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1 truncate">
+          {title}
+        </p>
+        <p className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-foreground leading-tight">
+          {value}
+        </p>
+        {subtitle && (
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 truncate">{subtitle}</p>
+        )}
+        {trend && (
+          <div className="flex items-center gap-1.5 mt-2">
+            <span
+              className={cn(
+                "text-xs sm:text-sm font-semibold",
+                trend.isPositive ? "text-success" : "text-destructive"
+              )}
+            >
+              {trend.isPositive ? "+" : ""}
+              {trend.value}%
+            </span>
+            <span className="text-xs text-muted-foreground">vs mês anterior</span>
+          </div>
+        )}
       </div>
     </div>
   );
