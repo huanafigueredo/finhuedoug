@@ -33,17 +33,15 @@ import {
   Tag,
   CreditCard,
   Wallet,
-  PiggyBank,
   Plus,
   Pencil,
   Trash2,
   Users,
   ChevronRight,
+  ChevronDown,
   UserCircle,
   Save,
   Settings as SettingsIcon,
-  Target,
-  TrendingUp,
 } from "lucide-react";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
@@ -66,13 +64,13 @@ interface ConfigItem {
 
 // Sidebar navigation items
 const navSections = [
-  { id: "general", label: "Geral", icon: SettingsIcon },
-  { id: "people", label: "Pessoas", icon: UserCircle },
-  { id: "banks", label: "Bancos", icon: CreditCard },
-  { id: "payment-methods", label: "Formas de Pagamento", icon: Wallet },
-  { id: "recipients", label: "Para Quem", icon: Users },
-  { id: "categories", label: "Categorias", icon: Folder },
-  { id: "subcategories", label: "Subcategorias", icon: Tag },
+  { id: "general", label: "Geral", icon: SettingsIcon, hasSubmenu: false },
+  { id: "people", label: "Pessoas", icon: UserCircle, hasSubmenu: false },
+  { id: "banks", label: "Bancos", icon: CreditCard, hasSubmenu: true },
+  { id: "payment-methods", label: "Formas de Pagamento", icon: Wallet, hasSubmenu: true },
+  { id: "recipients", label: "Para Quem", icon: Users, hasSubmenu: true },
+  { id: "categories", label: "Categorias", icon: Folder, hasSubmenu: true },
+  { id: "subcategories", label: "Subcategorias", icon: Tag, hasSubmenu: true },
 ];
 
 export default function Settings() {
@@ -290,7 +288,39 @@ export default function Settings() {
     }
   };
 
-  // Render a config list item
+  // Render a config item for SIDEBAR submenu (compact)
+  const renderSidebarConfigItem = (sectionKey: string, item: ConfigItem) => (
+    <div
+      key={item.id}
+      className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 group transition-colors text-xs"
+    >
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {item.color && (
+          <div
+            className="w-2 h-2 rounded-full flex-shrink-0"
+            style={{ backgroundColor: item.color }}
+          />
+        )}
+        <span className="truncate text-muted-foreground">{item.name}</span>
+      </div>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => { e.stopPropagation(); openEditDialog(sectionKey, item); }}
+          className="p-1 rounded hover:bg-muted transition-colors"
+        >
+          <Pencil className="w-3 h-3 text-muted-foreground" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); confirmDelete(sectionKey, item.id, item.name); }}
+          className="p-1 rounded hover:bg-destructive/10 transition-colors"
+        >
+          <Trash2 className="w-3 h-3 text-destructive" />
+        </button>
+      </div>
+    </div>
+  );
+
+  // Render a config item for MAIN content area
   const renderConfigItem = (sectionKey: string, item: ConfigItem) => (
     <div
       key={item.id}
@@ -355,17 +385,15 @@ export default function Settings() {
     </div>
   );
 
-  // Config list section
+  // Config list section for MAIN content
   const ConfigListSection = ({ 
     sectionKey, 
     items, 
     isLoading,
-    allowColor = false,
   }: { 
     sectionKey: string;
     items: ConfigItem[];
     isLoading: boolean;
-    allowColor?: boolean;
   }) => (
     <div className="space-y-1">
       {isLoading ? (
@@ -387,29 +415,81 @@ export default function Settings() {
     </div>
   );
 
+  // Get items for a section
+  const getSectionItems = (sectionId: string): { items: ConfigItem[]; isLoading: boolean } => {
+    switch (sectionId) {
+      case "banks":
+        return { items: banks.map((b) => ({ id: b.id, name: b.name, color: b.color })), isLoading: banksLoading };
+      case "payment-methods":
+        return { items: paymentMethods.map((p) => ({ id: p.id, name: p.name })), isLoading: paymentMethodsLoading };
+      case "recipients":
+        return { items: recipients.map((r) => ({ id: r.id, name: r.name })), isLoading: recipientsLoading };
+      case "categories":
+        return { items: categories.map((c) => ({ id: c.id, name: c.name })), isLoading: categoriesLoading };
+      case "subcategories":
+        return { items: subcategories.map((s) => ({ id: s.id, name: s.name, category_id: s.category_id })), isLoading: subcategoriesLoading };
+      default:
+        return { items: [], isLoading: false };
+    }
+  };
+
   return (
     <AppLayout>
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
         {/* Sidebar Navigation - Desktop only */}
         {!isMobile && (
-          <aside className="w-56 flex-shrink-0 border-r border-border bg-card/50">
+          <aside className="w-64 flex-shrink-0 border-r border-border bg-card/50">
             <ScrollArea className="h-full py-4">
               <nav className="px-3 space-y-1">
-                {navSections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => scrollToSection(section.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left",
-                      activeSection === section.id
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <section.icon className="w-4 h-4" />
-                    {section.label}
-                  </button>
-                ))}
+                {navSections.map((section) => {
+                  const isActive = activeSection === section.id;
+                  const sectionData = section.hasSubmenu ? getSectionItems(section.id) : null;
+                  
+                  return (
+                    <div key={section.id}>
+                      <button
+                        onClick={() => scrollToSection(section.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors text-left",
+                          isActive
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <section.icon className="w-4 h-4" />
+                          {section.label}
+                        </div>
+                        {section.hasSubmenu && (
+                          <ChevronDown className={cn(
+                            "w-4 h-4 transition-transform duration-200",
+                            isActive ? "rotate-0" : "-rotate-90"
+                          )} />
+                        )}
+                      </button>
+                      
+                      {/* Submenu with items */}
+                      {section.hasSubmenu && isActive && sectionData && (
+                        <div className="ml-4 mt-1 pl-3 border-l border-border/50 space-y-0.5 animate-fade-up">
+                          {sectionData.isLoading ? (
+                            <p className="text-xs text-muted-foreground py-1 px-2">Carregando...</p>
+                          ) : sectionData.items.length === 0 ? (
+                            <p className="text-xs text-muted-foreground py-1 px-2">Nenhum item</p>
+                          ) : (
+                            sectionData.items.map((item) => renderSidebarConfigItem(section.id, item))
+                          )}
+                          <button
+                            onClick={() => openAddDialog(section.id)}
+                            className="flex items-center gap-2 py-1.5 px-2 text-xs text-primary hover:bg-primary/5 rounded-md w-full transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Adicionar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </nav>
             </ScrollArea>
           </aside>
@@ -426,24 +506,58 @@ export default function Settings() {
               </p>
             </div>
 
-            {/* Mobile: Section selector */}
+            {/* Mobile: Section navigation */}
             {isMobile && (
-              <div className="mb-6">
-                <Select value={activeSection} onValueChange={scrollToSection}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {navSections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        <div className="flex items-center gap-2">
+              <div className="mb-6 space-y-1">
+                {navSections.map((section) => {
+                  const isActive = activeSection === section.id;
+                  const sectionData = section.hasSubmenu ? getSectionItems(section.id) : null;
+                  
+                  return (
+                    <div key={section.id} className="bg-card rounded-lg border border-border">
+                      <button
+                        onClick={() => scrollToSection(section.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3 text-sm transition-colors text-left",
+                          isActive
+                            ? "text-primary font-medium"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
                           <section.icon className="w-4 h-4" />
                           {section.label}
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        {section.hasSubmenu && (
+                          <ChevronDown className={cn(
+                            "w-4 h-4 transition-transform duration-200",
+                            isActive ? "rotate-0" : "-rotate-90"
+                          )} />
+                        )}
+                      </button>
+                      
+                      {/* Submenu with items */}
+                      {section.hasSubmenu && isActive && sectionData && (
+                        <div className="px-4 pb-3 space-y-0.5 animate-fade-up">
+                          {sectionData.isLoading ? (
+                            <p className="text-xs text-muted-foreground py-1 px-2">Carregando...</p>
+                          ) : sectionData.items.length === 0 ? (
+                            <p className="text-xs text-muted-foreground py-1 px-2">Nenhum item</p>
+                          ) : (
+                            sectionData.items.map((item) => renderSidebarConfigItem(section.id, item))
+                          )}
+                          <button
+                            onClick={() => openAddDialog(section.id)}
+                            className="flex items-center gap-2 py-2 px-2 text-xs text-primary hover:bg-primary/5 rounded-md w-full transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Adicionar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -512,7 +626,6 @@ export default function Settings() {
                 sectionKey="banks"
                 items={banks.map((b) => ({ id: b.id, name: b.name, color: b.color }))}
                 isLoading={banksLoading}
-                allowColor
               />
             </SectionWrapper>
 
