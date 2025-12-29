@@ -13,6 +13,7 @@ import { Transaction } from "./TransactionRow";
 interface TransactionCardProps {
   transaction: Transaction;
   className?: string;
+  style?: React.CSSProperties;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
@@ -22,6 +23,7 @@ interface TransactionCardProps {
 export function TransactionCard({
   transaction,
   className,
+  style,
   onEdit,
   onDelete,
   onDuplicate,
@@ -47,6 +49,7 @@ export function TransactionCard({
         "hover:shadow-md hover:border-primary/20 transition-all active:scale-[0.99]",
         className
       )}
+      style={style}
       onClick={handleCardClick}
     >
       {/* Header Row */}
