@@ -59,6 +59,7 @@ interface ConfigItem {
   name: string;
   color?: string | null;
   category_id?: string;
+  user_id?: string | null;
 }
 
 // Sidebar navigation items
@@ -303,44 +304,50 @@ export default function Settings() {
   };
 
   // Render a config list item
-  const renderConfigItem = (sectionKey: string, item: ConfigItem) => (
-    <div
-      key={item.id}
-      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 group transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        {item.color && (
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: item.color }}
-          />
-        )}
-        <div className="flex flex-col">
-          <span className="text-sm text-foreground">{item.name}</span>
-          {sectionKey === "subcategories" && item.category_id && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <ChevronRight className="w-3 h-3" />
-              {getCategoryName(item.category_id)}
-            </span>
+  const renderConfigItem = (sectionKey: string, item: ConfigItem) => {
+    const isSystemItem = item.user_id === null || item.user_id === undefined;
+    
+    return (
+      <div
+        key={item.id}
+        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 group transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          {item.color && (
+            <div
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: item.color }}
+            />
           )}
+          <div className="flex flex-col">
+            <span className="text-sm text-foreground">{item.name}</span>
+            {sectionKey === "subcategories" && item.category_id && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <ChevronRight className="w-3 h-3" />
+                {getCategoryName(item.category_id)}
+              </span>
+            )}
+          </div>
         </div>
+        {!isSystemItem && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => openEditDialog(sectionKey, item)}
+              className="p-1.5 rounded-md hover:bg-muted transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+            <button
+              onClick={() => confirmDelete(sectionKey, item.id, item.name)}
+              className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-destructive" />
+            </button>
+          </div>
+        )}
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => openEditDialog(sectionKey, item)}
-          className="p-1.5 rounded-md hover:bg-muted transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-        </button>
-        <button
-          onClick={() => confirmDelete(sectionKey, item.id, item.name)}
-          className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5 text-destructive" />
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   // Section component
   const SectionWrapper = ({ 
