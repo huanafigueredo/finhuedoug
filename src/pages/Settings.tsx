@@ -73,21 +73,12 @@ const navSections = [
   { id: "recipients", label: "Para Quem", icon: Users },
   { id: "categories", label: "Categorias", icon: Folder },
   { id: "subcategories", label: "Subcategorias", icon: Tag },
-  { id: "balances", label: "Saldos Iniciais", icon: PiggyBank },
-];
-
-const initialBalances = [
-  { id: "1", name: "Conta 1", value: "5.000,00" },
-  { id: "2", name: "Conta 2", value: "2.500,00" },
-  { id: "3", name: "Conta 3", value: "3.800,00" },
-  { id: "4", name: "Conta 4", value: "1.200,00" },
 ];
 
 export default function Settings() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState("general");
-  const [balances, setBalances] = useState(initialBalances);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<ConfigItem | null>(null);
@@ -577,43 +568,6 @@ export default function Settings() {
               />
             </SectionWrapper>
 
-            {/* Balances Section */}
-            <SectionWrapper
-              id="balances"
-              title="Saldos Iniciais"
-              description="Configure os saldos iniciais de cada conta."
-            >
-              <div className="space-y-3">
-                {balances.map((balance) => (
-                  <div
-                    key={balance.id}
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <Label className="text-sm text-muted-foreground min-w-24">
-                      {balance.name}
-                    </Label>
-                    <div className="relative flex-1 max-w-40">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                        R$
-                      </span>
-                      <Input
-                        value={balance.value}
-                        onChange={(e) =>
-                          setBalances((prev) =>
-                            prev.map((b) =>
-                              b.id === balance.id
-                                ? { ...b, value: e.target.value }
-                                : b
-                            )
-                          )
-                        }
-                        className="pl-10 text-right text-sm"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </SectionWrapper>
           </div>
         </main>
       </div>
