@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
@@ -418,11 +417,8 @@ export default function People() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-6xl">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
           {/* Header */}
           <div className="text-center mb-6 sm:mb-8 animate-fade-up">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6 shadow-sm">
@@ -545,11 +541,8 @@ export default function People() {
                 </p>
               </div>
             </div>
-          </div>
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AppLayout>
   );
 }

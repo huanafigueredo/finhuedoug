@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,13 +108,10 @@ export default function Contas() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
                 Contas
@@ -341,10 +337,7 @@ export default function Contas() {
               )}
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
-
-      <Footer />
+      </div>
 
       {/* Modals */}
       <RecorrenciaFormModal
@@ -377,6 +370,6 @@ export default function Contas() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppLayout>
   );
 }

@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
@@ -193,11 +192,8 @@ export default function Dashboard() {
   const hasData = filteredTransactions.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8">
           {/* Header with animation */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 animate-fade-up">
             <div>
@@ -536,10 +532,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AppLayout>
   );
 }

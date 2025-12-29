@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { TransactionRow, Transaction } from "@/components/shared/TransactionRow";
 import { TransactionCard } from "@/components/shared/TransactionCard";
 import { TransactionFormModal } from "@/components/TransactionFormModal";
@@ -405,13 +404,10 @@ export default function Transactions() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
                 Lançamentos
@@ -913,10 +909,6 @@ export default function Transactions() {
             )}
           </div>
         </div>
-      </main>
-
-      <Footer />
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
@@ -974,13 +966,12 @@ export default function Transactions() {
         duplicateId={duplicateTransactionId}
       />
 
-      {/* Transaction Details Dialog */}
       <TransactionDetailsDialog
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
         transaction={selectedTransactionDetails}
         onEdit={handleEditFromDetails}
       />
-    </div>
+    </AppLayout>
   );
 }
