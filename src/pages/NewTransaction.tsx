@@ -31,6 +31,7 @@ import { useRecipients } from "@/hooks/useRecipients";
 import { useCreateTransaction, useUpdateTransaction, useTransactions } from "@/hooks/useTransactions";
 import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
+import { usePersonNames } from "@/hooks/useUserSettings";
 
 // Validation schema for transactions
 const transactionSchema = z.object({
@@ -49,8 +50,6 @@ const transactionSchema = z.object({
   totalInstallments: z.number().min(2).max(48).optional(),
   incomeOrigin: z.string().max(100).optional(),
 });
-
-const persons = ["Huana", "Douglas"];
 const installmentOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 15, 18];
 const recurringDurationOptions = [
   { value: "indefinite", label: "Sem prazo definido" },
@@ -69,6 +68,8 @@ export default function NewTransaction() {
   const loadId = editId || duplicateId;
   
   const { toast } = useToast();
+  const { members } = usePersonNames();
+  const persons = members.map(m => m.name);
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
   const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
