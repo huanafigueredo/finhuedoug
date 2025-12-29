@@ -216,9 +216,9 @@ export default function People() {
     const evolutionData = getMonthlyEvolution(personName);
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <MetricCard
             title="Despesas Totais"
             value={formatCurrency(totalExpenses)}
@@ -249,16 +249,16 @@ export default function People() {
         </div>
 
         {/* Charts */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {categoryData.length > 0 ? (
             <PieChart data={categoryData} title="Gastos por Categoria" />
           ) : (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Gastos por Categoria</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Gastos por Categoria</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-center h-48 text-muted-foreground">
-                Sem dados para exibir
+              <CardContent className="flex items-center justify-center h-40 sm:h-48 text-muted-foreground text-sm">
+                Sem dados
               </CardContent>
             </Card>
           )}
@@ -267,11 +267,11 @@ export default function People() {
             <PieChart data={bankData} title="Gastos por Banco" />
           ) : (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Gastos por Banco</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Gastos por Banco</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-center h-48 text-muted-foreground">
-                Sem dados para exibir
+              <CardContent className="flex items-center justify-center h-40 sm:h-48 text-muted-foreground text-sm">
+                Sem dados
               </CardContent>
             </Card>
           )}
@@ -289,49 +289,49 @@ export default function People() {
 
         {/* Recent Transactions */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Últimas Transações</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Últimas Transações</CardTitle>
             <Link to={`/lancamentos?for_who=${encodeURIComponent(personName)}`}>
-              <Button variant="ghost" size="sm" className="gap-1">
-                Ver todas <ArrowRight className="w-4 h-4" />
+              <Button variant="ghost" size="sm" className="gap-1 text-xs sm:text-sm">
+                Ver todas <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {recentTransactions.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {recentTransactions.map((t) => {
                   const value = t.is_couple ? getTransactionMonthValue(t) / 2 : getTransactionMonthValue(t);
                   return (
                     <div 
                       key={t.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                      className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground truncate">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <span className="font-medium text-foreground truncate text-sm">
                             {t.description}
                           </span>
                           {t.is_couple && (
-                            <Heart className="w-3.5 h-3.5 text-primary fill-primary shrink-0" />
+                            <Heart className="w-3 h-3 text-primary fill-primary shrink-0" />
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          {format(parseISO(t.date), "dd/MM/yyyy")} • {t.category || "Outros"}
+                          {format(parseISO(t.date), "dd/MM")} • {t.category || "Outros"}
                         </div>
                       </div>
                       <span className={cn(
-                        "font-medium tabular-nums ml-4",
+                        "font-medium tabular-nums ml-2 text-sm",
                         t.type === "income" ? "text-success" : "text-destructive"
                       )}>
-                        {t.type === "income" ? "+" : "-"} {formatCurrency(value)}
+                        {t.type === "income" ? "+" : "-"}{formatCurrency(value)}
                       </span>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
                 Nenhuma transação neste período
               </div>
             )}
@@ -348,23 +348,23 @@ export default function People() {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-              <Heart className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Perfis Individuais</span>
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6">
+              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+              <span className="text-xs sm:text-sm font-medium text-primary">Perfis Individuais</span>
             </div>
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4">
               Dashboard por Pessoa
             </h1>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Visualize as finanças individuais de cada pessoa do casal
+            <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+              Visualize as finanças individuais
             </p>
           </div>
 
           {/* Month/Year Filter */}
-          <div className="flex items-center justify-center gap-3 mb-8">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-28 sm:w-36">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
@@ -377,7 +377,7 @@ export default function People() {
             </Select>
 
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-20 sm:w-24">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>
@@ -392,13 +392,13 @@ export default function People() {
 
           {/* Tabs for each person */}
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-              <TabsTrigger value="person1" className="gap-2">
-                <User className="w-4 h-4" />
+            <TabsList className="grid w-full max-w-xs sm:max-w-md mx-auto grid-cols-2 mb-6 sm:mb-8">
+              <TabsTrigger value="person1" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {metrics.person1Name}
               </TabsTrigger>
-              <TabsTrigger value="person2" className="gap-2">
-                <User className="w-4 h-4" />
+              <TabsTrigger value="person2" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {metrics.person2Name}
               </TabsTrigger>
             </TabsList>
@@ -425,30 +425,30 @@ export default function People() {
           </Tabs>
 
           {/* Summary Card */}
-          <div className="mt-12 p-8 rounded-2xl bg-card border border-border shadow-card text-center">
-            <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h2 className="font-display text-2xl font-semibold text-foreground mb-2">
+          <div className="mt-8 sm:mt-12 p-5 sm:p-8 rounded-2xl bg-card border border-border shadow-card text-center">
+            <Heart className="w-8 h-8 sm:w-12 sm:h-12 text-primary mx-auto mb-3 sm:mb-4" />
+            <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-2">
               Resumo do Casal
             </h2>
-            <p className="text-muted-foreground mb-6">
-              Totais combinados em {selectedMonth}/{selectedYear}
+            <p className="text-muted-foreground text-sm mb-4 sm:mb-6">
+              Totais em {selectedMonth}/{selectedYear}
             </p>
-            <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 max-w-lg mx-auto">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Despesas</p>
-                <p className="text-xl font-display font-bold text-destructive">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Despesas</p>
+                <p className="text-base sm:text-xl font-display font-bold text-destructive">
                   {formatCurrency(metrics.totalExpenses)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Receitas</p>
-                <p className="text-xl font-display font-bold text-success">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Receitas</p>
+                <p className="text-base sm:text-xl font-display font-bold text-success">
                   {formatCurrency(metrics.totalIncome)}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground mb-1">Saldo</p>
-                <p className={`text-xl font-display font-bold ${metrics.totalBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Saldo</p>
+                <p className={`text-base sm:text-xl font-display font-bold ${metrics.totalBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {formatCurrency(metrics.totalBalance)}
                 </p>
               </div>
