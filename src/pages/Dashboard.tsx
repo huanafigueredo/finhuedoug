@@ -260,18 +260,21 @@ export default function Dashboard() {
               value={formatCurrency(metrics.totalExpenses)}
               icon={TrendingDown}
               variant="primary"
+              delay={0}
             />
             <MetricCard
               title="Total de Receitas"
               value={formatCurrency(metrics.totalIncome)}
               icon={TrendingUp}
               variant="success"
+              delay={100}
             />
             <MetricCard
               title="Saldo do Mês"
               value={formatCurrency(metrics.totalBalance)}
               icon={Wallet}
               variant="accent"
+              delay={200}
             />
           </div>
 
@@ -283,6 +286,7 @@ export default function Dashboard() {
               subtitle="Individual + metade casal"
               icon={User}
               variant="primary"
+              delay={300}
             />
             <MetricCard
               title={`Gastos ${metrics.person2Name}`}
@@ -290,6 +294,7 @@ export default function Dashboard() {
               subtitle="Individual + metade casal"
               icon={User}
               variant="primary"
+              delay={400}
             />
             <MetricCard
               title={`Saldo ${metrics.person1Name}`}
@@ -297,6 +302,7 @@ export default function Dashboard() {
               subtitle={`Rec: ${formatCurrency(metrics.person1Income)}`}
               icon={PiggyBank}
               variant={metrics.person1Balance >= 0 ? "success" : "primary"}
+              delay={500}
             />
             <MetricCard
               title={`Saldo ${metrics.person2Name}`}
@@ -304,6 +310,7 @@ export default function Dashboard() {
               subtitle={`Rec: ${formatCurrency(metrics.person2Income)}`}
               icon={PiggyBank}
               variant={metrics.person2Balance >= 0 ? "success" : "primary"}
+              delay={600}
             />
           </div>
 

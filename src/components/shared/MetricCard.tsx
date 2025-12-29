@@ -12,6 +12,7 @@ interface MetricCardProps {
   };
   variant?: "default" | "primary" | "accent" | "success";
   className?: string;
+  delay?: number;
 }
 
 export function MetricCard({
@@ -22,6 +23,7 @@ export function MetricCard({
   trend,
   variant = "default",
   className,
+  delay = 0,
 }: MetricCardProps) {
   const variants = {
     default: "bg-card border-border",
@@ -47,10 +49,12 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "relative p-4 sm:p-5 rounded-2xl border shadow-card overflow-hidden transition-all duration-200 hover:shadow-lg",
+        "relative p-4 sm:p-5 rounded-2xl border shadow-card overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
+        "animate-fade-up opacity-0",
         variants[variant],
         className
       )}
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
     >
       {/* Icon positioned top-right */}
       <div 
