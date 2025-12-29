@@ -1,20 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -46,6 +41,9 @@ import {
   ChevronRight,
   UserCircle,
   Save,
+  Settings as SettingsIcon,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
@@ -56,8 +54,8 @@ import { useAddCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/us
 import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@/hooks/useSubcategoriesMutations";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
 import { useToast } from "@/hooks/use-toast";
-import { BudgetConfigSection } from "@/components/budget/BudgetConfigSection";
-import { SavingsGoalsConfigSection } from "@/components/savings/SavingsGoalsConfigSection";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ConfigItem {
   id: string;
@@ -65,6 +63,18 @@ interface ConfigItem {
   color?: string | null;
   category_id?: string;
 }
+
+// Sidebar navigation items
+const navSections = [
+  { id: "general", label: "Geral", icon: SettingsIcon },
+  { id: "people", label: "Pessoas", icon: UserCircle },
+  { id: "banks", label: "Bancos", icon: CreditCard },
+  { id: "payment-methods", label: "Formas de Pagamento", icon: Wallet },
+  { id: "recipients", label: "Para Quem", icon: Users },
+  { id: "categories", label: "Categorias", icon: Folder },
+  { id: "subcategories", label: "Subcategorias", icon: Tag },
+  { id: "balances", label: "Saldos Iniciais", icon: PiggyBank },
+];
 
 const initialBalances = [
   { id: "1", name: "Conta 1", value: "5.000,00" },
@@ -75,6 +85,8 @@ const initialBalances = [
 
 export default function Settings() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [activeSection, setActiveSection] = useState("general");
   const [balances, setBalances] = useState(initialBalances);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<string | null>(null);
@@ -84,6 +96,9 @@ export default function Settings() {
   const [newItemCategoryId, setNewItemCategoryId] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ section: string; id: string; name: string } | null>(null);
+
+  // Section refs for scrolling
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // User settings for editable names
   const { data: userSettings, isLoading: settingsLoading } = useUserSettings();
@@ -142,54 +157,16 @@ export default function Settings() {
     }
   };
 
-  // Group subcategories by category
-  const subcategoriesByCategory = subcategories.reduce((acc, sub) => {
-    if (!acc[sub.category_id]) acc[sub.category_id] = [];
-    acc[sub.category_id].push(sub);
-    return acc;
-  }, {} as Record<string, typeof subcategories>);
+  const getCategoryName = (categoryId: string) => {
+    return categories.find(c => c.id === categoryId)?.name || "";
+  };
 
-  const sections = {
-    banks: {
-      title: "Bancos",
-      icon: CreditCard,
-      allowColor: true,
-      requiresCategory: false,
-      items: banks.map((b) => ({ id: b.id, name: b.name, color: b.color })),
-      isLoading: banksLoading,
-    },
-    paymentMethods: {
-      title: "Formas de Pagamento",
-      icon: Wallet,
-      allowColor: false,
-      requiresCategory: false,
-      items: paymentMethods.map((p) => ({ id: p.id, name: p.name })),
-      isLoading: paymentMethodsLoading,
-    },
-    recipients: {
-      title: "Para Quem",
-      icon: Users,
-      allowColor: false,
-      requiresCategory: false,
-      items: recipients.map((r) => ({ id: r.id, name: r.name })),
-      isLoading: recipientsLoading,
-    },
-    categories: {
-      title: "Categorias",
-      icon: Folder,
-      allowColor: false,
-      requiresCategory: false,
-      items: categories.map((c) => ({ id: c.id, name: c.name })),
-      isLoading: categoriesLoading,
-    },
-    subcategories: {
-      title: "Subcategorias",
-      icon: Tag,
-      allowColor: false,
-      requiresCategory: true,
-      items: subcategories.map((s) => ({ id: s.id, name: s.name, category_id: s.category_id })),
-      isLoading: subcategoriesLoading,
-    },
+  const scrollToSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const element = sectionRefs.current[sectionId];
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const openAddDialog = (sectionKey: string) => {
@@ -225,7 +202,7 @@ export default function Settings() {
         } else {
           await addBank.mutateAsync({ name: newItemName, color: newItemColor });
         }
-      } else if (editingSection === "paymentMethods") {
+      } else if (editingSection === "payment-methods") {
         if (editingItem) {
           await updatePaymentMethod.mutateAsync({ id: editingItem.id, name: newItemName });
         } else {
@@ -280,7 +257,7 @@ export default function Settings() {
     try {
       if (section === "banks") {
         await deleteBank.mutateAsync(id);
-      } else if (section === "paymentMethods") {
+      } else if (section === "payment-methods") {
         await deletePaymentMethod.mutateAsync(id);
       } else if (section === "recipients") {
         await deleteRecipient.mutateAsync(id);
@@ -311,230 +288,347 @@ export default function Settings() {
                    addCategory.isPending || updateCategory.isPending ||
                    addSubcategory.isPending || updateSubcategory.isPending;
 
-  const getCategoryName = (categoryId: string) => {
-    return categories.find(c => c.id === categoryId)?.name || "";
+  const getSectionLabel = (section: string) => {
+    switch (section) {
+      case "banks": return "Bancos";
+      case "payment-methods": return "Formas de Pagamento";
+      case "recipients": return "Para Quem";
+      case "categories": return "Categorias";
+      case "subcategories": return "Subcategorias";
+      default: return "";
+    }
   };
+
+  // Render a config list item
+  const renderConfigItem = (sectionKey: string, item: ConfigItem) => (
+    <div
+      key={item.id}
+      className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 group transition-colors"
+    >
+      <div className="flex items-center gap-3">
+        {item.color && (
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: item.color }}
+          />
+        )}
+        <div className="flex flex-col">
+          <span className="text-sm text-foreground">{item.name}</span>
+          {sectionKey === "subcategories" && item.category_id && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <ChevronRight className="w-3 h-3" />
+              {getCategoryName(item.category_id)}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => openEditDialog(sectionKey, item)}
+          className="p-1.5 rounded-md hover:bg-muted transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+        </button>
+        <button
+          onClick={() => confirmDelete(sectionKey, item.id, item.name)}
+          className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+        </button>
+      </div>
+    </div>
+  );
+
+  // Section component
+  const SectionWrapper = ({ 
+    id, 
+    title, 
+    description, 
+    children 
+  }: { 
+    id: string; 
+    title: string; 
+    description?: string; 
+    children: React.ReactNode;
+  }) => (
+    <div 
+      ref={(el) => { sectionRefs.current[id] = el; }}
+      className="scroll-mt-6"
+    >
+      <h2 className="text-lg font-semibold text-foreground mb-1">{title}</h2>
+      {description && (
+        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+      )}
+      {children}
+      <Separator className="my-6" />
+    </div>
+  );
+
+  // Config list section
+  const ConfigListSection = ({ 
+    sectionKey, 
+    items, 
+    isLoading,
+    allowColor = false,
+  }: { 
+    sectionKey: string;
+    items: ConfigItem[];
+    isLoading: boolean;
+    allowColor?: boolean;
+  }) => (
+    <div className="space-y-1">
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground py-2">Carregando...</p>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-2">Nenhum item cadastrado.</p>
+      ) : (
+        items.map((item) => renderConfigItem(sectionKey, item))
+      )}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => openAddDialog(sectionKey)}
+        className="mt-3"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Adicionar
+      </Button>
+    </div>
+  );
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        {/* Header */}
-        <div className="mb-8">
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Configurações
-            </h1>
-            <p className="text-muted-foreground">
-              Personalize bancos, formas de pagamento e mais
-            </p>
-          </div>
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)]">
+        {/* Sidebar Navigation - Desktop only */}
+        {!isMobile && (
+          <aside className="w-56 flex-shrink-0 border-r border-border bg-card/50">
+            <ScrollArea className="h-full py-4">
+              <nav className="px-3 space-y-1">
+                {navSections.map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors text-left",
+                      activeSection === section.id
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <section.icon className="w-4 h-4" />
+                    {section.label}
+                  </button>
+                ))}
+              </nav>
+            </ScrollArea>
+          </aside>
+        )}
 
-          {/* Config Sections */}
-          <div className="space-y-4">
-            <Accordion type="multiple" className="space-y-4">
-              {Object.entries(sections).map(([key, section]) => (
-                <AccordionItem
-                  key={key}
-                  value={key}
-                  className="rounded-2xl bg-card border border-border shadow-card overflow-hidden"
-                >
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/30">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <section.icon className="w-5 h-5 text-primary" />
-                      </div>
-                      <span className="font-display text-lg font-semibold text-foreground">
-                        {section.title}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({section.items.length})
-                      </span>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-6">
-                    <div className="space-y-3">
-                      {section.isLoading ? (
-                        <div className="text-center py-4 text-muted-foreground">
-                          Carregando...
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-2xl mx-auto px-4 py-6 lg:px-8 lg:py-8">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-2xl lg:text-3xl font-bold text-foreground">Configurações</h1>
+              <p className="text-muted-foreground mt-1">
+                Personalize bancos, categorias e preferências.
+              </p>
+            </div>
+
+            {/* Mobile: Section selector */}
+            {isMobile && (
+              <div className="mb-6">
+                <Select value={activeSection} onValueChange={scrollToSection}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {navSections.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        <div className="flex items-center gap-2">
+                          <section.icon className="w-4 h-4" />
+                          {section.label}
                         </div>
-                      ) : (
-                        <>
-                          {section.items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 group"
-                            >
-                              <div className="flex items-center gap-3">
-                                {item.color && (
-                                  <div
-                                    className="w-4 h-4 rounded-full"
-                                    style={{ backgroundColor: item.color }}
-                                  />
-                                )}
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-medium text-foreground">
-                                    {item.name}
-                                  </span>
-                                  {key === "subcategories" && item.category_id && (
-                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                      <ChevronRight className="w-3 h-3" />
-                                      {getCategoryName(item.category_id)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => openEditDialog(key, item)}
-                                  className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
-                                >
-                                  <Pencil className="w-4 h-4 text-muted-foreground" />
-                                </button>
-                                <button
-                                  onClick={() => confirmDelete(key, item.id, item.name)}
-                                  className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4 text-destructive" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openAddDialog(key)}
-                            className="w-full mt-2"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Adicionar
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-
-              {/* Budget Config Section */}
-              <BudgetConfigSection />
-
-              {/* Savings Goals Config Section */}
-              <SavingsGoalsConfigSection />
-
-              {/* Person Names */}
-              <AccordionItem
-                value="person-names"
-                className="rounded-2xl bg-card border border-border shadow-card overflow-hidden"
-              >
-                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/30">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <UserCircle className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-display text-lg font-semibold text-foreground">
-                      Nomes das Pessoas
-                    </span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-6 pb-6">
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Personalize os nomes usados nos lançamentos e relatórios.
-                    </p>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Pessoa 1</Label>
-                        <Input
-                          value={person1Name}
-                          onChange={(e) => setPerson1Name(e.target.value)}
-                          placeholder="Nome da pessoa 1"
-                          maxLength={50}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Pessoa 2</Label>
-                        <Input
-                          value={person2Name}
-                          onChange={(e) => setPerson2Name(e.target.value)}
-                          placeholder="Nome da pessoa 2"
-                          maxLength={50}
-                        />
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleSaveNames}
-                      disabled={updateUserSettings.isPending}
-                      className="w-full mt-4"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {updateUserSettings.isPending ? "Salvando..." : "Salvar Nomes"}
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-
-              {/* Initial Balances */}
-              <AccordionItem
-                value="balances"
-                className="rounded-2xl bg-card border border-border shadow-card overflow-hidden"
-              >
-                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-secondary/30">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                      <PiggyBank className="w-5 h-5 text-accent" />
-                    </div>
-                    <span className="font-display text-lg font-semibold text-foreground">
-                      Saldos Iniciais
-                    </span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-6 pb-6">
-                  <div className="space-y-4">
-                    {balances.map((balance) => (
-                      <div
-                        key={balance.id}
-                        className="flex items-center justify-between gap-4"
-                      >
-                        <Label className="text-sm font-medium text-muted-foreground min-w-32">
-                          {balance.name}
-                        </Label>
-                        <div className="relative flex-1 max-w-48">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                            R$
-                          </span>
-                          <Input
-                            value={balance.value}
-                            onChange={(e) =>
-                              setBalances((prev) =>
-                                prev.map((b) =>
-                                  b.id === balance.id
-                                    ? { ...b, value: e.target.value }
-                                    : b
-                                )
-                              )
-                            }
-                            className="pl-10 text-right"
-                          />
-                        </div>
-                      </div>
+                      </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* General Section */}
+            <SectionWrapper
+              id="general"
+              title="Geral"
+              description="Informações gerais do aplicativo."
+            >
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Versão</p>
+                  <p className="text-sm font-medium text-foreground">1.0.0</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Última atualização</p>
+                  <p className="text-sm font-medium text-foreground">Dezembro 2025</p>
+                </div>
+              </div>
+            </SectionWrapper>
+
+            {/* People Section */}
+            <SectionWrapper
+              id="people"
+              title="Pessoas"
+              description="Personalize os nomes usados nos lançamentos e relatórios."
+            >
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Pessoa 1</Label>
+                  <Input
+                    value={person1Name}
+                    onChange={(e) => setPerson1Name(e.target.value)}
+                    placeholder="Nome da pessoa 1"
+                    maxLength={50}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Pessoa 2</Label>
+                  <Input
+                    value={person2Name}
+                    onChange={(e) => setPerson2Name(e.target.value)}
+                    placeholder="Nome da pessoa 2"
+                    maxLength={50}
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={handleSaveNames}
+                disabled={updateUserSettings.isPending}
+                className="mt-4"
+                size="sm"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {updateUserSettings.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+            </SectionWrapper>
+
+            {/* Banks Section */}
+            <SectionWrapper
+              id="banks"
+              title="Bancos"
+              description="Gerencie as instituições financeiras."
+            >
+              <ConfigListSection
+                sectionKey="banks"
+                items={banks.map((b) => ({ id: b.id, name: b.name, color: b.color }))}
+                isLoading={banksLoading}
+                allowColor
+              />
+            </SectionWrapper>
+
+            {/* Payment Methods Section */}
+            <SectionWrapper
+              id="payment-methods"
+              title="Formas de Pagamento"
+              description="Configure as formas de pagamento disponíveis."
+            >
+              <ConfigListSection
+                sectionKey="payment-methods"
+                items={paymentMethods.map((p) => ({ id: p.id, name: p.name }))}
+                isLoading={paymentMethodsLoading}
+              />
+            </SectionWrapper>
+
+            {/* Recipients Section */}
+            <SectionWrapper
+              id="recipients"
+              title="Para Quem"
+              description="Destinatários de transferências e pagamentos."
+            >
+              <ConfigListSection
+                sectionKey="recipients"
+                items={recipients.map((r) => ({ id: r.id, name: r.name }))}
+                isLoading={recipientsLoading}
+              />
+            </SectionWrapper>
+
+            {/* Categories Section */}
+            <SectionWrapper
+              id="categories"
+              title="Categorias"
+              description="Organize suas transações por categorias."
+            >
+              <ConfigListSection
+                sectionKey="categories"
+                items={categories.map((c) => ({ id: c.id, name: c.name }))}
+                isLoading={categoriesLoading}
+              />
+            </SectionWrapper>
+
+            {/* Subcategories Section */}
+            <SectionWrapper
+              id="subcategories"
+              title="Subcategorias"
+              description="Detalhamento adicional para cada categoria."
+            >
+              <ConfigListSection
+                sectionKey="subcategories"
+                items={subcategories.map((s) => ({ id: s.id, name: s.name, category_id: s.category_id }))}
+                isLoading={subcategoriesLoading}
+              />
+            </SectionWrapper>
+
+            {/* Balances Section */}
+            <SectionWrapper
+              id="balances"
+              title="Saldos Iniciais"
+              description="Configure os saldos iniciais de cada conta."
+            >
+              <div className="space-y-3">
+                {balances.map((balance) => (
+                  <div
+                    key={balance.id}
+                    className="flex items-center justify-between gap-4"
+                  >
+                    <Label className="text-sm text-muted-foreground min-w-24">
+                      {balance.name}
+                    </Label>
+                    <div className="relative flex-1 max-w-40">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                        R$
+                      </span>
+                      <Input
+                        value={balance.value}
+                        onChange={(e) =>
+                          setBalances((prev) =>
+                            prev.map((b) =>
+                              b.id === balance.id
+                                ? { ...b, value: e.target.value }
+                                : b
+                            )
+                          )
+                        }
+                        className="pl-10 text-right text-sm"
+                      />
+                    </div>
                   </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
+                ))}
+              </div>
+            </SectionWrapper>
+          </div>
+        </main>
       </div>
+
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">
+            <DialogTitle>
               {editingItem ? "Editar" : "Adicionar"}{" "}
-              {editingSection && sections[editingSection as keyof typeof sections]?.title}
+              {editingSection && getSectionLabel(editingSection)}
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label>Nome</Label>
               <Input
@@ -544,7 +638,7 @@ export default function Settings() {
               />
             </div>
 
-            {editingSection && sections[editingSection as keyof typeof sections]?.allowColor && (
+            {editingSection === "banks" && (
               <div className="space-y-2">
                 <Label>Cor</Label>
                 <div className="flex items-center gap-3">
@@ -552,7 +646,7 @@ export default function Settings() {
                     type="color"
                     value={newItemColor}
                     onChange={(e) => setNewItemColor(e.target.value)}
-                    className="w-12 h-12 rounded-xl border border-border cursor-pointer"
+                    className="w-10 h-10 rounded-lg border border-border cursor-pointer"
                   />
                   <Input
                     value={newItemColor}
@@ -581,7 +675,7 @@ export default function Settings() {
               </div>
             )}
 
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
               </Button>
