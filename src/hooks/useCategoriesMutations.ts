@@ -74,8 +74,11 @@ export function useDeleteCategory() {
         }
       }
 
-      const { error } = await supabase.from("categories").delete().eq("id", id);
+      const { data, error } = await supabase.from("categories").delete().eq("id", id).select();
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Não foi possível excluir o item. Verifique suas permissões.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categories"] });
