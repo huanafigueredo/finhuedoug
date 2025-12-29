@@ -785,7 +785,7 @@ export default function Transactions() {
             ) : isMobile ? (
               /* Mobile: Cards Layout */
               <div className="p-3 space-y-2">
-                {filteredTransactions.map((transaction) => (
+                {filteredTransactions.map((transaction, index) => (
                   <TransactionCard
                     key={transaction.id}
                     transaction={transaction}
@@ -793,6 +793,8 @@ export default function Transactions() {
                     onDelete={handleDeleteClick}
                     onDuplicate={handleDuplicateClick}
                     onClick={handleRowClick}
+                    className="animate-fade-up"
+                    style={{ animationDelay: `${Math.min(index * 50, 300)}ms`, animationFillMode: 'backwards' }}
                   />
                 ))}
               </div>
