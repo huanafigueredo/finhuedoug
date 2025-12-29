@@ -31,6 +31,7 @@ import {
   useUpdateSavingsGoal,
   useDeleteSavingsGoal,
   SavingsGoal,
+  GoalOwnerFilter,
 } from "@/hooks/useSavingsGoals";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -46,9 +47,14 @@ const formatCurrency = (valueInCents: number) => {
   }).format(valueInCents / 100);
 };
 
-export function SavingsGoalsConfigSection() {
+interface SavingsGoalsConfigSectionProps {
+  ownerFilter?: GoalOwnerFilter;
+  ownerLabel?: string;
+}
+
+export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGoalsConfigSectionProps) {
   const { toast } = useToast();
-  const { data: goals = [], isLoading } = useSavingsGoals();
+  const { data: goals = [], isLoading } = useSavingsGoals(ownerFilter);
   const createGoal = useCreateSavingsGoal();
   const updateGoal = useUpdateSavingsGoal();
   const deleteGoal = useDeleteSavingsGoal();
@@ -145,6 +151,7 @@ export function SavingsGoalsConfigSection() {
           current_amount: currentCents,
           deadline: deadline || null,
           icon: selectedIcon,
+          owner: ownerFilter || "couple",
         });
         toast({
           title: "Meta criada! 🎯",
@@ -186,6 +193,8 @@ export function SavingsGoalsConfigSection() {
   const activeGoals = goals.filter((g) => g.current_amount < g.target_amount);
   const completedGoals = goals.filter((g) => g.current_amount >= g.target_amount);
 
+  const sectionTitle = ownerLabel ? `Metas de ${ownerLabel}` : "Metas de Economia";
+
   return (
     <>
       <AccordionItem
@@ -198,7 +207,7 @@ export function SavingsGoalsConfigSection() {
               <Target className="w-5 h-5 text-success" />
             </div>
             <span className="font-display text-lg font-semibold text-foreground">
-              Metas de Economia
+              {sectionTitle}
             </span>
             <Badge variant="secondary" className="text-xs">
               {goals.length} meta{goals.length !== 1 ? "s" : ""}
@@ -330,7 +339,7 @@ export function SavingsGoalsConfigSection() {
             <DialogDescription>
               {editingGoal
                 ? "Atualize os detalhes da sua meta."
-                : "Defina uma nova meta para acompanhar seu progresso."}
+                : `Defina uma nova meta ${ownerLabel ? `para ${ownerLabel}` : ""} para acompanhar seu progresso.`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">

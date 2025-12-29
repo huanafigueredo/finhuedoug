@@ -24,13 +24,22 @@ import {
 import { cn } from "@/lib/utils";
 import { 
   useSavingsGoals, 
-  useAddToSavingsGoal,
-  SavingsGoal 
+  SavingsGoal,
+  GoalOwnerFilter,
 } from "@/hooks/useSavingsGoals";
+import { useCreateSavingsDeposit, useSavingsDeposits } from "@/hooks/useSavingsDeposits";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { usePersonNames } from "@/hooks/useUserSettings";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formatCurrency = (valueInCents: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -39,11 +48,19 @@ const formatCurrency = (valueInCents: number) => {
   }).format(valueInCents / 100);
 };
 
-function GoalItem({ goal }: { goal: SavingsGoal }) {
+interface GoalItemProps {
+  goal: SavingsGoal;
+  showDepositor?: boolean;
+}
+
+function GoalItem({ goal, showDepositor }: GoalItemProps) {
   const [isAddingOpen, setIsAddingOpen] = useState(false);
   const [addAmount, setAddAmount] = useState("");
-  const addToGoal = useAddToSavingsGoal();
+  const [depositor, setDepositor] = useState<"person1" | "person2">("person1");
+  const createDeposit = useCreateSavingsDeposit();
   const { toast } = useToast();
+  const { person1, person2 } = usePersonNames();
+  const { data: deposits = [] } = useSavingsDeposits(goal.id);
 
   const percentage = Math.min(
     Math.round((goal.current_amount / goal.target_amount) * 100),
@@ -83,10 +100,17 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
     }
 
     try {
-      await addToGoal.mutateAsync({ id: goal.id, amount: cents });
+      await createDeposit.mutateAsync({ 
+        goal_id: goal.id, 
+        amount: cents,
+        deposited_by: showDepositor ? depositor : "person1",
+      });
+      const depositorName = depositor === "person1" ? person1 : person2;
       toast({
         title: "Valor adicionado! 🎉",
-        description: `R$ ${formatCurrencyInput(addAmount)} adicionado à meta "${goal.title}"`,
+        description: showDepositor 
+          ? `R$ ${formatCurrencyInput(addAmount)} adicionado por ${depositorName} à meta "${goal.title}"`
+          : `R$ ${formatCurrencyInput(addAmount)} adicionado à meta "${goal.title}"`,
       });
       setAddAmount("");
       setIsAddingOpen(false);
@@ -98,6 +122,14 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
       });
     }
   };
+
+  // Calcular contribuições por pessoa
+  const person1Deposits = deposits
+    .filter(d => d.deposited_by === "person1")
+    .reduce((sum, d) => sum + d.amount, 0);
+  const person2Deposits = deposits
+    .filter(d => d.deposited_by === "person2")
+    .reduce((sum, d) => sum + d.amount, 0);
 
   return (
     <>
@@ -157,6 +189,20 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
             )}
           </div>
         </div>
+
+        {/* Mostrar contribuições por pessoa em metas do casal */}
+        {showDepositor && deposits.length > 0 && (
+          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1 border-t border-border/50 mt-2">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              {person1}: {formatCurrency(person1Deposits)}
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-secondary" />
+              {person2}: {formatCurrency(person2Deposits)}
+            </span>
+          </div>
+        )}
       </div>
 
       <Dialog open={isAddingOpen} onOpenChange={setIsAddingOpen}>
@@ -171,6 +217,22 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Seletor de quem está depositando (apenas para metas do casal) */}
+            {showDepositor && (
+              <div className="space-y-2">
+                <Label>Quem está depositando?</Label>
+                <Select value={depositor} onValueChange={(v) => setDepositor(v as "person1" | "person2")}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="person1">{person1}</SelectItem>
+                    <SelectItem value="person2">{person2}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Valor a adicionar</Label>
               <div className="relative">
@@ -194,10 +256,10 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
             </div>
             <Button
               onClick={handleAddAmount}
-              disabled={addToGoal.isPending}
+              disabled={createDeposit.isPending}
               className="w-full"
             >
-              {addToGoal.isPending ? (
+              {createDeposit.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : (
                 <TrendingUp className="w-4 h-4 mr-2" />
@@ -214,10 +276,17 @@ function GoalItem({ goal }: { goal: SavingsGoal }) {
 interface SavingsGoalsCardProps {
   className?: string;
   showConfigLink?: boolean;
+  ownerFilter?: GoalOwnerFilter;
+  showDepositor?: boolean;
 }
 
-export function SavingsGoalsCard({ className, showConfigLink = true }: SavingsGoalsCardProps) {
-  const { data: goals = [], isLoading } = useSavingsGoals();
+export function SavingsGoalsCard({ 
+  className, 
+  showConfigLink = true,
+  ownerFilter,
+  showDepositor = false,
+}: SavingsGoalsCardProps) {
+  const { data: goals = [], isLoading } = useSavingsGoals(ownerFilter);
 
   if (isLoading) {
     return (
@@ -308,7 +377,7 @@ export function SavingsGoalsCard({ className, showConfigLink = true }: SavingsGo
         {/* Goals List */}
         <div className="space-y-4 max-h-48 overflow-y-auto pr-1">
           {displayGoals.map((goal) => (
-            <GoalItem key={goal.id} goal={goal} />
+            <GoalItem key={goal.id} goal={goal} showDepositor={showDepositor} />
           ))}
         </div>
 
@@ -332,7 +401,7 @@ export function SavingsGoalsCard({ className, showConfigLink = true }: SavingsGo
                 {completedGoals.length} meta{completedGoals.length !== 1 ? "s" : ""} concluída{completedGoals.length !== 1 ? "s" : ""}
               </p>
               <p className="font-semibold text-foreground">
-                {Math.round((totalSaved / totalTarget) * 100)}% do total
+                {totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0}% do total
               </p>
             </div>
           </div>

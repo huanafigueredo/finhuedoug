@@ -9,9 +9,12 @@ export interface SavingsGoal {
   current_amount: number; // em centavos
   deadline: string | null;
   icon: string;
+  owner: string; // 'person1', 'person2', 'couple'
   created_at: string;
   updated_at: string;
 }
+
+export type GoalOwnerFilter = "all" | "person1" | "person2" | "couple";
 
 export interface SavingsGoalInput {
   title: string;
@@ -19,16 +22,23 @@ export interface SavingsGoalInput {
   current_amount?: number;
   deadline?: string | null;
   icon?: string;
+  owner?: string;
 }
 
-export function useSavingsGoals() {
+export function useSavingsGoals(ownerFilter?: GoalOwnerFilter) {
   return useQuery({
-    queryKey: ["savings-goals"],
+    queryKey: ["savings-goals", ownerFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("savings_goals")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (ownerFilter && ownerFilter !== "all") {
+        query = query.eq("owner", ownerFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as SavingsGoal[];
@@ -53,7 +63,8 @@ export function useCreateSavingsGoal() {
           current_amount: input.current_amount || 0,
           deadline: input.deadline || null,
           icon: input.icon || "🎯",
-        })
+          owner: input.owner || "couple",
+        } as any)
         .select()
         .single();
 
