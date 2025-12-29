@@ -25,12 +25,13 @@ export interface BudgetSummary {
   hasExceeded: boolean;
 }
 
-function getMonthValue(t: Transaction): number {
+function getMonthValueInCents(t: Transaction): number {
   // Para transações parceladas, usar o valor da parcela
+  // Converter de Reais para centavos (valores no banco estão em Reais)
   if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    return Number(t.installment_value);
+    return Math.round(Number(t.installment_value) * 100);
   }
-  return Number(t.total_value);
+  return Math.round(Number(t.total_value) * 100);
 }
 
 export function useBudgetProgress(
@@ -52,11 +53,11 @@ export function useBudgetProgress(
       );
     });
 
-    // Calcular gastos por categoria
+    // Calcular gastos por categoria (em centavos)
     const spentByCategory: Record<string, number> = {};
     monthTransactions.forEach((t) => {
       const cat = t.category || "Outros";
-      spentByCategory[cat] = (spentByCategory[cat] || 0) + getMonthValue(t);
+      spentByCategory[cat] = (spentByCategory[cat] || 0) + getMonthValueInCents(t);
     });
 
     // Mapear orçamentos com progresso

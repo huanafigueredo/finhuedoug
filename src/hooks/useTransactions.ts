@@ -142,7 +142,7 @@ export function useCreateTransaction() {
             installment_number: startFrom,
             installment_value: installmentValue,
             is_generated_installment: false,
-          })
+          } as any)
           .select()
           .single();
 
@@ -182,7 +182,7 @@ export function useCreateTransaction() {
               user_id: user.id,
               date: firstDate.toISOString().split("T")[0],
               is_generated_installment: false,
-            })
+            } as any)
             .select()
             .single();
 
@@ -211,7 +211,7 @@ export function useCreateTransaction() {
           if (futureTransactions.length > 0) {
             const { error: futureError } = await supabase
               .from("transactions")
-              .insert(futureTransactions);
+              .insert(futureTransactions as any);
 
             if (futureError) {
               console.error("Future recurring transactions insert error:", futureError);
@@ -226,7 +226,7 @@ export function useCreateTransaction() {
       // Single transaction (no installments or recurring)
       const { data, error } = await supabase
         .from("transactions")
-        .insert({ ...transactionData, user_id: user.id })
+        .insert({ ...transactionData, user_id: user.id } as any)
         .select()
         .single();
 
