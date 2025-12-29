@@ -43,9 +43,9 @@ export function TransactionCard({
   const SWIPE_THRESHOLD = 80;
   const MAX_SWIPE = 140;
 
-  const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  const triggerHaptic = (intensity: 'light' | 'medium' | 'heavy' = 'light') => {
     if ('vibrate' in navigator) {
-      const duration = style === 'light' ? 10 : style === 'medium' ? 20 : 30;
+      const duration = intensity === 'light' ? 10 : intensity === 'medium' ? 20 : 30;
       navigator.vibrate(duration);
     }
   };
