@@ -2,7 +2,9 @@ import { useState, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { TransactionRow, Transaction } from "@/components/shared/TransactionRow";
+import { TransactionCard } from "@/components/shared/TransactionCard";
 import { TransactionFormModal } from "@/components/TransactionFormModal";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionDetailsDialog, TransactionDetails } from "@/components/TransactionDetailsDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, Download, Loader2, Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -83,6 +86,7 @@ function calculateInstallmentForMonth(
 
 export default function Transactions() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const { data: banksData = [] } = useBanks();
   const { data: paymentMethodsData = [] } = usePaymentMethods();
@@ -439,8 +443,8 @@ export default function Transactions() {
               <span className="text-sm font-medium text-foreground">Filtros</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-12 gap-4">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+              <div className="col-span-2 sm:col-span-1 space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Buscar</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -631,13 +635,88 @@ export default function Transactions() {
             </div>
           </div>
 
-          {/* Table */}
           <div className="rounded-2xl bg-card border border-border shadow-card overflow-hidden">
             {transactionsLoading ? (
               <div className="p-12 flex items-center justify-center">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
+            ) : isMobile ? (
+              /* Mobile: Cards Layout */
+              <div className="p-4 space-y-3">
+                {filteredTransactions.map((transaction) => (
+                  <TransactionCard
+                    key={transaction.id}
+                    transaction={transaction}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteClick}
+                    onDuplicate={handleDuplicateClick}
+                    onClick={handleRowClick}
+                  />
+                ))}
+                
+                {/* Mobile Summary */}
+                {filteredTransactions.length > 0 && (
+                  <div className="mt-4 p-4 rounded-xl bg-secondary/50 space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-muted-foreground">Total do Mês:</span>
+                      <span className="font-bold text-primary">
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                          filteredTransactions.reduce((sum, t) => sum + (t.type === "expense" ? t.totalValue : 0), 0)
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Despesas:</span>
+                      <span className="font-medium text-foreground">
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                          filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0)
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Receitas:</span>
+                      <span className="font-medium text-success">
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                          filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0)
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
+                      <span className="text-muted-foreground">Saldo:</span>
+                      {(() => {
+                        const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
+                        const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
+                        const balance = income - expenses;
+                        return (
+                          <span className={cn("font-medium", balance >= 0 ? "text-success" : "text-destructive")}>
+                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balance)}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    {filteredTransactions.some(t => t.isCouple) && (
+                      <div className="flex justify-between items-center text-sm pt-2 border-t border-border">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <Heart className="w-3.5 h-3.5 text-primary fill-primary" />
+                          P/ Pessoa:
+                        </span>
+                        {(() => {
+                          const incomePerPerson = filteredTransactions.filter(t => t.type === "income" && t.isCouple).reduce((sum, t) => sum + t.valuePerPerson, 0);
+                          const expensesPerPerson = filteredTransactions.filter(t => t.type === "expense" && t.isCouple).reduce((sum, t) => sum + t.valuePerPerson, 0);
+                          const balancePerPerson = incomePerPerson - expensesPerPerson;
+                          return (
+                            <span className={cn("font-bold", balancePerPerson >= 0 ? "text-success" : "text-destructive")}>
+                              {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(balancePerPerson)}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             ) : (
+              /* Desktop: Table Layout */
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
                   <thead className="bg-secondary/50">
@@ -699,7 +778,6 @@ export default function Transactions() {
                         <td className="px-2 py-3 text-sm font-bold text-primary text-right">
                           {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
                             filteredTransactions.reduce((sum, t) => {
-                              // totalValue now already contains installment value for new-style
                               return sum + (t.type === "expense" ? t.totalValue : 0);
                             }, 0)
                           )}
