@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -374,13 +373,10 @@ export default function NewTransaction() {
   const preview = installmentPreview();
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-3xl">
-          {/* Header */}
-          <div className="mb-8">
+    <AppLayout>
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        {/* Header */}
+        <div className="mb-8">
             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -1043,10 +1039,7 @@ export default function NewTransaction() {
               </div>
             </div>
           </form>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AppLayout>
   );
 }
