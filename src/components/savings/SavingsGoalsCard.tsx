@@ -20,6 +20,9 @@ import {
   Sparkles,
   Calendar,
   Loader2,
+  History,
+  User,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
@@ -27,7 +30,7 @@ import {
   SavingsGoal,
   GoalOwnerFilter,
 } from "@/hooks/useSavingsGoals";
-import { useCreateSavingsDeposit, useSavingsDeposits } from "@/hooks/useSavingsDeposits";
+import { useCreateSavingsDeposit, useSavingsDeposits, useDeleteSavingsDeposit, SavingsDeposit } from "@/hooks/useSavingsDeposits";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +43,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const formatCurrency = (valueInCents: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -55,12 +69,42 @@ interface GoalItemProps {
 
 function GoalItem({ goal, showDepositor }: GoalItemProps) {
   const [isAddingOpen, setIsAddingOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [depositToDelete, setDepositToDelete] = useState<SavingsDeposit | null>(null);
   const [addAmount, setAddAmount] = useState("");
   const [depositor, setDepositor] = useState<"person1" | "person2">("person1");
   const createDeposit = useCreateSavingsDeposit();
+  const deleteDeposit = useDeleteSavingsDeposit();
   const { toast } = useToast();
   const { person1, person2 } = usePersonNames();
   const { data: deposits = [] } = useSavingsDeposits(goal.id);
+
+  const getDepositorName = (depositedBy: string) => {
+    return depositedBy === "person1" ? person1 : person2;
+  };
+
+  const handleDeleteDeposit = async () => {
+    if (!depositToDelete) return;
+    
+    try {
+      await deleteDeposit.mutateAsync({
+        id: depositToDelete.id,
+        goalId: depositToDelete.goal_id,
+        amount: depositToDelete.amount,
+      });
+      toast({
+        title: "Depósito removido",
+        description: `Depósito de ${formatCurrency(depositToDelete.amount)} foi removido.`,
+      });
+      setDepositToDelete(null);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error?.message || "Não foi possível remover o depósito.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const percentage = Math.min(
     Math.round((goal.current_amount / goal.target_amount) * 100),
@@ -192,15 +236,26 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
 
         {/* Mostrar contribuições por pessoa em metas do casal */}
         {showDepositor && deposits.length > 0 && (
-          <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1 border-t border-border/50 mt-2">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              {person1}: {formatCurrency(person1Deposits)}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-secondary" />
-              {person2}: {formatCurrency(person2Deposits)}
-            </span>
+          <div className="flex items-center justify-between pt-1 border-t border-border/50 mt-2">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                {person1}: {formatCurrency(person1Deposits)}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-secondary" />
+                {person2}: {formatCurrency(person2Deposits)}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsHistoryOpen(true)}
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <History className="w-3 h-3 mr-1" />
+              Histórico
+            </Button>
           </div>
         )}
       </div>
@@ -269,6 +324,126 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Histórico de Depósitos */}
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">{goal.icon}</span>
+              Histórico de Depósitos
+            </DialogTitle>
+            <DialogDescription>
+              {goal.title} - {deposits.length} depósito{deposits.length !== 1 ? "s" : ""}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {deposits.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum depósito registrado ainda.
+            </div>
+          ) : (
+            <ScrollArea className="max-h-80">
+              <div className="space-y-3 pr-4">
+                {deposits.map((deposit) => (
+                  <div
+                    key={deposit.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-sm",
+                        deposit.deposited_by === "person1" 
+                          ? "bg-primary/20 text-primary" 
+                          : "bg-secondary text-secondary-foreground"
+                      )}>
+                        <User className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {getDepositorName(deposit.deposited_by)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(parseISO(deposit.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                        {deposit.note && (
+                          <p className="text-xs text-muted-foreground mt-0.5 italic">
+                            "{deposit.note}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-success">
+                        +{formatCurrency(deposit.amount)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDepositToDelete(deposit)}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+
+          {/* Resumo */}
+          {deposits.length > 0 && (
+            <div className="pt-3 border-t border-border/50 mt-2">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-4">
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    {person1}: {formatCurrency(person1Deposits)}
+                  </span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <span className="w-2 h-2 rounded-full bg-secondary" />
+                    {person2}: {formatCurrency(person2Deposits)}
+                  </span>
+                </div>
+                <span className="font-semibold text-success">
+                  Total: {formatCurrency(goal.current_amount)}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmação de exclusão */}
+      <AlertDialog open={!!depositToDelete} onOpenChange={() => setDepositToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover depósito?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso irá remover o depósito de{" "}
+              <strong>{depositToDelete && formatCurrency(depositToDelete.amount)}</strong>{" "}
+              feito por{" "}
+              <strong>{depositToDelete && getDepositorName(depositToDelete.deposited_by)}</strong>.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteDeposit}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteDeposit.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
