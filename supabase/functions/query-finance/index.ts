@@ -43,11 +43,87 @@ interface QueryFilters {
 
 // Helper function to get correct transaction value (handles installments)
 function getTransactionValue(t: any): number {
-  // For new-style installments (single record), use installment_value
+  // For dynamic installments (single record), use installment_value
   if (t.is_installment && !t.is_generated_installment && t.installment_value) {
     return Number(t.installment_value);
   }
   return Number(t.total_value || 0);
+}
+
+// Calculate which installment number should appear in a given month
+function calculateInstallmentForMonth(
+  transactionDate: string,
+  totalInstallments: number,
+  targetMonth: number,
+  targetYear: number
+): { installmentNumber: number; shouldShow: boolean } {
+  const txDate = new Date(transactionDate);
+  const txMonth = txDate.getMonth();
+  const txYear = txDate.getFullYear();
+
+  // Calculate months difference
+  const monthsDiff = (targetYear - txYear) * 12 + (targetMonth - txMonth);
+  
+  // Installment number is 1-indexed
+  const installmentNumber = monthsDiff + 1;
+  
+  // Should show if within valid range
+  const shouldShow = installmentNumber >= 1 && installmentNumber <= totalInstallments;
+  
+  return { installmentNumber, shouldShow };
+}
+
+// Check if a transaction should appear in the target period
+function shouldIncludeTransaction(
+  t: any,
+  startDate: string,
+  endDate: string
+): { include: boolean; projectedInstallmentNumber?: number } {
+  const txDate = new Date(t.date);
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  // For non-installment transactions, use simple date range check
+  if (!t.is_installment || t.is_generated_installment) {
+    const isInRange = txDate >= start && txDate <= end;
+    return { include: isInRange };
+  }
+  
+  // For dynamic installments, check if any parcela falls within the period
+  const totalInstallments = t.total_installments || 1;
+  
+  // Check each month in the target period
+  const startMonth = start.getMonth();
+  const startYear = start.getFullYear();
+  const endMonth = end.getMonth();
+  const endYear = end.getFullYear();
+  
+  // For simplicity, check the start month of the period (most common case)
+  const { installmentNumber, shouldShow } = calculateInstallmentForMonth(
+    t.date,
+    totalInstallments,
+    startMonth,
+    startYear
+  );
+  
+  if (shouldShow) {
+    return { include: true, projectedInstallmentNumber: installmentNumber };
+  }
+  
+  // If period spans multiple months, also check end month
+  if (startMonth !== endMonth || startYear !== endYear) {
+    const endCheck = calculateInstallmentForMonth(
+      t.date,
+      totalInstallments,
+      endMonth,
+      endYear
+    );
+    if (endCheck.shouldShow) {
+      return { include: true, projectedInstallmentNumber: endCheck.installmentNumber };
+    }
+  }
+  
+  return { include: false };
 }
 
 serve(async (req) => {
@@ -265,7 +341,19 @@ Se for pergunta de conversa geral:
     // Step 2: Execute query based on filters
     const filters: QueryFilters = parsed.filters || {};
     
-    let query = supabase
+    // Determine the period for the query
+    const queryStartDate = filters.periodo?.inicio || startOfMonth;
+    const queryEndDate = filters.periodo?.fim || endOfMonth;
+    
+    // For installment projection, we need to fetch installments that started before the period
+    // Calculate how far back we need to look (max 36 months for safety)
+    const periodStart = new Date(queryStartDate);
+    const lookbackDate = new Date(periodStart);
+    lookbackDate.setMonth(lookbackDate.getMonth() - 36);
+    const lookbackDateStr = lookbackDate.toISOString().split("T")[0];
+    
+    // Build base query with all needed fields
+    let baseQuery = supabase
       .from("transactions")
       .select(`
         id, date, description, type, total_value, category, subcategory,
@@ -274,35 +362,26 @@ Se for pergunta de conversa geral:
         is_generated_installment, observacao, 
         banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
       `)
-      .eq("user_id", userId)
       .order("date", { ascending: false });
-
-    // Apply period filter
-    if (filters.periodo) {
-      query = query.gte("date", filters.periodo.inicio).lte("date", filters.periodo.fim);
-    } else {
-      // Default to current month
-      query = query.gte("date", startOfMonth).lte("date", endOfMonth);
-    }
 
     // Apply type filter
     if (filters.tipo && filters.tipo.length > 0) {
-      query = query.in("type", filters.tipo);
+      baseQuery = baseQuery.in("type", filters.tipo);
     }
 
     // Apply person filter
     if (filters.pessoa && filters.pessoa.length > 0) {
-      query = query.in("for_who", filters.pessoa);
+      baseQuery = baseQuery.in("for_who", filters.pessoa);
     }
 
     // Apply category filter
     if (filters.categoria && filters.categoria.length > 0) {
-      query = query.in("category", filters.categoria);
+      baseQuery = baseQuery.in("category", filters.categoria);
     }
 
     // Apply subcategory filter
     if (filters.subcategoria && filters.subcategoria.length > 0) {
-      query = query.in("subcategory", filters.subcategoria);
+      baseQuery = baseQuery.in("subcategory", filters.subcategoria);
     }
 
     // Apply forma_pagamento filter using payment_method_id lookup
@@ -315,7 +394,7 @@ Se for pergunta de conversa geral:
       );
       if (matchingPaymentMethods.length > 0) {
         const pmIds = matchingPaymentMethods.map(pm => pm.id);
-        query = query.in("payment_method_id", pmIds);
+        baseQuery = baseQuery.in("payment_method_id", pmIds);
       }
     }
 
@@ -329,31 +408,95 @@ Se for pergunta de conversa geral:
       );
       if (matchingBanks.length > 0) {
         const bankIds = matchingBanks.map(b => b.id);
-        query = query.in("bank_id", bankIds);
+        baseQuery = baseQuery.in("bank_id", bankIds);
       }
     }
 
     // Apply text search
     if (filters.busca_texto) {
-      query = query.ilike("description", `%${filters.busca_texto}%`);
+      baseQuery = baseQuery.ilike("description", `%${filters.busca_texto}%`);
     }
 
     // Apply installment filter (only if explicitly true or false, not null)
     if (filters.is_installment === true || filters.is_installment === false) {
-      query = query.eq("is_installment", filters.is_installment);
+      baseQuery = baseQuery.eq("is_installment", filters.is_installment);
     }
 
-    const { data: transactions, error: queryError } = await query.limit(100);
+    // Query 1: Regular transactions in the period
+    const regularQuery = baseQuery
+      .gte("date", queryStartDate)
+      .lte("date", queryEndDate)
+      .eq("is_installment", false);
+    
+    // Query 2: All installment transactions (we'll filter by projection)
+    const installmentQuery = supabase
+      .from("transactions")
+      .select(`
+        id, date, description, type, total_value, category, subcategory,
+        for_who, paid_by, is_couple, bank_id, payment_method_id,
+        is_installment, installment_number, total_installments, installment_value,
+        is_generated_installment, observacao, 
+        banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
+      `)
+      .eq("is_installment", true)
+      .eq("is_generated_installment", false)
+      .gte("date", lookbackDateStr)
+      .order("date", { ascending: false });
 
-    if (queryError) {
-      console.error("Query error:", queryError);
+    // Execute both queries
+    const [regularResult, installmentResult] = await Promise.all([
+      baseQuery.gte("date", queryStartDate).lte("date", queryEndDate).limit(200),
+      installmentQuery.limit(200),
+    ]);
+
+    if (regularResult.error) {
+      console.error("Regular query error:", regularResult.error);
+      throw new Error("Database query failed");
+    }
+    if (installmentResult.error) {
+      console.error("Installment query error:", installmentResult.error);
       throw new Error("Database query failed");
     }
 
-    // Calculate metrics using correct values for installments
-    const txList = transactions || [];
-    let total = 0;
+    // Filter and project installments
+    const projectedInstallments: any[] = [];
+    for (const t of installmentResult.data || []) {
+      const result = shouldIncludeTransaction(t, queryStartDate, queryEndDate);
+      if (result.include) {
+        // Add projected installment number if different from original
+        projectedInstallments.push({
+          ...t,
+          _projectedInstallmentNumber: result.projectedInstallmentNumber || t.installment_number,
+        });
+      }
+    }
+
+    // Combine results, avoiding duplicates (installments in the period are in both queries)
+    const regularTxIds = new Set((regularResult.data || []).map(t => t.id));
+    const uniqueProjectedInstallments = projectedInstallments.filter(t => !regularTxIds.has(t.id));
+    
+    // Also include regular installments from the period that might not have projection
+    const regularInstallments = (regularResult.data || []).filter(t => t.is_installment);
+    const regularNonInstallments = (regularResult.data || []).filter(t => !t.is_installment);
+    
+    // For regular installments in period, add their projection info
+    const regularInstallmentsWithProjection = regularInstallments.map(t => {
+      const result = shouldIncludeTransaction(t, queryStartDate, queryEndDate);
+      return {
+        ...t,
+        _projectedInstallmentNumber: result.projectedInstallmentNumber || t.installment_number,
+      };
+    });
+
+    // Combine all transactions
+    const txList = [
+      ...regularNonInstallments,
+      ...regularInstallmentsWithProjection,
+      ...uniqueProjectedInstallments,
+    ];
+    
     let count = txList.length;
+    let total = 0;
 
     if (filters.metrica === "soma" || !filters.metrica) {
       total = txList.reduce((sum, t) => sum + getTransactionValue(t), 0);
@@ -401,7 +544,9 @@ Se for pergunta de conversa geral:
         bank_name: (t as any).banks?.name,
         payment_method: (t as any).payment_methods?.name,
         is_installment: t.is_installment,
-        installment_info: t.is_installment ? `${t.installment_number}/${t.total_installments}` : null,
+        installment_info: t.is_installment 
+          ? `${(t as any)._projectedInstallmentNumber || t.installment_number}/${t.total_installments}` 
+          : null,
       })),
     };
 
@@ -459,7 +604,7 @@ Gere uma resposta amigável com o resultado.`,
         bank_name: (t as any).banks?.name,
         payment_method: (t as any).payment_methods?.name,
         is_installment: t.is_installment,
-        installment_number: t.installment_number,
+        installment_number: (t as any)._projectedInstallmentNumber || t.installment_number,
         total_installments: t.total_installments,
       })),
     }), {
