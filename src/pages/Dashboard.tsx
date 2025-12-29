@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
+import { BudgetProgressCard } from "@/components/budget/BudgetProgressCard";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,7 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
+import { useBudgetProgress } from "@/hooks/useBudgetProgress";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -65,6 +67,7 @@ export default function Dashboard() {
   const year = parseInt(selectedYear);
 
   const metrics = useFinancialMetrics(transactions, monthIndex, year);
+  const budgetSummary = useBudgetProgress(transactions, monthIndex, year);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -310,14 +313,14 @@ export default function Dashboard() {
 
           {/* Charts Row */}
           {hasData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
                 <PieChart data={categoryData} title="Divisão por Categoria" />
               </div>
               <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
                 <PieChart data={bankData} title="Divisão por Banco" />
               </div>
-              <div className="md:col-span-2 lg:col-span-1 animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
                 <LineChart
                   data={evolutionData}
                   lines={[
@@ -325,6 +328,9 @@ export default function Dashboard() {
                   ]}
                   title="Evolução Mensal"
                 />
+              </div>
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}>
+                <BudgetProgressCard summary={budgetSummary} />
               </div>
             </div>
           ) : (
@@ -352,7 +358,7 @@ export default function Dashboard() {
             {/* Contas a Vencer */}
             <div 
               className="p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card transition-all duration-300 hover:shadow-card-hover animate-fade-up opacity-0"
-              style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}
+              style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
@@ -407,7 +413,7 @@ export default function Dashboard() {
             {/* Recent Transactions */}
             <div 
               className="p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card transition-all duration-300 hover:shadow-card-hover animate-fade-up opacity-0"
-              style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}
+              style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground">
@@ -479,7 +485,7 @@ export default function Dashboard() {
             {/* Banks Summary */}
             <div 
               className="p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card md:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-card-hover animate-fade-up opacity-0"
-              style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}
+              style={{ animationDelay: "1300ms", animationFillMode: "forwards" }}
             >
               <h3 className="font-display text-lg font-semibold text-foreground mb-6">
                 Bancos Mais Utilizados
