@@ -33,6 +33,7 @@ import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 const months = [
   "Janeiro",
@@ -63,7 +64,6 @@ export default function Dashboard() {
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
 
-  // Use centralized financial metrics hook
   const metrics = useFinancialMetrics(transactions, monthIndex, year);
 
   const formatCurrency = (value: number) => {
@@ -73,7 +73,6 @@ export default function Dashboard() {
     }).format(value);
   };
 
-  // Filter transactions by selected month/year
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
       const date = parseISO(t.date);
@@ -81,17 +80,13 @@ export default function Dashboard() {
     });
   }, [transactions, monthIndex, year]);
 
-  // Helper: get the value to use for a transaction in a specific month
   const getMonthValue = (t: any): number => {
-    // New-style installment: single record with installment_value
     if (t.is_installment && t.installment_value && !t.is_generated_installment) {
       return Number(t.installment_value);
     }
-    // Regular transaction or old-style installment
     return Number(t.total_value);
   };
 
-  // Category breakdown
   const categoryData = useMemo(() => {
     const categoryMap: Record<string, number> = {};
     
@@ -103,12 +98,12 @@ export default function Dashboard() {
       });
 
     const colors = [
-      "hsl(14, 56%, 62%)",
-      "hsl(135, 14%, 42%)",
-      "hsl(25, 50%, 65%)",
-      "hsl(0, 0%, 50%)",
-      "hsl(25, 50%, 80%)",
-      "hsl(210, 60%, 50%)",
+      "hsl(330, 75%, 55%)",
+      "hsl(145, 60%, 42%)",
+      "hsl(210, 80%, 55%)",
+      "hsl(40, 90%, 55%)",
+      "hsl(280, 60%, 55%)",
+      "hsl(0, 72%, 55%)",
     ];
 
     return Object.entries(categoryMap).map(([name, value], i) => ({
@@ -118,7 +113,6 @@ export default function Dashboard() {
     }));
   }, [filteredTransactions]);
 
-  // Bank breakdown
   const bankData = useMemo(() => {
     const bankMap: Record<string, { value: number; color: string }> = {};
     
@@ -142,7 +136,6 @@ export default function Dashboard() {
     }));
   }, [filteredTransactions, banks]);
 
-  // Recent transactions (last 5)
   const recentTransactions = useMemo(() => {
     return [...filteredTransactions]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -159,7 +152,6 @@ export default function Dashboard() {
       });
   }, [filteredTransactions]);
 
-  // Evolution data (last 6 months) - simplified version
   const evolutionData = useMemo(() => {
     const result: { name: string; total: number }[] = [];
     const year = parseInt(selectedYear);
@@ -182,7 +174,6 @@ export default function Dashboard() {
       const expenses = monthTransactions
         .filter((t) => t.type === "expense")
         .reduce((sum, t) => {
-          // Use installment_value for new-style installments
           if (t.is_installment && t.installment_value && !t.is_generated_installment) {
             return sum + Number(t.installment_value);
           }
@@ -206,8 +197,8 @@ export default function Dashboard() {
 
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          {/* Header with animation */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 animate-fade-up">
             <div>
               <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
                 Olá! 💕
@@ -219,14 +210,14 @@ export default function Dashboard() {
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <Link to="/chat-ia">
-                <Button variant="outline" size="sm" className="gap-2 text-xs sm:text-sm">
-                  <Sparkles className="w-4 h-4" />
+                <Button variant="outline" size="sm" className="gap-2 text-xs sm:text-sm group">
+                  <Sparkles className="w-4 h-4 group-hover:animate-pulse-soft" />
                   <span className="hidden sm:inline">Perguntar ao</span> Chat IA
                 </Button>
               </Link>
               
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-28 sm:w-36">
+                <SelectTrigger className="w-32 sm:w-40">
                   <SelectValue placeholder="Mês" />
                 </SelectTrigger>
                 <SelectContent>
@@ -239,7 +230,7 @@ export default function Dashboard() {
               </Select>
 
               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-20 sm:w-24">
+                <SelectTrigger className="w-24 sm:w-28">
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
                 <SelectContent>
@@ -259,6 +250,7 @@ export default function Dashboard() {
               title="Total de Despesas"
               value={formatCurrency(metrics.totalExpenses)}
               icon={TrendingDown}
+              emoji="💸"
               variant="primary"
               delay={0}
             />
@@ -266,6 +258,7 @@ export default function Dashboard() {
               title="Total de Receitas"
               value={formatCurrency(metrics.totalIncome)}
               icon={TrendingUp}
+              emoji="💰"
               variant="success"
               delay={100}
             />
@@ -273,6 +266,7 @@ export default function Dashboard() {
               title="Saldo do Mês"
               value={formatCurrency(metrics.totalBalance)}
               icon={Wallet}
+              emoji={metrics.totalBalance >= 0 ? "🎉" : "😅"}
               variant="accent"
               delay={200}
             />
@@ -317,44 +311,54 @@ export default function Dashboard() {
           {/* Charts Row */}
           {hasData ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <PieChart data={categoryData} title="Divisão por Categoria" />
-              <PieChart data={bankData} title="Divisão por Banco" />
-              <div className="md:col-span-2 lg:col-span-1">
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+                <PieChart data={categoryData} title="Divisão por Categoria" />
+              </div>
+              <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
+                <PieChart data={bankData} title="Divisão por Banco" />
+              </div>
+              <div className="md:col-span-2 lg:col-span-1 animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
                 <LineChart
                   data={evolutionData}
                   lines={[
-                    { dataKey: "total", color: "hsl(14, 56%, 62%)", name: "Total" },
+                    { dataKey: "total", color: "hsl(330, 75%, 55%)", name: "Total" },
                   ]}
                   title="Evolução Mensal"
                 />
               </div>
             </div>
           ) : (
-            <div className="p-8 sm:p-12 rounded-2xl bg-card border border-border shadow-card mb-6 sm:mb-8 text-center">
-              <FileText className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-4" />
+            <div className="p-8 sm:p-12 rounded-2xl bg-card border border-border/50 shadow-card mb-6 sm:mb-8 text-center animate-fade-up" style={{ animationDelay: "700ms" }}>
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
+                <FileText className="w-8 h-8 text-muted-foreground" />
+              </div>
               <h3 className="font-display text-base sm:text-lg font-semibold text-foreground mb-2">
                 Nenhum lançamento encontrado
               </h3>
               <p className="text-muted-foreground text-sm mb-4">
                 Comece adicionando suas receitas e despesas.
               </p>
-              <a
-                href="/novo-lancamento"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm"
-              >
-                Adicionar lançamento
-                <ArrowUpRight className="w-4 h-4" />
-              </a>
+              <Link to="/novo-lancamento">
+                <Button className="gap-2">
+                  Adicionar lançamento
+                  <ArrowUpRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           )}
 
           {/* Bottom Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Contas a Vencer */}
-            <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card transition-all duration-300 hover:shadow-card-hover animate-fade-up opacity-0"
+              style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}
+            >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-primary" />
+                  <div className="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center">
+                    <AlertCircle className="w-4 h-4 text-warning" />
+                  </div>
                   Contas em Aberto
                 </h3>
                 <Link
@@ -368,10 +372,10 @@ export default function Dashboard() {
 
               {contasAVencer.length > 0 ? (
                 <div className="space-y-3">
-                  {contasAVencer.slice(0, 3).map((conta) => (
+                  {contasAVencer.slice(0, 3).map((conta, index) => (
                     <div
                       key={conta.id}
-                      className="flex items-center justify-between p-3 rounded-xl bg-secondary/50"
+                      className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 hover:bg-secondary/70 transition-all duration-200"
                     >
                       <div>
                         <span className="text-sm font-medium text-foreground">
@@ -401,34 +405,38 @@ export default function Dashboard() {
             </div>
 
             {/* Recent Transactions */}
-            <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-card">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card transition-all duration-300 hover:shadow-card-hover animate-fade-up opacity-0"
+              style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}
+            >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display text-lg font-semibold text-foreground">
                   Lançamentos Recentes
                 </h3>
-                <a
-                  href="/lancamentos"
+                <Link
+                  to="/lancamentos"
                   className="text-sm text-primary hover:underline flex items-center gap-1"
                 >
                   Ver todos
                   <ArrowUpRight className="w-4 h-4" />
-                </a>
+                </Link>
               </div>
 
               {recentTransactions.length > 0 ? (
-                <div className="space-y-4">
-                  {recentTransactions.map((transaction) => (
+                <div className="space-y-3">
+                  {recentTransactions.map((transaction, index) => (
                     <div
                       key={transaction.id}
-                      className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                      className="flex items-center justify-between p-3 rounded-xl hover:bg-secondary/50 transition-all duration-200"
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          className={cn(
+                            "w-10 h-10 rounded-xl flex items-center justify-center",
                             transaction.value > 0
-                              ? "bg-success/10"
-                              : "bg-primary/10"
-                          }`}
+                              ? "bg-success/15"
+                              : "bg-primary/15"
+                          )}
                         >
                           {transaction.value > 0 ? (
                             <TrendingUp className="w-5 h-5 text-success" />
@@ -451,9 +459,10 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <span
-                        className={`text-sm font-semibold ${
+                        className={cn(
+                          "text-sm font-semibold",
                           transaction.value > 0 ? "text-success" : "text-foreground"
-                        }`}
+                        )}
                       >
                         {formatCurrency(transaction.value)}
                       </span>
@@ -468,7 +477,10 @@ export default function Dashboard() {
             </div>
 
             {/* Banks Summary */}
-            <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border shadow-card md:col-span-2 lg:col-span-1">
+            <div 
+              className="p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card md:col-span-2 lg:col-span-1 transition-all duration-300 hover:shadow-card-hover animate-fade-up opacity-0"
+              style={{ animationDelay: "1200ms", animationFillMode: "forwards" }}
+            >
               <h3 className="font-display text-lg font-semibold text-foreground mb-6">
                 Bancos Mais Utilizados
               </h3>
@@ -481,11 +493,11 @@ export default function Dashboard() {
                     .map((bank, index) => (
                       <div
                         key={bank.name}
-                        className="flex items-center justify-between"
+                        className="flex items-center justify-between group"
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center"
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
                             style={{ backgroundColor: bank.color + "20" }}
                           >
                             <CreditCard
@@ -498,7 +510,7 @@ export default function Dashboard() {
                               {bank.name}
                             </span>
                             <div className="text-xs text-muted-foreground">
-                              {index === 0 ? "Mais usado" : `${index + 1}º lugar`}
+                              {index === 0 ? "🏆 Mais usado" : `${index + 1}º lugar`}
                             </div>
                           </div>
                         </div>
