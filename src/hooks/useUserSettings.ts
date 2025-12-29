@@ -77,13 +77,5 @@ export function useUpdateUserSettings() {
   });
 }
 
-export function usePersonNames() {
-  const { data: settings } = useUserSettings();
-  
-  return {
-    person1: settings?.person_1_name || "Huana",
-    person2: settings?.person_2_name || "Douglas",
-    person1Avatar: settings?.person_1_avatar_url || null,
-    person2Avatar: settings?.person_2_avatar_url || null,
-  };
-}
+// Re-export from useCoupleMembers for backwards compatibility
+export { usePersonNames } from "./useCoupleMembers";

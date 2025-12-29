@@ -3,10 +3,13 @@ import { Camera, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 
-interface AvatarUploadProps {
+export interface AvatarUploadProps {
   name: string;
   avatar?: string | null;
-  personNumber: 1 | 2;
+  /** @deprecated Use memberId instead */
+  personNumber?: 1 | 2;
+  /** New: ID of the couple member */
+  memberId?: string;
   size?: "sm" | "md" | "lg";
   editable?: boolean;
 }
@@ -15,11 +18,12 @@ export function AvatarUpload({
   name, 
   avatar, 
   personNumber, 
+  memberId,
   size = "lg",
   editable = true 
 }: AvatarUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { uploadAvatar, uploading } = useAvatarUpload();
+  const { uploadAvatar, uploadAvatarForMember, uploading } = useAvatarUpload();
 
   const sizeClasses = {
     sm: "w-10 h-10 text-sm",
@@ -41,7 +45,12 @@ export function AvatarUpload({
       return;
     }
 
-    await uploadAvatar(file, personNumber);
+    // Use memberId if available, otherwise fallback to personNumber
+    if (memberId) {
+      await uploadAvatarForMember(file, memberId);
+    } else if (personNumber) {
+      await uploadAvatar(file, personNumber);
+    }
   };
 
   return (
