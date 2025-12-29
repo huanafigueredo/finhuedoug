@@ -14,6 +14,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -24,6 +31,7 @@ import {
   Loader2,
   CheckCircle,
   Calendar,
+  Building2,
 } from "lucide-react";
 import { 
   useSavingsGoals, 
@@ -33,6 +41,7 @@ import {
   SavingsGoal,
   GoalOwnerFilter,
 } from "@/hooks/useSavingsGoals";
+import { useBanks } from "@/hooks/useBanks";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
@@ -55,6 +64,7 @@ interface SavingsGoalsConfigSectionProps {
 export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGoalsConfigSectionProps) {
   const { toast } = useToast();
   const { data: goals = [], isLoading } = useSavingsGoals(ownerFilter);
+  const { data: banks = [] } = useBanks();
   const createGoal = useCreateSavingsGoal();
   const updateGoal = useUpdateSavingsGoal();
   const deleteGoal = useDeleteSavingsGoal();
@@ -66,6 +76,7 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
   const [currentAmount, setCurrentAmount] = useState("");
   const [deadline, setDeadline] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("🎯");
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const formatCurrencyInput = (value: string): string => {
@@ -89,6 +100,7 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
     setCurrentAmount("");
     setDeadline("");
     setSelectedIcon("🎯");
+    setSelectedBankId(null);
     setEditingGoal(null);
   };
 
@@ -104,6 +116,7 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
     setCurrentAmount(formatCurrencyInput(String(goal.current_amount)));
     setDeadline(goal.deadline || "");
     setSelectedIcon(goal.icon);
+    setSelectedBankId(goal.bank_id);
     setIsDialogOpen(true);
   };
 
@@ -139,6 +152,7 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
           current_amount: currentCents,
           deadline: deadline || null,
           icon: selectedIcon,
+          bank_id: selectedBankId,
         });
         toast({
           title: "Meta atualizada!",
@@ -152,6 +166,7 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
           deadline: deadline || null,
           icon: selectedIcon,
           owner: ownerFilter || "couple",
+          bank_id: selectedBankId,
         });
         toast({
           title: "Meta criada! 🎯",
@@ -272,6 +287,12 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="w-3 h-3" />
                         Prazo: {format(parseISO(goal.deadline), "dd/MM/yyyy", { locale: ptBR })}
+                      </div>
+                    )}
+                    {goal.bank_id && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Building2 className="w-3 h-3" />
+                        {banks.find(b => b.id === goal.bank_id)?.name || "Banco"}
                       </div>
                     )}
                   </div>
@@ -421,6 +442,35 @@ export function SavingsGoalsConfigSection({ ownerFilter, ownerLabel }: SavingsGo
                 onChange={(e) => setDeadline(e.target.value)}
                 min={new Date().toISOString().split("T")[0]}
               />
+            </div>
+
+            {/* Bank Selector */}
+            <div className="space-y-2">
+              <Label>Banco onde está guardado (opcional)</Label>
+              <Select
+                value={selectedBankId || "none"}
+                onValueChange={(value) => setSelectedBankId(value === "none" ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {banks.map((bank) => (
+                    <SelectItem key={bank.id} value={bank.id}>
+                      <div className="flex items-center gap-2">
+                        {bank.color && (
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: bank.color }}
+                          />
+                        )}
+                        {bank.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Button

@@ -10,6 +10,7 @@ export interface SavingsGoal {
   deadline: string | null;
   icon: string;
   owner: string; // 'person1', 'person2', 'couple'
+  bank_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +24,7 @@ export interface SavingsGoalInput {
   deadline?: string | null;
   icon?: string;
   owner?: string;
+  bank_id?: string | null;
 }
 
 export function useSavingsGoals(ownerFilter?: GoalOwnerFilter) {
@@ -64,6 +66,7 @@ export function useCreateSavingsGoal() {
           deadline: input.deadline || null,
           icon: input.icon || "🎯",
           owner: input.owner || "couple",
+          bank_id: input.bank_id || null,
         } as any)
         .select()
         .single();

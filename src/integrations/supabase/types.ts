@@ -508,6 +508,7 @@ export type Database = {
       }
       savings_goals: {
         Row: {
+          bank_id: string | null
           created_at: string
           current_amount: number
           deadline: string | null
@@ -520,6 +521,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bank_id?: string | null
           created_at?: string
           current_amount?: number
           deadline?: string | null
@@ -532,6 +534,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bank_id?: string | null
           created_at?: string
           current_amount?: number
           deadline?: string | null
@@ -543,7 +546,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "savings_goals_bank_id_fkey"
+            columns: ["bank_id"]
+            isOneToOne: false
+            referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subcategories: {
         Row: {
