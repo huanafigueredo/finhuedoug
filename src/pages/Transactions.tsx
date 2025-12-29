@@ -15,7 +15,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Download, Loader2, Heart } from "lucide-react";
+import { Plus, Search, Filter, Download, Loader2, Heart, FileDown } from "lucide-react";
+import { exportTransactionsToPdf } from "@/lib/exportPdf";
 import { cn } from "@/lib/utils";
 
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
@@ -421,9 +422,54 @@ export default function Transactions() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  const totalExpenses = filteredTransactions
+                    .filter(t => t.type === "expense")
+                    .reduce((sum, t) => sum + t.totalValue, 0);
+                  const totalIncome = filteredTransactions
+                    .filter(t => t.type === "income")
+                    .reduce((sum, t) => sum + t.totalValue, 0);
+                  
+                  exportTransactionsToPdf(
+                    filteredTransactions.map(t => ({
+                      date: t.date,
+                      description: t.description,
+                      person: t.person,
+                      forWho: t.forWho,
+                      category: t.category,
+                      bank: t.bank,
+                      paymentMethod: t.paymentMethod,
+                      totalValue: t.totalValue,
+                      type: t.type,
+                      isInstallment: t.isInstallment,
+                      installmentNumber: t.installmentNumber,
+                      totalInstallments: t.totalInstallments,
+                    })),
+                    {
+                      month: monthFilter,
+                      year: yearFilter,
+                      category: categoryFilter,
+                      type: typeFilter,
+                      person: personFilter,
+                    },
+                    {
+                      totalExpenses,
+                      totalIncome,
+                      balance: totalIncome - totalExpenses,
+                    }
+                  );
+                  toast({
+                    title: "PDF exportado",
+                    description: "O relatório foi baixado com sucesso.",
+                  });
+                }}
+                disabled={filteredTransactions.length === 0}
+              >
+                <FileDown className="w-4 h-4 mr-2" />
+                Exportar PDF
               </Button>
               <Button size="sm" onClick={() => {
                 setEditTransactionId(null);
