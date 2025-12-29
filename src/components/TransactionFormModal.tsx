@@ -24,7 +24,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { format, addMonths, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -515,22 +522,16 @@ export function TransactionFormModal({
   };
 
   const preview = installmentPreview();
+  const isMobile = useIsMobile();
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="text-xl font-bold">
-            {isEditMode ? "Editar Lançamento" : isDuplicateMode ? "Duplicar Lançamento" : "Novo Lançamento"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <ScrollArea className="max-h-[calc(90vh-100px)]">
-          <form onSubmit={handleSubmit} className="px-6 pb-6">
-            <div className="space-y-6">
-              {/* Type Toggle */}
-              <div className="flex items-center justify-center gap-4 pt-4">
-                <button
+  const modalTitle = isEditMode ? "Editar Lançamento" : isDuplicateMode ? "Duplicar Lançamento" : "Novo Lançamento";
+
+  const formContent = (
+    <form onSubmit={handleSubmit} className="px-4 sm:px-6 pb-6">
+      <div className="space-y-5 sm:space-y-6">
+        {/* Type Toggle */}
+        <div className="flex items-center justify-center gap-2 sm:gap-4 pt-4">
+          <button
                   type="button"
                   onClick={() => {
                     if (type !== "expense") {
@@ -1146,6 +1147,31 @@ export function TransactionFormModal({
               </div>
             </div>
           </form>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[95vh]">
+          <DrawerHeader className="px-4 pt-4 pb-2">
+            <DrawerTitle className="text-lg font-bold">{modalTitle}</DrawerTitle>
+          </DrawerHeader>
+          <ScrollArea className="flex-1 overflow-auto px-0">
+            {formContent}
+          </ScrollArea>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl w-[95vw] sm:w-auto max-h-[90vh] p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-0">
+          <DialogTitle className="text-xl font-bold">{modalTitle}</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(90vh-100px)]">
+          {formContent}
         </ScrollArea>
       </DialogContent>
     </Dialog>
