@@ -5,7 +5,7 @@ interface MetricCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   emoji?: string;
   trend?: {
     value: number;
@@ -65,19 +65,21 @@ export function MetricCard({
       )}
       style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
     >
-      {/* Icon positioned top-right */}
-      <div 
-        className={cn(
-          "absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center",
-          "transition-transform duration-300 group-hover:scale-110",
-          iconBgVariants[variant]
-        )}
-      >
-        <Icon className={cn("w-5 h-5 sm:w-5.5 sm:h-5.5", iconColorVariants[variant])} />
-      </div>
+      {/* Icon positioned top-right (only if provided) */}
+      {Icon && (
+        <div 
+          className={cn(
+            "absolute top-3 right-3 sm:top-4 sm:right-4 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center",
+            "transition-transform duration-300 group-hover:scale-110",
+            iconBgVariants[variant]
+          )}
+        >
+          <Icon className={cn("w-5 h-5 sm:w-5.5 sm:h-5.5", iconColorVariants[variant])} />
+        </div>
+      )}
 
       {/* Content */}
-      <div className="pr-14 sm:pr-16">
+      <div className={Icon ? "pr-14 sm:pr-16" : ""}>
         <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1.5 truncate">
           {title}
         </p>
