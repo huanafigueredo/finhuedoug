@@ -23,7 +23,7 @@ import {
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
-import { parseISO, subMonths, format } from "date-fns";
+import { parseISO, subMonths, format, differenceInMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,48 @@ function getTransactionMonthValue(t: any): number {
     return Number(t.installment_value);
   }
   return Number(t.total_value);
+}
+
+// Helper function to calculate installment info for a given filter month/year
+function calculateInstallmentForMonth(
+  firstInstallmentDate: Date,
+  startInstallment: number,
+  totalInstallments: number,
+  filterMonth: number,
+  filterYear: number
+): { currentInstallment: number; isInRange: boolean } | null {
+  const firstMonth = firstInstallmentDate.getMonth() + 1;
+  const firstYear = firstInstallmentDate.getFullYear();
+  
+  const filterDate = new Date(filterYear, filterMonth - 1, 1);
+  const firstDate = new Date(firstYear, firstMonth - 1, 1);
+  const monthsDiff = differenceInMonths(filterDate, firstDate);
+  
+  const currentInstallment = startInstallment + monthsDiff;
+  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
+  
+  return { currentInstallment, isInRange };
+}
+
+// Check if transaction should appear in the filtered month
+function shouldShowInMonth(t: any, filterMonth: number, filterYear: number): boolean {
+  const rawDate = parseISO(t.date);
+  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
+  
+  if (isNewStyleInstallment) {
+    const startInstallment = t.installment_number || 1;
+    const result = calculateInstallmentForMonth(
+      rawDate,
+      startInstallment,
+      t.total_installments,
+      filterMonth + 1,
+      filterYear
+    );
+    return result?.isInRange ?? false;
+  }
+  
+  // Regular transaction - match by date
+  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
 }
 
 // Simple avatar display component (non-editable)
@@ -103,12 +145,9 @@ export default function People() {
     }).format(value);
   };
 
-  // Filter transactions by selected month/year
+  // Filter transactions by selected month/year (including dynamic installments)
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
-      const date = parseISO(t.date);
-      return date.getMonth() === monthIndex && date.getFullYear() === year;
-    });
+    return transactions.filter((t) => shouldShowInMonth(t, monthIndex, year));
   }, [transactions, monthIndex, year]);
 
   // Get person-specific transactions
@@ -199,10 +238,8 @@ export default function People() {
       const m = monthDate.getMonth();
       const y = monthDate.getFullYear();
 
-      const monthTransactions = transactions.filter((t) => {
-        const date = parseISO(t.date);
-        return date.getMonth() === m && date.getFullYear() === y;
-      });
+      // Use the same installment projection logic
+      const monthTransactions = transactions.filter((t) => shouldShowInMonth(t, m, y));
 
       const personalExpenses = monthTransactions
         .filter((t) => t.type === "expense" && t.for_who === personName && !t.is_couple)
