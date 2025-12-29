@@ -109,12 +109,16 @@ export function useDeleteCoupleMember() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("couple_members")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .select();
 
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Não foi possível excluir o item. Verifique suas permissões.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["couple-members"] });

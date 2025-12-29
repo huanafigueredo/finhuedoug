@@ -62,8 +62,11 @@ export function useDeletePaymentMethod() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("payment_methods").delete().eq("id", id);
+      const { data, error } = await supabase.from("payment_methods").delete().eq("id", id).select();
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Não foi possível excluir o item. Verifique suas permissões.");
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payment_methods"] }),
   });
