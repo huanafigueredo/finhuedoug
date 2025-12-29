@@ -129,7 +129,7 @@ export function BudgetProgressCard({ summary, className }: BudgetProgressCardPro
               Nenhum orçamento definido
             </p>
             <Link 
-              to="/configuracoes" 
+              to="/config" 
               className="text-sm text-primary hover:underline"
             >
               Configurar orçamentos →
@@ -151,7 +151,7 @@ export function BudgetProgressCard({ summary, className }: BudgetProgressCardPro
             Orçamento do Mês
           </CardTitle>
           <Link 
-            to="/configuracoes" 
+            to="/config" 
             className="text-xs text-muted-foreground hover:text-primary transition-colors"
           >
             Editar
