@@ -6,6 +6,8 @@ import { parseISO } from "date-fns";
 
 export type BudgetStatus = "ok" | "warning" | "exceeded";
 
+export type PersonFilter = "all" | "person1" | "person2" | "couple";
+
 export interface BudgetProgress {
   categoryId: string;
   categoryName: string;
@@ -25,39 +27,67 @@ export interface BudgetSummary {
   hasExceeded: boolean;
 }
 
-function getMonthValueInCents(t: Transaction): number {
+function getMonthValueInCents(t: Transaction, personFilter: PersonFilter): number {
   // Para transações parceladas, usar o valor da parcela
   // Converter de Reais para centavos (valores no banco estão em Reais)
+  let value: number;
   if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    return Math.round(Number(t.installment_value) * 100);
+    value = Number(t.installment_value);
+  } else {
+    value = Number(t.total_value);
   }
-  return Math.round(Number(t.total_value) * 100);
+  
+  // Se filtro é por pessoa individual e é despesa do casal, pegar metade
+  if (personFilter !== "all" && personFilter !== "couple" && t.is_couple) {
+    value = value / 2;
+  }
+  
+  return Math.round(value * 100);
 }
 
 export function useBudgetProgress(
   transactions: Transaction[],
   monthIndex: number,
-  year: number
+  year: number,
+  personFilter: PersonFilter = "all",
+  person1Name: string = "Huana",
+  person2Name: string = "Douglas"
 ): BudgetSummary {
   const { data: budgets = [] } = useCategoryBudgets();
   const { data: categories = [] } = useCategories("expense");
 
   return useMemo(() => {
-    // Filtrar transações do mês/ano selecionado
+    // Filtrar transações do mês/ano selecionado e por pessoa
     const monthTransactions = transactions.filter((t) => {
       const date = parseISO(t.date);
-      return (
-        date.getMonth() === monthIndex &&
+      const isInMonth = date.getMonth() === monthIndex &&
         date.getFullYear() === year &&
-        t.type === "expense"
-      );
+        t.type === "expense";
+      
+      if (!isInMonth) return false;
+      
+      // Aplicar filtro de pessoa
+      switch (personFilter) {
+        case "person1":
+          // Transações da pessoa 1 OU do casal (metade)
+          return t.for_who === person1Name || t.is_couple === true;
+        case "person2":
+          // Transações da pessoa 2 OU do casal (metade)
+          return t.for_who === person2Name || t.is_couple === true;
+        case "couple":
+          // Apenas transações do casal
+          return t.is_couple === true || t.for_who === "Casal";
+        case "all":
+        default:
+          return true;
+      }
     });
 
     // Calcular gastos por categoria (em centavos)
     const spentByCategory: Record<string, number> = {};
     monthTransactions.forEach((t) => {
       const cat = t.category || "Outros";
-      spentByCategory[cat] = (spentByCategory[cat] || 0) + getMonthValueInCents(t);
+      spentByCategory[cat] = (spentByCategory[cat] || 0) + getMonthValueInCents(t, personFilter);
     });
 
     // Mapear orçamentos com progresso
@@ -106,5 +136,5 @@ export function useBudgetProgress(
       hasWarnings: budgetProgress.some((b) => b.status === "warning"),
       hasExceeded: budgetProgress.some((b) => b.status === "exceeded"),
     };
-  }, [transactions, budgets, categories, monthIndex, year]);
+  }, [transactions, budgets, categories, monthIndex, year, personFilter, person1Name, person2Name]);
 }
