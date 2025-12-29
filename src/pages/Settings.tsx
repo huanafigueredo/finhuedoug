@@ -305,7 +305,10 @@ export default function Settings() {
 
   // Render a config list item
   const renderConfigItem = (sectionKey: string, item: ConfigItem) => {
-    const isSystemItem = item.user_id === null || item.user_id === undefined;
+    // Categories and subcategories are global - everyone can edit/delete
+    // For other items (banks, payment_methods, recipients), only user-owned items can be edited
+    const isGlobalEditableSection = sectionKey === "categories" || sectionKey === "subcategories";
+    const isSystemItem = !isGlobalEditableSection && (item.user_id === null || item.user_id === undefined);
     
     return (
       <div
@@ -551,7 +554,7 @@ export default function Settings() {
             >
               <ConfigListSection
                 sectionKey="banks"
-                items={banks.map((b) => ({ id: b.id, name: b.name, color: b.color }))}
+                items={banks.map((b) => ({ id: b.id, name: b.name, color: b.color, user_id: b.user_id }))}
                 isLoading={banksLoading}
                 allowColor
               />
@@ -565,7 +568,7 @@ export default function Settings() {
             >
               <ConfigListSection
                 sectionKey="payment-methods"
-                items={paymentMethods.map((p) => ({ id: p.id, name: p.name }))}
+                items={paymentMethods.map((p) => ({ id: p.id, name: p.name, user_id: p.user_id }))}
                 isLoading={paymentMethodsLoading}
               />
             </SectionWrapper>
@@ -578,7 +581,7 @@ export default function Settings() {
             >
               <ConfigListSection
                 sectionKey="recipients"
-                items={recipients.map((r) => ({ id: r.id, name: r.name }))}
+                items={recipients.map((r) => ({ id: r.id, name: r.name, user_id: r.user_id }))}
                 isLoading={recipientsLoading}
               />
             </SectionWrapper>
