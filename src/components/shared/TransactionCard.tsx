@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
 import { Heart, MoreVertical, Pencil, Trash2, Copy, Calendar, CreditCard, Wallet } from "lucide-react";
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Transaction } from "./TransactionRow";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -29,6 +31,16 @@ export function TransactionCard({
   onDuplicate,
   onClick,
 }: TransactionCardProps) {
+  const isMobile = useIsMobile();
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isHorizontalSwipe = useRef(false);
+
+  const SWIPE_THRESHOLD = 80;
+  const MAX_SWIPE = 140;
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -38,108 +50,198 @@ export function TransactionCard({
 
   const handleCardClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('[data-actions-dropdown]')) return;
+    if (target.closest('[data-actions-dropdown]') || target.closest('[data-swipe-actions]')) return;
+    if (Math.abs(swipeOffset) > 10) return; // Don't trigger click if swiped
     onClick?.(transaction.id);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isHorizontalSwipe.current = false;
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isSwiping) return;
+    
+    const deltaX = e.touches[0].clientX - touchStartX.current;
+    const deltaY = e.touches[0].clientY - touchStartY.current;
+
+    // Determine if horizontal or vertical swipe on first significant move
+    if (!isHorizontalSwipe.current && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+      isHorizontalSwipe.current = Math.abs(deltaX) > Math.abs(deltaY);
+    }
+
+    if (!isHorizontalSwipe.current) return;
+
+    // Only allow left swipe (negative deltaX)
+    const newOffset = Math.min(0, Math.max(-MAX_SWIPE, deltaX + swipeOffset));
+    setSwipeOffset(newOffset);
+  };
+
+  const handleTouchEnd = () => {
+    setIsSwiping(false);
+    
+    // Snap to open or closed position
+    if (swipeOffset < -SWIPE_THRESHOLD) {
+      setSwipeOffset(-MAX_SWIPE);
+    } else {
+      setSwipeOffset(0);
+    }
+  };
+
+  const handleSwipeAction = (action: 'edit' | 'delete') => {
+    setSwipeOffset(0);
+    if (action === 'edit') {
+      onEdit?.(transaction.id);
+    } else {
+      onDelete?.(transaction.id);
+    }
+  };
+
+  const resetSwipe = () => setSwipeOffset(0);
+
   return (
-    <div
-      className={cn(
-        "p-3 sm:p-4 rounded-xl bg-card border border-border shadow-sm cursor-pointer",
-        "hover:shadow-md hover:border-primary/20 transition-all active:scale-[0.99]",
-        className
+    <div className="relative overflow-hidden rounded-xl">
+      {/* Swipe Actions Background - Only on mobile */}
+      {isMobile && (
+        <div 
+          data-swipe-actions
+          className="absolute inset-y-0 right-0 flex items-stretch"
+          style={{ width: MAX_SWIPE }}
+        >
+          <button
+            onClick={() => handleSwipeAction('edit')}
+            className="flex-1 flex items-center justify-center bg-blue-500 text-white active:bg-blue-600 transition-colors"
+          >
+            <Pencil className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => handleSwipeAction('delete')}
+            className="flex-1 flex items-center justify-center bg-destructive text-destructive-foreground active:bg-destructive/90 transition-colors"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
       )}
-      style={style}
-      onClick={handleCardClick}
-    >
-      {/* Header Row */}
-      <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-            <span className="text-sm font-semibold text-foreground truncate">
-              {transaction.description}
-            </span>
-            {transaction.isCouple && (
-              <Heart className="w-3.5 h-3.5 text-primary fill-primary shrink-0" />
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground">
-            <Calendar className="w-3 h-3" />
-            <span>{transaction.date}</span>
-            {transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments && (
-              <span className="px-1.5 py-0.5 bg-secondary rounded text-xs font-medium">
-                {transaction.installmentNumber}/{transaction.totalInstallments}
+
+      {/* Main Card Content */}
+      <div
+        className={cn(
+          "relative p-4 rounded-xl bg-card border border-border shadow-sm cursor-pointer",
+          "hover:shadow-md hover:border-primary/20 active:scale-[0.99]",
+          isSwiping ? "" : "transition-transform duration-200",
+          className
+        )}
+        style={{ 
+          ...style,
+          transform: isMobile ? `translateX(${swipeOffset}px)` : undefined 
+        }}
+        onClick={handleCardClick}
+        onTouchStart={isMobile ? handleTouchStart : undefined}
+        onTouchMove={isMobile ? handleTouchMove : undefined}
+        onTouchEnd={isMobile ? handleTouchEnd : undefined}
+      >
+        {/* Header Row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm sm:text-base font-semibold text-foreground truncate">
+                {transaction.description}
               </span>
-            )}
+              {transaction.isCouple && (
+                <Heart className="w-4 h-4 text-primary fill-primary shrink-0" />
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{transaction.date}</span>
+              {transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments && (
+                <span className="px-2 py-0.5 bg-secondary rounded-md text-xs font-medium">
+                  {transaction.installmentNumber}/{transaction.totalInstallments}
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Badge variant={transaction.type} />
+            <div data-actions-dropdown>
+              <DropdownMenu onOpenChange={(open) => !open && resetSwipe()}>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 sm:h-8 sm:w-8 -mr-2"
+                  >
+                    <MoreVertical className="w-5 h-5 sm:w-4 sm:h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-popover min-w-[160px]">
+                  <DropdownMenuItem 
+                    onClick={(e) => { e.stopPropagation(); onEdit?.(transaction.id); }}
+                    className="py-3 sm:py-2"
+                  >
+                    <Pencil className="w-4 h-4 mr-3" />
+                    Editar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={(e) => { e.stopPropagation(); onDuplicate?.(transaction.id); }}
+                    className="py-3 sm:py-2"
+                  >
+                    <Copy className="w-4 h-4 mr-3" />
+                    Duplicar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onDelete?.(transaction.id); }}
+                    className="text-destructive py-3 sm:py-2"
+                  >
+                    <Trash2 className="w-4 h-4 mr-3" />
+                    Excluir
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
-        
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <Badge variant={transaction.type} />
-          <div data-actions-dropdown>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-7 sm:w-7">
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-popover">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit?.(transaction.id); }}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate?.(transaction.id); }}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => { e.stopPropagation(); onDelete?.(transaction.id); }}
-                  className="text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
 
-      {/* Details Row */}
-      <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 mb-2 sm:mb-3 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{transaction.person}</span>
-        <span>•</span>
-        <span>{transaction.category}</span>
-        {transaction.bank !== "-" && (
-          <>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <Wallet className="w-3 h-3" />
-              {transaction.bank}
-            </span>
-          </>
-        )}
-        {transaction.paymentMethod !== "-" && (
-          <>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <CreditCard className="w-3 h-3" />
-              {transaction.paymentMethod}
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Value Row */}
-      <div className="flex items-center justify-between pt-2 border-t border-border">
-        <div className="text-sm sm:text-base font-bold text-foreground">
-          {formatCurrency(transaction.totalValue)}
+        {/* Details Row */}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mb-3 text-xs sm:text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{transaction.person}</span>
+          <span className="text-muted-foreground/50">•</span>
+          <span>{transaction.category}</span>
+          {transaction.bank !== "-" && (
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="flex items-center gap-1">
+                <Wallet className="w-3.5 h-3.5" />
+                {transaction.bank}
+              </span>
+            </>
+          )}
+          {transaction.paymentMethod !== "-" && (
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="flex items-center gap-1">
+                <CreditCard className="w-3.5 h-3.5" />
+                {transaction.paymentMethod}
+              </span>
+            </>
+          )}
         </div>
-        {transaction.isCouple && (
-          <div className="text-[11px] sm:text-xs text-muted-foreground">
-            P/ pessoa: <span className="font-medium text-foreground">{formatCurrency(transaction.valuePerPerson)}</span>
+
+        {/* Value Row */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="text-base sm:text-lg font-bold text-foreground">
+            {formatCurrency(transaction.totalValue)}
           </div>
-        )}
+          {transaction.isCouple && (
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              P/ pessoa: <span className="font-medium text-foreground">{formatCurrency(transaction.valuePerPerson)}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
