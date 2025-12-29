@@ -564,7 +564,7 @@ export function TransactionFormModal({
                         {date ? format(date, "PPP", { locale: ptBR }) : "Selecione a data"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0 z-50 bg-popover" align="start">
                       <Calendar
                         mode="single"
                         selected={date}
@@ -573,7 +573,7 @@ export function TransactionFormModal({
                           if (d) setFieldErrors(prev => ({ ...prev, date: undefined }));
                         }}
                         initialFocus
-                        className="pointer-events-auto"
+                        className={cn("p-3 pointer-events-auto")}
                       />
                     </PopoverContent>
                   </Popover>
