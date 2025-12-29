@@ -314,29 +314,36 @@ export default function Dashboard() {
 
           {/* Charts Row */}
           {hasData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
-              <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
-                <PieChart data={categoryData} title="Divisão por Categoria" />
+            <>
+              {/* First row: 3 charts */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+                  <PieChart data={categoryData} title="Divisão por Categoria" />
+                </div>
+                <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
+                  <PieChart data={bankData} title="Divisão por Banco" />
+                </div>
+                <div className="animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
+                  <LineChart
+                    data={evolutionData}
+                    lines={[
+                      { dataKey: "total", color: "hsl(330, 75%, 55%)", name: "Total" },
+                    ]}
+                    title="Evolução Mensal"
+                  />
+                </div>
               </div>
-              <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
-                <PieChart data={bankData} title="Divisão por Banco" />
+              
+              {/* Second row: Budget and Savings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div className="animate-fade-up opacity-0" style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}>
+                  <BudgetProgressCard summary={budgetSummary} />
+                </div>
+                <div className="animate-fade-up opacity-0" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
+                  <SavingsGoalsCard />
+                </div>
               </div>
-              <div className="animate-fade-up opacity-0" style={{ animationDelay: "900ms", animationFillMode: "forwards" }}>
-                <LineChart
-                  data={evolutionData}
-                  lines={[
-                    { dataKey: "total", color: "hsl(330, 75%, 55%)", name: "Total" },
-                  ]}
-                  title="Evolução Mensal"
-                />
-              </div>
-              <div className="animate-fade-up opacity-0" style={{ animationDelay: "1000ms", animationFillMode: "forwards" }}>
-                <BudgetProgressCard summary={budgetSummary} />
-              </div>
-              <div className="animate-fade-up opacity-0" style={{ animationDelay: "1100ms", animationFillMode: "forwards" }}>
-                <SavingsGoalsCard />
-              </div>
-            </div>
+            </>
           ) : (
             <div className="p-8 sm:p-12 rounded-2xl bg-card border border-border/50 shadow-card mb-6 sm:mb-8 text-center animate-fade-up" style={{ animationDelay: "700ms" }}>
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
