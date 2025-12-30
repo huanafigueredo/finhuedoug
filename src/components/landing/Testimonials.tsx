@@ -1,19 +1,22 @@
 const testimonials = [
   {
-    quote: "Paramos de brigar por dinheiro. Agora está tudo transparente.",
+    quote: "Finalmente paramos de brigar por dinheiro. Agora está tudo transparente e organizado!",
     couple: "Marina & Pedro",
+    time: "usando há 8 meses",
     avatar1: "M",
     avatar2: "P",
   },
   {
-    quote: "A divisão proporcional mudou nossa vida financeira.",
+    quote: "A divisão proporcional mudou nossa vida. Cada um paga o que pode, sem culpa.",
     couple: "Julia & André",
+    time: "usando há 5 meses",
     avatar1: "J",
     avatar2: "A",
   },
   {
-    quote: "Juntamos R$ 15.000 para nossa viagem com as metas!",
+    quote: "As metas compartilhadas nos ajudaram a juntar R$ 15.000 para nossa viagem!",
     couple: "Carla & Bruno",
+    time: "usando há 1 ano",
     avatar1: "C",
     avatar2: "B",
   },
@@ -21,35 +24,49 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section className="py-24 md:py-32 bg-muted/20">
+    <section className="py-20 md:py-28">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-20">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4 animate-fade-up opacity-0">
-            casais que usam amam
+        <div className="text-center mb-16">
+          <span className="inline-block text-sm font-medium text-primary bg-primary/10 px-4 py-1.5 rounded-full mb-4 animate-fade-up opacity-0">
+            depoimentos
+          </span>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4 animate-fade-up opacity-0 stagger-1">
+            casais que usam amam 💕
           </h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto animate-fade-up opacity-0 stagger-2">
+            veja o que outros casais estão dizendo
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {testimonials.map((testimonial, index) => (
             <div
               key={testimonial.couple}
-              className="bg-card rounded-2xl p-8 border border-border animate-fade-up opacity-0"
-              style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+              className="bg-card rounded-2xl p-8 border border-border/50 shadow-card hover:shadow-warm transition-shadow animate-fade-up opacity-0"
+              style={{ animationDelay: `${(index + 1) * 0.15}s` }}
             >
-              <p className="text-foreground mb-6 leading-relaxed">
-                "{testimonial.quote}"
+              {/* Quote icon */}
+              <div className="text-4xl text-primary/20 mb-4">"</div>
+
+              {/* Quote text */}
+              <p className="text-foreground leading-relaxed mb-6 text-lg">
+                {testimonial.quote}
               </p>
 
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-semibold text-primary border-2 border-card">
+              {/* Author */}
+              <div className="flex items-center gap-4">
+                <div className="flex -space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-semibold text-primary border-2 border-card">
                     {testimonial.avatar1}
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground border-2 border-card">
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-sm font-semibold text-accent border-2 border-card">
                     {testimonial.avatar2}
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{testimonial.couple}</p>
+                <div>
+                  <p className="font-semibold text-foreground">{testimonial.couple}</p>
+                  <p className="text-sm text-muted-foreground">{testimonial.time}</p>
+                </div>
               </div>
             </div>
           ))}
