@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ import { Link } from "react-router-dom";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeActions } from "@/hooks/useSwipeActions";
+import { useGamificationEvents } from "@/hooks/useGamificationEvents";
 import { GoalFormContent } from "./GoalFormContent";
 import {
   Select,
@@ -90,9 +91,10 @@ interface GoalItemProps {
   onEdit: (goal: SavingsGoal) => void;
   onDelete: (goal: SavingsGoal) => void;
   isDeleting?: boolean;
+  onDepositSuccess?: (depositor: "person1" | "person2", goalCompleted: boolean) => void;
 }
 
-function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalItemProps) {
+function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting, onDepositSuccess }: GoalItemProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [isAddingOpen, setIsAddingOpen] = useState(false);
@@ -179,10 +181,11 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
     }
 
     try {
+      const depositedBy = showDepositor ? depositor : "person1";
       await createDeposit.mutateAsync({ 
         goal_id: goal.id, 
         amount: cents,
-        deposited_by: showDepositor ? depositor : "person1",
+        deposited_by: depositedBy,
       });
       const depositorName = depositor === "person1" ? person1 : person2;
       toast({
@@ -191,6 +194,16 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
           ? `R$ ${formatCurrencyInput(addAmount)} adicionado por ${depositorName} à meta "${goal.title}"`
           : `R$ ${formatCurrencyInput(addAmount)} adicionado à meta "${goal.title}"`,
       });
+      
+      // Check if goal will be completed after this deposit
+      const newAmount = goal.current_amount + cents;
+      const willBeCompleted = newAmount >= goal.target_amount && goal.current_amount < goal.target_amount;
+      
+      // Trigger gamification events
+      if (onDepositSuccess) {
+        onDepositSuccess(depositedBy as "person1" | "person2", willBeCompleted);
+      }
+      
       setAddAmount("");
       setIsAddingOpen(false);
     } catch (error: any) {
@@ -576,6 +589,32 @@ export function SavingsGoalsCard({
   const updateGoal = useUpdateSavingsGoal();
   const deleteGoal = useDeleteSavingsGoal();
   const { toast } = useToast();
+  const { triggerGamificationEvent } = useGamificationEvents();
+
+  // Handler for deposit success - triggers gamification events
+  const handleDepositSuccess = async (depositor: "person1" | "person2", goalCompleted: boolean) => {
+    // Trigger deposit event
+    await triggerGamificationEvent({
+      actionType: "deposit_made",
+      personName: depositor,
+    });
+
+    // If goal was completed, trigger goal_completed event
+    if (goalCompleted) {
+      await triggerGamificationEvent({
+        actionType: "goal_completed",
+        personName: depositor,
+      });
+    }
+  };
+
+  // Handler for goal creation - triggers gamification event
+  const handleGoalCreated = async () => {
+    await triggerGamificationEvent({
+      actionType: "goal_created",
+      personName: "person1", // Default to person1 for goal creation
+    });
+  };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
@@ -679,6 +718,9 @@ export function SavingsGoalsCard({
           title: "Meta criada! 🎯",
           description: `A meta "${title}" foi criada com sucesso.`,
         });
+        
+        // Trigger gamification event for goal creation
+        await handleGoalCreated();
       }
       setIsDialogOpen(false);
       resetForm();
@@ -812,6 +854,7 @@ export function SavingsGoalsCard({
                       onEdit={openEditDialog}
                       onDelete={handleDelete}
                       isDeleting={deletingId === goal.id}
+                      onDepositSuccess={handleDepositSuccess}
                     />
                   </div>
                 ))}
@@ -831,6 +874,7 @@ export function SavingsGoalsCard({
                         onEdit={openEditDialog}
                         onDelete={handleDelete}
                         isDeleting={deletingId === goal.id}
+                        onDepositSuccess={handleDepositSuccess}
                       />
                     </div>
                   ))}
