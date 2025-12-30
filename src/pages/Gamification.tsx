@@ -8,6 +8,8 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useSavingsDeposits } from "@/hooks/useSavingsDeposits";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { useFinancialRankingHistory } from "@/hooks/useFinancialRankingHistory";
+import { useRankingNotifications } from "@/hooks/useRankingNotifications";
 import { XPProgressBar } from "@/components/gamification/XPProgressBar";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { AchievementCard } from "@/components/gamification/AchievementCard";
@@ -15,9 +17,10 @@ import { ChallengeCard } from "@/components/gamification/ChallengeCard";
 import { RewardCard } from "@/components/gamification/RewardCard";
 import { CoupleRankingCard } from "@/components/gamification/CoupleRankingCard";
 import { FinancialRankingCard } from "@/components/gamification/FinancialRankingCard";
+import { RankingHistoryCard } from "@/components/gamification/RankingHistoryCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Target, Medal, Gift, Users, Wallet } from "lucide-react";
+import { Trophy, Target, Medal, Gift, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Gamification() {
@@ -90,6 +93,51 @@ export default function Gamification() {
     
     return { person1Savings, person2Savings };
   }, [allDeposits, currentMonth, currentYear]);
+
+  // Financial ranking history
+  const {
+    rankings: financialRankings,
+    historicalWins: financialHistoricalWins,
+    saveRankingAsync,
+  } = useFinancialRankingHistory();
+
+  // Ranking notifications
+  const rankingData = useMemo(() => ({
+    person1Expenses: financialMetrics.person1TotalExpenses,
+    person2Expenses: financialMetrics.person2TotalExpenses,
+    person1Savings: monthlySavings.person1Savings,
+    person2Savings: monthlySavings.person2Savings,
+    person1Balance: financialMetrics.person1Balance,
+    person2Balance: financialMetrics.person2Balance,
+  }), [financialMetrics, monthlySavings]);
+
+  useRankingNotifications(rankingData);
+
+  // Save current month ranking when data changes (debounced by effect)
+  useEffect(() => {
+    const saveCurrentRanking = async () => {
+      if (!transactions.length) return;
+      
+      try {
+        await saveRankingAsync({
+          month: currentMonth + 1, // 1-indexed
+          year: currentYear,
+          person1_expenses: Math.round(financialMetrics.person1TotalExpenses * 100),
+          person1_savings: Math.round(monthlySavings.person1Savings * 100),
+          person1_balance: Math.round(financialMetrics.person1Balance * 100),
+          person2_expenses: Math.round(financialMetrics.person2TotalExpenses * 100),
+          person2_savings: Math.round(monthlySavings.person2Savings * 100),
+          person2_balance: Math.round(financialMetrics.person2Balance * 100),
+        });
+      } catch (error) {
+        // Silent fail - ranking will be saved on next update
+      }
+    };
+
+    // Debounce the save
+    const timeoutId = setTimeout(saveCurrentRanking, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [financialMetrics, monthlySavings, currentMonth, currentYear, transactions.length]);
 
   // Initialize challenges on mount
   useEffect(() => {
@@ -308,6 +356,14 @@ export default function Gamification() {
               currentLeader={currentLeader}
               person1AvatarUrl={userSettings?.person_1_avatar_url}
               person2AvatarUrl={userSettings?.person_2_avatar_url}
+            />
+
+            {/* Ranking History Card */}
+            <RankingHistoryCard
+              rankings={financialRankings}
+              person1Name={person1Name}
+              person2Name={person2Name}
+              historicalWins={financialHistoricalWins}
             />
 
             <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
