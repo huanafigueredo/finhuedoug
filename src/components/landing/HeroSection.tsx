@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { TogetherLogo } from "@/components/shared/TogetherLogo";
 import { ArrowRight, Play } from "lucide-react";
 import { useParallax } from "@/hooks/useScrollAnimation";
+import heroIllustration from "@/assets/hero-illustration.png";
 
 export function HeroSection() {
   const { ref: parallaxRef, offset } = useParallax(0.3);
@@ -63,50 +63,22 @@ export function HeroSection() {
             </div>
           </div>
 
-          {/* Right - Visual with rotate-in animation */}
+          {/* Right - Hero Illustration */}
           <div className="relative animate-rotate-in opacity-0 stagger-2">
-            <div className="relative mx-auto max-w-md lg:max-w-none">
-              {/* Main card mockup with hover effect */}
-              <div className="bg-card rounded-3xl shadow-warm p-6 border border-border/50 backdrop-blur-sm hover-lift">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <TogetherLogo size="sm" />
-                    <span className="font-display font-semibold text-foreground">together</span>
-                  </div>
-                  <span className="text-sm text-muted-foreground">dezembro 2024</span>
-                </div>
-
-                {/* Balance card with shimmer */}
-                <div className="bg-gradient-to-br from-primary/10 via-secondary to-accent/10 rounded-2xl p-6 mb-4 relative overflow-hidden">
-                  <div className="absolute inset-0 animate-shimmer" />
-                  <p className="text-sm text-muted-foreground mb-1 relative">saldo disponível</p>
-                  <p className="font-display text-3xl font-bold text-foreground relative">R$ 4.850,00</p>
-                  <div className="mt-4 h-2 bg-background/50 rounded-full overflow-hidden relative">
-                    <div className="h-full w-3/4 bg-primary rounded-full animate-pulse-soft" />
-                  </div>
-                  <div className="flex justify-between mt-2 text-xs text-muted-foreground relative">
-                    <span>receitas: R$ 12.000</span>
-                    <span>despesas: R$ 7.150</span>
-                  </div>
-                </div>
-
-                {/* Mini metrics with staggered bounce */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-secondary/50 rounded-xl p-4 text-center animate-bounce-in opacity-0" style={{ animationDelay: "0.8s" }}>
-                    <span className="text-2xl">🏠</span>
-                    <p className="text-xs text-muted-foreground mt-1">moradia</p>
-                    <p className="font-semibold text-foreground">R$ 2.100</p>
-                  </div>
-                  <div className="bg-secondary/50 rounded-xl p-4 text-center animate-bounce-in opacity-0" style={{ animationDelay: "0.9s" }}>
-                    <span className="text-2xl">🍔</span>
-                    <p className="text-xs text-muted-foreground mt-1">alimentação</p>
-                    <p className="font-semibold text-foreground">R$ 1.800</p>
-                  </div>
-                </div>
+            <div className="relative mx-auto max-w-lg lg:max-w-none">
+              {/* Main illustration with hover effect */}
+              <div className="relative hover-lift rounded-3xl overflow-hidden shadow-warm">
+                <img 
+                  src={heroIllustration} 
+                  alt="Casal feliz organizando finanças juntos" 
+                  className="w-full h-auto rounded-3xl"
+                />
+                
+                {/* Subtle overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent pointer-events-none" />
               </div>
 
-              {/* Floating elements with enhanced float animation */}
+              {/* Floating elements */}
               <div className="absolute -top-4 -right-4 bg-card rounded-2xl shadow-card p-4 border border-border/50 animate-float hover:scale-105 transition-transform">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🎯</span>
@@ -119,11 +91,18 @@ export function HeroSection() {
 
               <div className="absolute -bottom-4 -left-4 bg-card rounded-2xl shadow-card p-4 border border-border/50 animate-float hover:scale-105 transition-transform" style={{ animationDelay: "1.5s" }}>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">💑</span>
+                  <span className="text-xl">💰</span>
                   <div>
-                    <p className="text-xs text-muted-foreground">divisão</p>
-                    <p className="font-semibold text-foreground text-sm">50% cada</p>
+                    <p className="text-xs text-muted-foreground">economizado</p>
+                    <p className="font-semibold text-foreground text-sm">R$ 2.500</p>
                   </div>
+                </div>
+              </div>
+
+              <div className="absolute top-1/2 -right-8 bg-card rounded-2xl shadow-card p-3 border border-border/50 animate-float hidden lg:block hover:scale-105 transition-transform" style={{ animationDelay: "0.8s" }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📊</span>
+                  <p className="font-semibold text-foreground text-xs">50/50</p>
                 </div>
               </div>
             </div>
