@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { addMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -19,13 +20,17 @@ import {
   User,
   Tag,
   FileText,
-  PartyPopper
+  PartyPopper,
+  Target,
+  ArrowUpRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ComprovantesCard } from "@/components/comprovantes/ComprovantesCard";
 import { ItensCompraCard } from "@/components/comprovantes/ItensCompraCard";
 import { useItensLancamento } from "@/hooks/useComprovantes";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import confetti from 'canvas-confetti';
 
 export interface TransactionDetails {
@@ -53,6 +58,38 @@ export interface TransactionDetails {
   // New fields for dynamic installments
   firstInstallmentDate?: Date;
   startInstallment?: number;
+  // Savings goal link
+  savingsDepositId?: string | null;
+}
+
+// Hook to fetch savings goal info via deposit
+function useSavingsGoalFromDeposit(savingsDepositId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["savings-goal-from-deposit", savingsDepositId],
+    queryFn: async () => {
+      if (!savingsDepositId) return null;
+
+      // 1. Get the deposit to find goal_id
+      const { data: deposit, error: depositError } = await supabase
+        .from("savings_deposits")
+        .select("goal_id")
+        .eq("id", savingsDepositId)
+        .single();
+
+      if (depositError || !deposit) return null;
+
+      // 2. Get the goal info
+      const { data: goal, error: goalError } = await supabase
+        .from("savings_goals")
+        .select("id, title, icon, current_amount, target_amount")
+        .eq("id", deposit.goal_id)
+        .single();
+
+      if (goalError) return null;
+      return goal;
+    },
+    enabled: !!savingsDepositId,
+  });
 }
 
 interface TransactionDetailsDialogProps {
@@ -70,6 +107,7 @@ export function TransactionDetailsDialog({
 }: TransactionDetailsDialogProps) {
   const { toast } = useToast();
   const { data: itensLancamento } = useItensLancamento(transaction?.id);
+  const { data: linkedGoal } = useSavingsGoalFromDeposit(transaction?.savingsDepositId);
   const [showCelebration, setShowCelebration] = useState(false);
 
   // Check if this is the last installment and show celebration
@@ -259,6 +297,11 @@ export function TransactionDetailsDialog({
                 transaction={transaction}
                 isLastInstallment={isLastInstallment}
               />
+            )}
+
+            {/* Bloco D2 - Meta de Economia vinculada */}
+            {linkedGoal && (
+              <SavingsGoalSection goal={linkedGoal} />
             )}
 
             {/* Bloco E - Comprovantes */}
@@ -513,6 +556,63 @@ function InstallmentSection({
             ? "Parabéns! Você quitou este parcelamento!" 
             : `${transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes`}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function SavingsGoalSection({ 
+  goal 
+}: { 
+  goal: { id: string; title: string; icon: string | null; current_amount: number; target_amount: number } 
+}) {
+  const formatCurrency = (valueInCents: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(valueInCents / 100);
+  };
+
+  const progress = goal.target_amount > 0 
+    ? Math.min(100, (goal.current_amount / goal.target_amount) * 100)
+    : 0;
+
+  return (
+    <div className="p-3 sm:p-4 rounded-xl bg-info/10 border border-info/20">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <Target className="w-4 h-4 text-info" />
+          <span className="text-xs sm:text-sm font-medium text-foreground">Meta de Economia</span>
+        </div>
+        <Link to="/metas">
+          <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-info hover:text-info">
+            <span className="text-xs">Ver metas</span>
+            <ArrowUpRight className="w-3 h-3" />
+          </Button>
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-xl">{goal.icon || "🎯"}</span>
+        <span className="text-sm sm:text-base font-semibold text-foreground">{goal.title}</span>
+      </div>
+
+      {/* Progresso */}
+      <div className="flex items-center justify-between text-xs sm:text-sm mb-1.5">
+        <span className="text-muted-foreground">Progresso</span>
+        <span className="font-medium text-foreground">{progress.toFixed(0)}%</span>
+      </div>
+
+      <div className="h-2 rounded-full bg-border overflow-hidden mb-2">
+        <div 
+          className="h-full bg-info transition-all duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{formatCurrency(goal.current_amount)}</span>
+        <span>de {formatCurrency(goal.target_amount)}</span>
       </div>
     </div>
   );
