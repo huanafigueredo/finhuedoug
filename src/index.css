@@ -35,7 +35,7 @@
     --warning: 40 90% 55%;
     --warning-foreground: 240 10% 15%;
 
-    --info: 210 80% 55%;
+    --info: 330 75% 55%;
     --info-foreground: 0 0% 100%;
 
     --border: 68 25% 85%;
@@ -65,8 +65,8 @@
     --yellow-light: 40 90% 70%;
     --purple: 280 60% 55%;
     --purple-light: 280 60% 70%;
-    --blue: 210 80% 55%;
-    --blue-light: 210 80% 70%;
+    --blue: 330 75% 55%;
+    --blue-light: 330 75% 70%;
     --dark: 240 10% 15%;
     --dark-soft: 240 10% 25%;
 
