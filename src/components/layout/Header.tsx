@@ -30,7 +30,7 @@ export function Header() {
               <Wallet className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-display text-xl font-bold text-foreground">
-              CasalFin
+              together finanças
             </span>
           </Link>
 

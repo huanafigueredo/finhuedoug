@@ -204,7 +204,7 @@ serve(async (req) => {
     const bankNames = banks?.map(b => b.name).join(", ") || "";
     const paymentMethodNames = paymentMethods?.map(p => p.name).join(", ") || "";
 
-    const systemPrompt = `Você é um assistente financeiro do app CasalFin, usado por ${person1Name} e ${person2Name}.
+    const systemPrompt = `Você é um assistente financeiro do app together finanças, usado por ${person1Name} e ${person2Name}.
 Você responde perguntas sobre finanças do casal baseado nos dados do app.
 
 DATA ATUAL: ${now.toLocaleDateString("pt-BR")} (${currentYear}-${String(currentMonth).padStart(2, "0")})

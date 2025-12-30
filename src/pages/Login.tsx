@@ -67,7 +67,7 @@ const Login = () => {
       setLoginAttempts(0);
       toast({
         title: 'Bem-vindo(a)! 💕',
-        description: 'Acesso liberado ao CasalFin',
+        description: 'Acesso liberado ao together finanças',
       });
       navigate(redirectTo, { replace: true });
     }
@@ -227,7 +227,7 @@ const Login = () => {
             </h1>
             
             <p className="text-muted-foreground mb-6">
-              O email <strong className="text-foreground">{email}</strong> já possui uma conta no CasalFin.
+              O email <strong className="text-foreground">{email}</strong> já possui uma conta no together finanças.
             </p>
             
             <div className="space-y-3">
@@ -302,7 +302,7 @@ const Login = () => {
             <Heart className="w-10 h-10 text-primary fill-primary" />
           </div>
           <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-            CasalFin
+            together finanças
           </h1>
           <p className="text-muted-foreground">
             {mode === 'login' && 'Entre na sua conta'}

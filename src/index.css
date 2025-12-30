@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Bricolage+Grotesque:wght@400;500;600;700&display=swap');
-
 @layer base {
   :root {
     /* MDO-inspired color palette - Vibrant & Modern */
@@ -132,11 +130,11 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Bricolage Grotesque', sans-serif;
+    font-family: 'Segoe UI', system-ui, sans-serif;
     font-weight: 600;
   }
 }
