@@ -415,6 +415,63 @@ export type Database = {
           },
         ]
       }
+      monthly_financial_rankings: {
+        Row: {
+          balance_winner: string | null
+          created_at: string
+          id: string
+          month: number
+          overall_winner: string | null
+          person1_balance: number
+          person1_expenses: number
+          person1_savings: number
+          person2_balance: number
+          person2_expenses: number
+          person2_savings: number
+          savings_winner: string | null
+          spending_winner: string | null
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          balance_winner?: string | null
+          created_at?: string
+          id?: string
+          month: number
+          overall_winner?: string | null
+          person1_balance?: number
+          person1_expenses?: number
+          person1_savings?: number
+          person2_balance?: number
+          person2_expenses?: number
+          person2_savings?: number
+          savings_winner?: string | null
+          spending_winner?: string | null
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          balance_winner?: string | null
+          created_at?: string
+          id?: string
+          month?: number
+          overall_winner?: string | null
+          person1_balance?: number
+          person1_expenses?: number
+          person1_savings?: number
+          person2_balance?: number
+          person2_expenses?: number
+          person2_savings?: number
+          savings_winner?: string | null
+          spending_winner?: string | null
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       monthly_xp: {
         Row: {
           achievements_count: number
