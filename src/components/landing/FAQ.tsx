@@ -7,59 +7,45 @@ import {
 
 const faqs = [
   {
-    question: "é grátis mesmo?",
-    answer: "Sim! O together é 100% gratuito. Todas as funcionalidades estão disponíveis sem custo.",
+    question: "é grátis?",
+    answer: "Sim, 100% gratuito. Todas as funcionalidades disponíveis.",
   },
   {
-    question: "preciso criar uma conta separada para meu parceiro(a)?",
-    answer: "Não precisa! Vocês compartilham a mesma conta e cada um pode adicionar lançamentos identificando quem pagou e para quem é a despesa.",
+    question: "meu parceiro precisa de conta separada?",
+    answer: "Não. Vocês compartilham a mesma conta e identificam quem pagou cada despesa.",
   },
   {
     question: "meus dados estão seguros?",
-    answer: "Sim! Usamos criptografia de ponta e seus dados ficam armazenados em servidores seguros. Nunca compartilhamos suas informações financeiras.",
+    answer: "Sim. Usamos criptografia e servidores seguros.",
   },
   {
     question: "funciona no celular?",
-    answer: "Sim! O together é totalmente responsivo e funciona perfeitamente em smartphones, tablets e computadores.",
-  },
-  {
-    question: "posso exportar meus dados?",
-    answer: "Sim! Você pode exportar relatórios em PDF e ter acesso a todos os seus dados a qualquer momento.",
-  },
-  {
-    question: "como funciona a divisão de despesas?",
-    answer: "Você pode escolher entre divisão 50/50, proporcional à renda de cada um, ou definir percentuais personalizados. A divisão pode ser configurada globalmente ou por categoria.",
+    answer: "Sim. Interface responsiva para qualquer dispositivo.",
   },
 ];
 
 export function FAQ() {
   return (
-    <section id="faq" className="py-20 md:py-28 bg-secondary/30">
+    <section id="faq" className="py-24 md:py-32 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <span className="inline-block text-sm font-medium text-primary bg-primary/10 px-4 py-1.5 rounded-full mb-4 animate-fade-up opacity-0">
-            dúvidas
-          </span>
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4 animate-fade-up opacity-0 stagger-1">
-            perguntas frequentes
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4 animate-fade-up opacity-0">
+            dúvidas frequentes
           </h2>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto animate-fade-up opacity-0 stagger-2">
-            tudo que vocês precisam saber antes de começar
-          </p>
         </div>
 
-        <div className="max-w-2xl mx-auto animate-fade-up opacity-0 stagger-3">
-          <Accordion type="single" collapsible className="space-y-4">
+        <div className="max-w-xl mx-auto animate-fade-up opacity-0 stagger-1">
+          <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-card rounded-xl border border-border/50 px-6 data-[state=open]:shadow-card transition-shadow"
+                className="bg-card rounded-xl border border-border px-5"
               >
-                <AccordionTrigger className="text-left font-display font-semibold text-foreground hover:no-underline py-5">
+                <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-4">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
+                <AccordionContent className="text-muted-foreground pb-4 text-sm">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
