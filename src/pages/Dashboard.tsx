@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -7,6 +7,7 @@ import { CompactMetricCard } from "@/components/dashboard/CompactMetricCard";
 import { PersonComparisonCard } from "@/components/dashboard/PersonComparisonCard";
 import { RecentTransactionsList } from "@/components/dashboard/RecentTransactionsList";
 import { UpcomingBillsList } from "@/components/dashboard/UpcomingBillsList";
+import { GamificationWidget } from "@/components/gamification/GamificationWidget";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
 import {
@@ -21,6 +22,7 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
+import { useGamification } from "@/hooks/useGamification";
 import { format, parseISO, differenceInMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -92,12 +94,18 @@ export default function Dashboard() {
   const { data: transactions = [], isLoading: loadingTransactions } = useTransactions();
   const { data: banks = [] } = useBanks();
   const { data: contasAVencer = [] } = useContasAVencer();
+  const { updateStreak } = useGamification();
 
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
 
   const metrics = useFinancialMetrics(transactions, monthIndex, year);
   const greeting = getGreeting();
+
+  // Update streak when dashboard loads (user is active)
+  useEffect(() => {
+    updateStreak();
+  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -338,7 +346,7 @@ export default function Dashboard() {
         )}
 
         {/* Bottom Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <UpcomingBillsList
             contas={contasAVencer}
             formatCurrency={formatCurrency}
@@ -349,6 +357,9 @@ export default function Dashboard() {
             formatCurrency={formatCurrency}
             delay={700}
           />
+          <div className="md:col-span-2 lg:col-span-1">
+            <GamificationWidget />
+          </div>
         </div>
       </div>
     </AppLayout>
