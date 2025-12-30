@@ -8,18 +8,11 @@ import {
   CheckCircle,
   TrendingUp,
   TrendingDown,
-  Sparkles,
-  ChevronRight
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BudgetProgress, BudgetSummary } from "@/hooks/useBudgetProgress";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Link } from "react-router-dom";
 
 interface BudgetProgressCardProps {
   summary: BudgetSummary;
@@ -34,9 +27,7 @@ const formatCurrency = (valueInCents: number) => {
   }).format(valueInCents / 100);
 };
 
-function BudgetItem({ item, index }: { item: BudgetProgress; index: number }) {
-  const navigate = useNavigate();
-  
+function BudgetItem({ item }: { item: BudgetProgress }) {
   const getStatusConfig = () => {
     switch (item.status) {
       case "exceeded":
@@ -45,7 +36,6 @@ function BudgetItem({ item, index }: { item: BudgetProgress; index: number }) {
           textColor: "text-destructive",
           icon: XCircle,
           label: "Ultrapassado",
-          description: "Você gastou mais do que o limite definido para esta categoria.",
           badgeVariant: "destructive" as const,
         };
       case "warning":
@@ -54,7 +44,6 @@ function BudgetItem({ item, index }: { item: BudgetProgress; index: number }) {
           textColor: "text-warning",
           icon: AlertTriangle,
           label: "Atenção",
-          description: "Você já usou 80% ou mais do orçamento desta categoria.",
           badgeVariant: "warning" as const,
         };
       default:
@@ -63,7 +52,6 @@ function BudgetItem({ item, index }: { item: BudgetProgress; index: number }) {
           textColor: "text-success",
           icon: CheckCircle,
           label: "OK",
-          description: "Você está dentro do limite para esta categoria.",
           badgeVariant: "success" as const,
         };
     }
@@ -73,81 +61,49 @@ function BudgetItem({ item, index }: { item: BudgetProgress; index: number }) {
   const StatusIcon = config.icon;
   const progressValue = Math.min(item.percentage, 100);
 
-  const handleClick = () => {
-    navigate(`/lancamentos?categoria=${encodeURIComponent(item.categoryName)}`);
-  };
-
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div 
-            className={cn(
-              "space-y-2 p-3 rounded-xl cursor-pointer transition-all duration-200",
-              "hover:bg-secondary/50 hover:shadow-sm",
-              "animate-fade-up opacity-0",
-              "group"
-            )}
-            style={{ animationDelay: `${index * 50}ms`, animationFillMode: "forwards" }}
-            onClick={handleClick}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                  {item.categoryName}
-                </span>
-                {item.status !== "ok" && (
-                  <Badge variant={config.badgeVariant} className="text-xs py-0 h-5">
-                    <StatusIcon className="w-3 h-3 mr-1" />
-                    {item.status === "exceeded" ? `+${item.percentage - 100}%` : `${item.percentage}%`}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={cn("text-xs font-medium", config.textColor)}>
-                  {item.percentage}%
-                </span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </div>
-            
-            <div className="relative">
-              <Progress 
-                value={progressValue} 
-                className={cn(
-                  "h-2",
-                  item.status === "exceeded" && "[&>div]:bg-destructive",
-                  item.status === "warning" && "[&>div]:bg-warning",
-                  item.status === "ok" && "[&>div]:bg-success"
-                )}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>
-                {formatCurrency(item.spent)} / {formatCurrency(item.budgeted)}
-              </span>
-              <span className={cn(
-                item.remaining >= 0 ? "text-success" : "text-destructive"
-              )}>
-                {item.remaining >= 0 ? "Sobra: " : "Excesso: "}
-                {formatCurrency(Math.abs(item.remaining))}
-              </span>
-            </div>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-medium flex items-center gap-1">
-              <StatusIcon className={cn("w-4 h-4", config.textColor)} />
-              {config.label}
-            </p>
-            <p className="text-xs text-muted-foreground">{config.description}</p>
-            <p className="text-xs text-primary mt-1">Clique para ver lançamentos →</p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-foreground">
+            {item.categoryName}
+          </span>
+          {item.status !== "ok" && (
+            <Badge variant={config.badgeVariant} className="text-xs py-0 h-5">
+              <StatusIcon className="w-3 h-3 mr-1" />
+              {item.status === "exceeded" ? `+${item.percentage - 100}%` : `${item.percentage}%`}
+            </Badge>
+          )}
+        </div>
+        <span className={cn("text-xs font-medium", config.textColor)}>
+          {item.percentage}%
+        </span>
+      </div>
+      
+      <div className="relative">
+        <Progress 
+          value={progressValue} 
+          className={cn(
+            "h-2",
+            item.status === "exceeded" && "[&>div]:bg-destructive",
+            item.status === "warning" && "[&>div]:bg-warning",
+            item.status === "ok" && "[&>div]:bg-success"
+          )}
+        />
+      </div>
+      
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {formatCurrency(item.spent)} / {formatCurrency(item.budgeted)}
+        </span>
+        <span className={cn(
+          item.remaining >= 0 ? "text-success" : "text-destructive"
+        )}>
+          {item.remaining >= 0 ? "Sobra: " : "Excesso: "}
+          {formatCurrency(Math.abs(item.remaining))}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -207,11 +163,11 @@ export function BudgetProgressCard({ summary, className, showConfigLink = true }
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-4">
         {/* Budget Items */}
-        <div className="space-y-1 max-h-80 overflow-y-auto pr-1 -mx-3">
-          {budgetProgress.map((item, index) => (
-            <BudgetItem key={item.categoryId} item={item} index={index} />
+        <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+          {budgetProgress.map((item) => (
+            <BudgetItem key={item.categoryId} item={item} />
           ))}
         </div>
 
