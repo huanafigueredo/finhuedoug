@@ -5,7 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Heart, Mail, Lock, User, ArrowLeft, CheckCircle, AlertCircle, KeyRound } from 'lucide-react';
+import { Mail, Lock, User, ArrowLeft, CheckCircle, AlertCircle, KeyRound } from 'lucide-react';
+import { TogetherLogo } from '@/components/shared/TogetherLogo';
 import { useToast } from '@/hooks/use-toast';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'email-exists';
@@ -204,7 +205,7 @@ const Login = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
-          <Heart className="w-12 h-12 text-primary fill-primary" />
+          <TogetherLogo size="xl" />
         </div>
       </div>
     );
@@ -299,7 +300,7 @@ const Login = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="w-10 h-10 text-primary fill-primary" />
+            <TogetherLogo size="xl" />
           </div>
           <h1 className="font-display text-3xl font-bold text-foreground mb-2">
             together finanças

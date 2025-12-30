@@ -9,9 +9,9 @@ import {
   LogOut,
   Plus,
   Wallet,
-  PiggyBank,
   Target,
 } from "lucide-react";
+import { TogetherLogo } from "@/components/shared/TogetherLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -58,8 +58,8 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/50">
       <SidebarHeader className="p-4">
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-pink group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-            <PiggyBank className="w-5 h-5 text-primary-foreground" />
+          <div className="group-hover:scale-105 transition-all duration-300">
+            <TogetherLogo size="lg" />
           </div>
           {!collapsed && (
             <span className="font-display text-xl font-bold text-foreground">
