@@ -2,15 +2,43 @@ import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SavingsGoalsCard } from "@/components/savings/SavingsGoalsCard";
 import { SavingsGoalsConfigSection } from "@/components/savings/SavingsGoalsConfigSection";
+import { MonthlySavingsReport } from "@/components/savings/MonthlySavingsReport";
 import { Accordion } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { Users } from "lucide-react";
 import { GoalOwnerFilter } from "@/hooks/useSavingsGoals";
 
+const months = [
+  { value: "0", label: "Janeiro" },
+  { value: "1", label: "Fevereiro" },
+  { value: "2", label: "Março" },
+  { value: "3", label: "Abril" },
+  { value: "4", label: "Maio" },
+  { value: "5", label: "Junho" },
+  { value: "6", label: "Julho" },
+  { value: "7", label: "Agosto" },
+  { value: "8", label: "Setembro" },
+  { value: "9", label: "Outubro" },
+  { value: "10", label: "Novembro" },
+  { value: "11", label: "Dezembro" },
+];
+
+const years = ["2024", "2025", "2026", "2027", "2028", "2029", "2030"];
+
 export default function Metas() {
+  const currentDate = new Date();
   const [selectedTab, setSelectedTab] = useState<GoalOwnerFilter>("couple");
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth().toString());
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const { person1, person2, person1Avatar, person2Avatar } = usePersonNames();
 
   const getTabLabel = (tab: GoalOwnerFilter) => {
@@ -71,13 +99,53 @@ export default function Metas() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-foreground mb-2">
-            Metas de Economia 🎯
-          </h1>
-          <p className="text-muted-foreground">
-            Acompanhe e gerencie suas metas de poupança
-          </p>
+        {/* Header com filtros de período */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+              Metas de Economia 🎯
+            </h1>
+            <p className="text-muted-foreground">
+              Acompanhe e gerencie suas metas de poupança
+            </p>
+          </div>
+
+          {/* Filtros de período */}
+          <div className="flex items-center gap-2">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-32 sm:w-40">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-24 sm:w-28">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Relatório Mensal de Economia */}
+        <div className="mb-8 animate-fade-up">
+          <MonthlySavingsReport 
+            month={parseInt(selectedMonth)} 
+            year={parseInt(selectedYear)} 
+          />
         </div>
 
         {/* Tabs para alternar entre perfis */}
@@ -113,13 +181,29 @@ export default function Metas() {
           </div>
 
           <TabsContent value="person1" className="animate-fade-up">
-            <MetasContent ownerFilter="person1" ownerLabel={person1} />
+            <MetasContent 
+              ownerFilter="person1" 
+              ownerLabel={person1}
+              month={parseInt(selectedMonth)}
+              year={parseInt(selectedYear)}
+            />
           </TabsContent>
           <TabsContent value="couple" className="animate-fade-up">
-            <MetasContent ownerFilter="couple" ownerLabel="Casal" isCoupleTab />
+            <MetasContent 
+              ownerFilter="couple" 
+              ownerLabel="Casal" 
+              isCoupleTab
+              month={parseInt(selectedMonth)}
+              year={parseInt(selectedYear)}
+            />
           </TabsContent>
           <TabsContent value="person2" className="animate-fade-up">
-            <MetasContent ownerFilter="person2" ownerLabel={person2} />
+            <MetasContent 
+              ownerFilter="person2" 
+              ownerLabel={person2}
+              month={parseInt(selectedMonth)}
+              year={parseInt(selectedYear)}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -131,9 +215,11 @@ interface MetasContentProps {
   ownerFilter: GoalOwnerFilter;
   ownerLabel: string;
   isCoupleTab?: boolean;
+  month: number;
+  year: number;
 }
 
-function MetasContent({ ownerFilter, ownerLabel, isCoupleTab }: MetasContentProps) {
+function MetasContent({ ownerFilter, ownerLabel, isCoupleTab, month, year }: MetasContentProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Goals Overview */}
