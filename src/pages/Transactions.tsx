@@ -432,6 +432,7 @@ export default function Transactions() {
         status_extracao: tx.status_extracao,
         firstInstallmentDate: tx.firstInstallmentDate,
         startInstallment: tx.startInstallment,
+        savingsDepositId: tx.savingsDepositId,
       } as any);
       setDetailsDialogOpen(true);
     }
