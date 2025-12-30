@@ -648,6 +648,8 @@ export function TransactionFormModal({
                   <Label htmlFor="value">Valor Total <span className="text-destructive">*</span></Label>
                   <Input
                     id="value"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="R$ 0,00"
                     value={value}
                     onChange={handleValueChange}
@@ -890,6 +892,8 @@ export function TransactionFormModal({
                   </div>
                   <Input
                     id="value"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="R$ 0,00"
                     value={value}
                     onChange={handleValueChange}
