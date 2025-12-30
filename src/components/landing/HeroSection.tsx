@@ -52,7 +52,7 @@ export function HeroSection() {
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 animate-scale-in opacity-0 stagger-3">
               <Link to="/login">
                 <Button variant="hero" size="xl" className="group animate-glow-pulse">
-                  começar agora — é grátis
+                  começar agora, é grátis
                   <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
