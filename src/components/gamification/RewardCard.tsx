@@ -49,7 +49,7 @@ export function RewardCard({
         bronze: "from-amber-600 to-amber-800",
         silver: "from-gray-300 to-gray-500",
         gold: "from-yellow-400 to-amber-600",
-        diamond: "from-cyan-300 via-blue-400 to-purple-500",
+        diamond: "from-cyan-300 via-pink-400 to-purple-500",
       };
       return {
         borderClass: borderColors[reward.preview_data.border || ""] || "",
