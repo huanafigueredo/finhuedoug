@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { BudgetConfigCard } from "@/components/budget/BudgetConfigCard";
 import { BudgetProgressCard } from "@/components/budget/BudgetProgressCard";
 import { BudgetMetricCards } from "@/components/budget/BudgetMetricCards";
-import { BudgetDonutChart } from "@/components/budget/BudgetDonutChart";
+
 import { useBudgetProgress, PersonFilter } from "@/hooks/useBudgetProgress";
 import { useTransactions } from "@/hooks/useTransactions";
 import { usePersonNames } from "@/hooks/useUserSettings";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+
 import { Heart, Users, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -182,42 +182,24 @@ export default function Orcamentos() {
         {hasBudgets && <BudgetMetricCards summary={budgetSummary} />}
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Progress */}
-          <div className="lg:col-span-7 space-y-6">
-            {/* Donut Chart + Progress Card */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-              {hasBudgets && (
-                <Card className="sm:col-span-4 animate-fade-up" style={{ animationDelay: "100ms" }}>
-                  <CardContent className="p-4 flex items-center justify-center">
-                    <BudgetDonutChart 
-                      spent={budgetSummary.totalSpent} 
-                      budgeted={budgetSummary.totalBudgeted} 
-                    />
-                  </CardContent>
-                </Card>
-              )}
-              <div className={cn(
-                "animate-fade-up",
-                hasBudgets ? "sm:col-span-8" : "sm:col-span-12"
-              )} style={{ animationDelay: "150ms" }}>
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-                    Progresso do Mês
-                    {selectedTab !== "all" && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        ({getFilterLabel()})
-                      </span>
-                    )}
-                  </h2>
-                </div>
-                <BudgetProgressCard summary={budgetSummary} showConfigLink={false} />
-              </div>
+          <div className="animate-fade-up" style={{ animationDelay: "100ms" }}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                Progresso do Mês
+                {selectedTab !== "all" && (
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({getFilterLabel()})
+                  </span>
+                )}
+              </h2>
             </div>
+            <BudgetProgressCard summary={budgetSummary} showConfigLink={false} />
           </div>
 
           {/* Right Column - Config */}
-          <div className="lg:col-span-5 animate-fade-up" style={{ animationDelay: "200ms" }}>
+          <div className="animate-fade-up" style={{ animationDelay: "150ms" }}>
             <BudgetConfigCard />
           </div>
         </div>
