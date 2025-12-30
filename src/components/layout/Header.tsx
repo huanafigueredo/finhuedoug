@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { Heart, Menu, X, LogOut, Sparkles, Wallet } from "lucide-react";
+import { Menu, X, LogOut, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { TogetherLogo } from "@/components/shared/TogetherLogo";
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard" },
@@ -26,8 +27,8 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-pink group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-              <Wallet className="w-5 h-5 text-primary-foreground" />
+            <div className="group-hover:scale-105 transition-all duration-300">
+              <TogetherLogo size="lg" />
             </div>
             <span className="font-display text-xl font-bold text-foreground">
               together finanças
