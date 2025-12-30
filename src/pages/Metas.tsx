@@ -138,14 +138,6 @@ export default function Metas() {
           </div>
         </div>
 
-        {/* Relatório Mensal Compacto */}
-        <div className="mb-6 animate-fade-up">
-          <MonthlySavingsReport 
-            month={parseInt(selectedMonth)} 
-            year={parseInt(selectedYear)} 
-          />
-        </div>
-
         {/* Tabs para alternar entre perfis */}
         <Tabs 
           value={selectedTab} 
@@ -175,6 +167,15 @@ export default function Metas() {
               <span className="hidden sm:inline truncate">{getTabLabel("person2")}</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Relatório Mensal filtrado por perfil */}
+          <div className="mb-6">
+            <MonthlySavingsReport 
+              month={parseInt(selectedMonth)} 
+              year={parseInt(selectedYear)}
+              ownerFilter={selectedTab}
+            />
+          </div>
 
           <TabsContent value="person1" className="animate-fade-up mt-0">
             <SavingsGoalsCard 
