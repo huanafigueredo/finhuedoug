@@ -283,7 +283,7 @@ export default function Gamification() {
             <p className="text-[10px] sm:text-xs text-muted-foreground">Conquistas</p>
           </div>
           <div className="p-3 sm:p-4 rounded-2xl bg-card border border-border/50 text-center">
-            <Target className="w-5 h-5 mx-auto text-blue-500 mb-1" />
+            <Target className="w-5 h-5 mx-auto text-pink-500 mb-1" />
             <p className="text-xl sm:text-2xl font-bold text-foreground">
               {completedWeekly + completedMonthly}
             </p>

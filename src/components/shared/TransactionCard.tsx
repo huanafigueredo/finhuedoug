@@ -134,7 +134,7 @@ export function TransactionCard({
         >
           <button
             onClick={() => handleSwipeAction('edit')}
-            className="flex-1 flex items-center justify-center bg-blue-500 text-white active:bg-blue-600 transition-colors"
+            className="flex-1 flex items-center justify-center bg-pink-500 text-white active:bg-pink-600 transition-colors"
           >
             <Pencil className="w-5 h-5" />
           </button>
