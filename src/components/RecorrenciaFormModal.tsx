@@ -30,6 +30,7 @@ import { usePersonNames } from "@/hooks/useUserSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format } from "date-fns";
 import { getCategoryEmoji } from "@/lib/categoryEmojis";
+import { formatCurrencyInput, parseCurrencyToCents, centsToReais } from "@/lib/currency";
 
 interface RecorrenciaFormModalProps {
   open: boolean;
@@ -74,6 +75,7 @@ export function RecorrenciaFormModal({
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [valorDisplay, setValorDisplay] = useState("");
 
   useEffect(() => {
     if (recorrencia) {
@@ -93,6 +95,13 @@ export function RecorrenciaFormModal({
         lembrete_3_dias: recorrencia.lembrete_3_dias,
         lembrete_1_dia: recorrencia.lembrete_1_dia,
       });
+      // Format existing value for display (convert from reais to cents then format)
+      if (recorrencia.valor_padrao > 0) {
+        const cents = Math.round(recorrencia.valor_padrao * 100);
+        setValorDisplay(formatCurrencyInput(cents.toString()));
+      } else {
+        setValorDisplay("");
+      }
     } else {
       setFormData({
         titulo: "",
@@ -110,8 +119,16 @@ export function RecorrenciaFormModal({
         lembrete_3_dias: false,
         lembrete_1_dia: false,
       });
+      setValorDisplay("");
     }
   }, [recorrencia, open]);
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCurrencyInput(e.target.value);
+    setValorDisplay(formatted);
+    const cents = parseCurrencyToCents(formatted);
+    setFormData({ ...formData, valor_padrao: centsToReais(cents) });
+  };
 
   const filteredCategories = categories.filter((c) => c.type === formData.tipo);
   const filteredSubcategories = subcategories.filter(
@@ -181,18 +198,22 @@ export function RecorrenciaFormModal({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="valor">💰 Valor Padrão *</Label>
-          <Input
-            id="valor"
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0"
-            value={formData.valor_padrao}
-            onChange={(e) =>
-              setFormData({ ...formData, valor_padrao: parseFloat(e.target.value) || 0 })
-            }
-            required
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+              R$
+            </span>
+            <Input
+              id="valor"
+              type="text"
+              inputMode="decimal"
+              value={valorDisplay}
+              onChange={handleValorChange}
+              onFocus={(e) => e.target.select()}
+              placeholder="0,00"
+              className="pl-9"
+              required
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
