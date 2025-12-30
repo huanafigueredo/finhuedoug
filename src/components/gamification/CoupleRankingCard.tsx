@@ -97,8 +97,8 @@ export function CoupleRankingCard({
               avatarUrl={person2AvatarUrl}
               frame={currentLeader === "person2" ? "champion" : person2Frame}
               size="lg"
-              gradientFrom="from-blue-400"
-              gradientTo="to-blue-600"
+              gradientFrom="from-purple-400"
+              gradientTo="to-purple-600"
             />
             {currentLeader === "person2" && (
               <Crown className="absolute -top-2 -right-1 w-5 h-5 text-amber-500 rotate-12" />
@@ -120,7 +120,7 @@ export function CoupleRankingCard({
             style={{ width: `${person1Percentage}%` }}
           />
           <div
-            className="h-full bg-gradient-to-r from-blue-400 to-blue-500 transition-all duration-700 ease-out"
+            className="h-full bg-gradient-to-r from-purple-400 to-purple-500 transition-all duration-700 ease-out"
             style={{ width: `${100 - person1Percentage}%` }}
           />
         </div>
@@ -132,7 +132,7 @@ export function CoupleRankingCard({
           <p className="text-xs text-muted-foreground">Conquistas</p>
           <p className="font-bold text-foreground">{person1Data.achievements_count}</p>
         </div>
-        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
+        <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
           <p className="text-xs text-muted-foreground">Conquistas</p>
           <p className="font-bold text-foreground">{person2Data.achievements_count}</p>
         </div>
@@ -140,7 +140,7 @@ export function CoupleRankingCard({
           <p className="text-xs text-muted-foreground">Desafios</p>
           <p className="font-bold text-foreground">{person1Data.challenges_completed}</p>
         </div>
-        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
+        <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
           <p className="text-xs text-muted-foreground">Desafios</p>
           <p className="font-bold text-foreground">{person2Data.challenges_completed}</p>
         </div>
@@ -161,7 +161,7 @@ export function CoupleRankingCard({
             <p className="text-xs text-muted-foreground">Empates</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-blue-500">{historicalWins.person2}</p>
+            <p className="text-lg font-bold text-purple-500">{historicalWins.person2}</p>
             <p className="text-xs text-muted-foreground">{person2Name}</p>
           </div>
         </div>

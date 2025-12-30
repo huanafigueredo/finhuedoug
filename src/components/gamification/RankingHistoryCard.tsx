@@ -45,7 +45,7 @@ export function RankingHistoryCard({
 
   const getWinnerColor = (winner: string | null) => {
     if (winner === "person1") return "text-pink-500";
-    if (winner === "person2") return "text-blue-500";
+    if (winner === "person2") return "text-purple-500";
     return "text-muted-foreground";
   };
 
@@ -84,8 +84,8 @@ export function RankingHistoryCard({
           <p className="text-2xl font-bold text-muted-foreground">{historicalWins.ties}</p>
           <p className="text-xs text-muted-foreground">Empates</p>
         </div>
-        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
-          <p className="text-2xl font-bold text-blue-500">{historicalWins.person2}</p>
+        <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
+          <p className="text-2xl font-bold text-purple-500">{historicalWins.person2}</p>
           <p className="text-xs text-muted-foreground">{person2Name}</p>
         </div>
       </div>
@@ -125,7 +125,7 @@ export function RankingHistoryCard({
 
               {/* Savings */}
               <div className="flex items-center gap-1.5 p-2 rounded-lg bg-background/50">
-                <PiggyBank className="w-3 h-3 text-blue-500" />
+                <PiggyBank className="w-3 h-3 text-pink-500" />
                 <div className="flex-1 min-w-0">
                   <p className="text-muted-foreground truncate">Poupou</p>
                   <p className={cn("font-medium", getWinnerColor(ranking.savings_winner))}>

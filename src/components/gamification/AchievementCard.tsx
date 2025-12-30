@@ -13,7 +13,7 @@ const categoryColors = {
   spending: "from-primary/20 to-primary/5 border-primary/30",
   saving: "from-success/20 to-success/5 border-success/30",
   revenue: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
-  consistency: "from-blue-500/20 to-blue-500/5 border-blue-500/30",
+  consistency: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
 };
 
 const categoryLabels = {
