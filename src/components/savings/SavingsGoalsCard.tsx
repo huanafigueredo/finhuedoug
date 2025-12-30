@@ -10,6 +10,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
@@ -43,6 +50,9 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { usePersonNames } from "@/hooks/useUserSettings";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useSwipeActions } from "@/hooks/useSwipeActions";
+import { GoalFormContent } from "./GoalFormContent";
 import {
   Select,
   SelectContent,
@@ -67,8 +77,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-const EMOJI_OPTIONS = ["🎯", "🏠", "🚗", "✈️", "💻", "📱", "🎓", "💍", "🎁", "🏖️", "💰", "🎮"];
-
 const formatCurrency = (valueInCents: number) => {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -85,6 +93,7 @@ interface GoalItemProps {
 }
 
 function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalItemProps) {
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [isAddingOpen, setIsAddingOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -97,6 +106,13 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
   const { person1, person2 } = usePersonNames();
   const { data: deposits = [] } = useSavingsDeposits(goal.id);
   const { data: banks = [] } = useBanks();
+
+  const { swipeX, handlers, isSwipedLeft, isSwipedRight } = useSwipeActions({
+    threshold: 60,
+    maxSwipe: 80,
+    onSwipeLeft: () => onDelete(goal),
+    onSwipeRight: () => onEdit(goal),
+  });
 
   const getDepositorName = (depositedBy: string) => {
     return depositedBy === "person1" ? person1 : person2;
@@ -198,135 +214,161 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
 
   return (
     <>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className={cn(
-          "rounded-xl border transition-all",
-          isCompleted 
-            ? "bg-success/5 border-success/20" 
-            : "bg-card border-border hover:border-primary/30"
-        )}>
-          <CollapsibleTrigger className="w-full p-4">
-            <div className="flex items-center gap-3">
-              <span className="text-xl">{goal.icon}</span>
-              <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm truncate">{goal.title}</span>
-                  {isCompleted && (
-                    <Badge variant="success" className="text-[10px] py-0 h-4">
-                      <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
-                      Concluída
-                    </Badge>
-                  )}
-                </div>
-                <Progress
-                  value={percentage}
-                  className={cn(
-                    "h-1.5 mt-1.5",
-                    isCompleted && "[&>div]:bg-success",
-                    !isCompleted && "[&>div]:bg-primary"
-                  )}
-                />
-                <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
-                  <span>{formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}</span>
-                  <span className="text-primary font-medium">{percentage}%</span>
-                </div>
-              </div>
-              <ChevronDown className={cn(
-                "w-4 h-4 text-muted-foreground transition-transform shrink-0",
-                isOpen && "rotate-180"
-              )} />
+      <div className="relative overflow-hidden rounded-xl">
+        {/* Swipe action backgrounds (mobile only) */}
+        {isMobile && (
+          <>
+            {/* Left swipe - Delete */}
+            <div className={cn(
+              "absolute inset-y-0 right-0 w-20 flex items-center justify-center bg-destructive transition-opacity",
+              isSwipedLeft ? "opacity-100" : "opacity-50"
+            )}>
+              <Trash2 className="w-5 h-5 text-destructive-foreground" />
             </div>
-          </CollapsibleTrigger>
+            {/* Right swipe - Edit */}
+            <div className={cn(
+              "absolute inset-y-0 left-0 w-20 flex items-center justify-center bg-primary transition-opacity",
+              isSwipedRight ? "opacity-100" : "opacity-50"
+            )}>
+              <Pencil className="w-5 h-5 text-primary-foreground" />
+            </div>
+          </>
+        )}
 
-          <CollapsibleContent>
-            <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/50">
-              {/* Info adicional */}
-              <div className="flex flex-wrap gap-2 pt-3 text-xs text-muted-foreground">
-                {!isCompleted && remaining > 0 && (
-                  <span className="flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-md">
-                    Faltam {formatCurrency(remaining)}
-                  </span>
-                )}
-                {daysRemaining !== null && daysRemaining > 0 && !isCompleted && (
-                  <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
-                    <Calendar className="w-3 h-3" />
-                    {daysRemaining} dias
-                  </span>
-                )}
-                {bankName && (
-                  <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
-                    <Building2 className="w-3 h-3" />
-                    {bankName}
-                  </span>
-                )}
-              </div>
-
-              {/* Contribuições por pessoa (metas casal) */}
-              {showDepositor && deposits.length > 0 && (
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-primary" />
-                    {person1}: {formatCurrency(person1Deposits)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-secondary" />
-                    {person2}: {formatCurrency(person2Deposits)}
-                  </span>
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <div 
+            className={cn(
+              "rounded-xl border transition-all relative bg-card",
+              isCompleted 
+                ? "bg-success/5 border-success/20" 
+                : "border-border hover:border-primary/30"
+            )}
+            style={isMobile ? { transform: `translateX(${swipeX}px)` } : undefined}
+            {...(isMobile ? handlers : {})}
+          >
+            <CollapsibleTrigger className="w-full p-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{goal.icon}</span>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm truncate">{goal.title}</span>
+                    {isCompleted && (
+                      <Badge variant="success" className="text-[10px] py-0 h-4">
+                        <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
+                        Concluída
+                      </Badge>
+                    )}
+                  </div>
+                  <Progress
+                    value={percentage}
+                    className={cn(
+                      "h-1.5 mt-1.5",
+                      isCompleted && "[&>div]:bg-success",
+                      !isCompleted && "[&>div]:bg-primary"
+                    )}
+                  />
+                  <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
+                    <span>{formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}</span>
+                    <span className="text-primary font-medium">{percentage}%</span>
+                  </div>
                 </div>
-              )}
+                <ChevronDown className={cn(
+                  "w-4 h-4 text-muted-foreground transition-transform shrink-0",
+                  isOpen && "rotate-180"
+                )} />
+              </div>
+            </CollapsibleTrigger>
 
-              {/* Ações */}
-              <div className="flex flex-wrap gap-2">
-                {!isCompleted && (
+            <CollapsibleContent>
+              <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/50">
+                {/* Info adicional */}
+                <div className="flex flex-wrap gap-2 pt-3 text-xs text-muted-foreground">
+                  {!isCompleted && remaining > 0 && (
+                    <span className="flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-md">
+                      Faltam {formatCurrency(remaining)}
+                    </span>
+                  )}
+                  {daysRemaining !== null && daysRemaining > 0 && !isCompleted && (
+                    <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
+                      <Calendar className="w-3 h-3" />
+                      {daysRemaining} dias
+                    </span>
+                  )}
+                  {bankName && (
+                    <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
+                      <Building2 className="w-3 h-3" />
+                      {bankName}
+                    </span>
+                  )}
+                </div>
+
+                {/* Contribuições por pessoa (metas casal) */}
+                {showDepositor && deposits.length > 0 && (
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-primary" />
+                      {person1}: {formatCurrency(person1Deposits)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-secondary" />
+                      {person2}: {formatCurrency(person2Deposits)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Ações */}
+                <div className="flex flex-wrap gap-2">
+                  {!isCompleted && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => setIsAddingOpen(true)}
+                      className="h-10 text-xs"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Depositar
+                    </Button>
+                  )}
+                  {deposits.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsHistoryOpen(true)}
+                      className="h-10 text-xs"
+                    >
+                      <History className="w-3 h-3 mr-1" />
+                      Histórico
+                    </Button>
+                  )}
                   <Button
                     size="sm"
-                    variant="default"
-                    onClick={() => setIsAddingOpen(true)}
-                    className="h-8 text-xs"
+                    variant="ghost"
+                    onClick={() => onEdit(goal)}
+                    className="h-10 text-xs"
                   >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Depositar
+                    <Pencil className="w-3 h-3 mr-1" />
+                    Editar
                   </Button>
-                )}
-                {deposits.length > 0 && (
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => setIsHistoryOpen(true)}
-                    className="h-8 text-xs"
+                    variant="ghost"
+                    onClick={() => onDelete(goal)}
+                    disabled={isDeleting}
+                    className="h-10 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
-                    <History className="w-3 h-3 mr-1" />
-                    Histórico
+                    {isDeleting ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <Trash2 className="w-3 h-3 mr-1" />
+                    )}
+                    Excluir
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onEdit(goal)}
-                  className="h-8 text-xs"
-                >
-                  <Pencil className="w-3 h-3 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onDelete(goal)}
-                  disabled={isDeleting}
-                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  {isDeleting ? (
-                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                  ) : (
-                    <Trash2 className="w-3 h-3 mr-1" />
-                  )}
-                  Excluir
-                </Button>
+                </div>
               </div>
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      </div>
 
       {/* Dialog Adicionar Depósito */}
       <Dialog open={isAddingOpen} onOpenChange={setIsAddingOpen}>
@@ -380,7 +422,7 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
             <Button
               onClick={handleAddAmount}
               disabled={createDeposit.isPending}
-              className="w-full"
+              className="w-full h-12"
             >
               {createDeposit.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -444,7 +486,7 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
                         size="sm"
                         variant="ghost"
                         onClick={() => setDepositToDelete(deposit)}
-                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                        className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -510,6 +552,8 @@ function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalIte
   );
 }
 
+const EMOJI_OPTIONS = ["🎯", "🏠", "🚗", "✈️", "💻", "📱", "🎓", "💍", "🎁", "🏖️", "💰", "🎮"];
+
 interface SavingsGoalsCardProps {
   className?: string;
   showConfigLink?: boolean;
@@ -525,6 +569,7 @@ export function SavingsGoalsCard({
   showDepositor = false,
   ownerLabel,
 }: SavingsGoalsCardProps) {
+  const isMobile = useIsMobile();
   const { data: goals = [], isLoading } = useSavingsGoals(ownerFilter);
   const { data: banks = [] } = useBanks();
   const createGoal = useCreateSavingsGoal();
@@ -681,9 +726,32 @@ export function SavingsGoalsCard({
   const completedGoals = goals.filter(g => g.current_amount >= g.target_amount);
   const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0);
 
+  const formContent = (
+    <GoalFormContent
+      editingGoal={editingGoal}
+      title={title}
+      setTitle={setTitle}
+      targetAmount={targetAmount}
+      setTargetAmount={setTargetAmount}
+      currentAmount={currentAmount}
+      setCurrentAmount={setCurrentAmount}
+      deadline={deadline}
+      setDeadline={setDeadline}
+      selectedIcon={selectedIcon}
+      setSelectedIcon={setSelectedIcon}
+      selectedBankId={selectedBankId}
+      setSelectedBankId={setSelectedBankId}
+      banks={banks}
+      ownerLabel={ownerLabel}
+      onSave={handleSave}
+      isSaving={createGoal.isPending || updateGoal.isPending}
+      formatCurrencyInput={formatCurrencyInput}
+    />
+  );
+
   return (
     <>
-      <Card className={cn("", className)}>
+      <Card className={cn("relative", className)}>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -703,16 +771,25 @@ export function SavingsGoalsCard({
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Botão Nova Meta */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={openAddDialog}
-            className="w-full"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Meta
-          </Button>
+          {/* Botão Nova Meta - hidden on mobile (FAB instead) */}
+          {!isMobile && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openAddDialog}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Meta
+            </Button>
+          )}
+
+          {/* Swipe hint for mobile */}
+          {isMobile && goals.length > 0 && (
+            <p className="text-[10px] text-center text-muted-foreground">
+              Deslize para editar ou excluir
+            </p>
+          )}
 
           {goals.length === 0 ? (
             <div className="text-center py-6">
@@ -774,144 +851,34 @@ export function SavingsGoalsCard({
         </CardContent>
       </Card>
 
-      {/* Dialog Criar/Editar Meta */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {editingGoal ? "Editar Meta" : "Nova Meta"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingGoal
-                ? "Atualize os detalhes da sua meta."
-                : `Defina uma nova meta ${ownerLabel ? `para ${ownerLabel}` : ""}.`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            {/* Seletor de Ícone */}
-            <div className="space-y-2">
-              <Label>Ícone</Label>
-              <div className="flex flex-wrap gap-2">
-                {EMOJI_OPTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setSelectedIcon(emoji)}
-                    className={cn(
-                      "w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all",
-                      selectedIcon === emoji
-                        ? "bg-primary/15 ring-2 ring-primary"
-                        : "bg-secondary hover:bg-secondary/70"
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+      {/* FAB for mobile */}
+      {isMobile && (
+        <button
+          onClick={openAddDialog}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-all active:scale-95"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Form - Drawer on mobile, Dialog on desktop */}
+      {isMobile ? (
+        <Drawer open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DrawerContent className="px-4 pb-8 max-h-[90vh]">
+            <ScrollArea className="max-h-[80vh] pr-4">
+              <div className="pt-4">
+                {formContent}
               </div>
-            </div>
-
-            {/* Título */}
-            <div className="space-y-2">
-              <Label>Título</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Viagem de férias"
-                maxLength={50}
-              />
-            </div>
-
-            {/* Valor Alvo */}
-            <div className="space-y-2">
-              <Label>Valor alvo</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  R$
-                </span>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={targetAmount}
-                  onChange={(e) => setTargetAmount(formatCurrencyInput(e.target.value))}
-                  placeholder="0,00"
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            {/* Valor Atual */}
-            <div className="space-y-2">
-              <Label>Valor já guardado (opcional)</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  R$
-                </span>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={currentAmount}
-                  onChange={(e) => setCurrentAmount(formatCurrencyInput(e.target.value))}
-                  placeholder="0,00"
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            {/* Prazo */}
-            <div className="space-y-2">
-              <Label>Prazo (opcional)</Label>
-              <Input
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-              />
-            </div>
-
-            {/* Banco */}
-            <div className="space-y-2">
-              <Label>Banco (opcional)</Label>
-              <Select
-                value={selectedBankId || "none"}
-                onValueChange={(value) => setSelectedBankId(value === "none" ? null : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um banco" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {banks.map((bank) => (
-                    <SelectItem key={bank.id} value={bank.id}>
-                      <div className="flex items-center gap-2">
-                        {bank.color && (
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: bank.color }}
-                          />
-                        )}
-                        {bank.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              onClick={handleSave}
-              disabled={createGoal.isPending || updateGoal.isPending}
-              className="w-full"
-            >
-              {(createGoal.isPending || updateGoal.isPending) ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : (
-                <Target className="w-4 h-4 mr-2" />
-              )}
-              {editingGoal ? "Salvar" : "Criar Meta"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </ScrollArea>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            {formContent}
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
