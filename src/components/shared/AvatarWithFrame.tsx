@@ -69,7 +69,7 @@ export function AvatarWithFrame({
   gradientFrom,
   gradientTo,
 }: AvatarWithFrameProps) {
-  const frameStyle = frameStyles[frame];
+  const frameStyle = frameStyles[frame] || frameStyles.default;
   const initials = name
     .split(" ")
     .map((n) => n[0])
