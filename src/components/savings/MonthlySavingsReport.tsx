@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { Target, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "@/hooks/useTransactions";
+import { usePersonNames } from "@/hooks/useUserSettings";
 import { parseISO, differenceInMonths } from "date-fns";
+import { GoalOwnerFilter } from "@/hooks/useSavingsGoals";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -63,6 +65,7 @@ function shouldShowInMonth(t: any, filterMonth: number, filterYear: number): boo
 interface MonthlySavingsReportProps {
   month: number; // 0-indexed
   year: number;
+  ownerFilter?: GoalOwnerFilter;
   className?: string;
 }
 
@@ -72,9 +75,10 @@ interface MetricItemProps {
   value: string;
   subtext?: string;
   variant: "info" | "primary" | "success" | "neutral";
+  delay?: number;
 }
 
-function MetricItem({ icon, label, value, subtext, variant }: MetricItemProps) {
+function MetricItem({ icon, label, value, subtext, variant, delay = 0 }: MetricItemProps) {
   const variantStyles = {
     info: "bg-info/10 text-info border-info/20",
     primary: "bg-primary/10 text-primary border-primary/20",
@@ -90,10 +94,13 @@ function MetricItem({ icon, label, value, subtext, variant }: MetricItemProps) {
   };
 
   return (
-    <div className={cn(
-      "flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-sm",
-      variantStyles[variant]
-    )}>
+    <div 
+      className={cn(
+        "flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-sm animate-fade-up",
+        variantStyles[variant]
+      )}
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", iconBg[variant])}>
         {icon}
       </div>
@@ -106,27 +113,74 @@ function MetricItem({ icon, label, value, subtext, variant }: MetricItemProps) {
   );
 }
 
-export function MonthlySavingsReport({ month, year, className }: MonthlySavingsReportProps) {
+export function MonthlySavingsReport({ month, year, ownerFilter, className }: MonthlySavingsReportProps) {
   const { data: transactions = [] } = useTransactions();
+  const { person1, person2 } = usePersonNames();
 
   const reportData = useMemo(() => {
     // Filter transactions for the selected month
     const monthTransactions = transactions.filter((t) => shouldShowInMonth(t, month, year));
 
+    // Helper to check if transaction is a savings goal deposit
+    const isSavingsTransfer = (t: any) => !!t.savings_deposit_id;
+
+    // Filter by owner
+    const filterByOwner = (t: any, type: "expense" | "income") => {
+      if (!ownerFilter || ownerFilter === "all") return true;
+      
+      if (ownerFilter === "couple") {
+        // For couple: only couple expenses/income
+        return t.is_couple === true || t.for_who === "Casal";
+      }
+      
+      const personName = ownerFilter === "person1" ? person1 : person2;
+      
+      if (type === "expense") {
+        // Individual expenses for this person + half of couple expenses
+        return t.for_who === personName || t.is_couple === true;
+      }
+      
+      // Income: only for this specific person
+      return t.for_who === personName;
+    };
+
+    // Calculate value based on owner filter
+    const getValueForOwner = (t: any, baseValue: number) => {
+      if (!ownerFilter || ownerFilter === "all" || ownerFilter === "couple") {
+        return baseValue;
+      }
+      
+      // For individual: if it's a couple expense, take half
+      if (t.is_couple === true) {
+        return baseValue / 2;
+      }
+      
+      return baseValue;
+    };
+
     // Total saved in goals (transactions with savings_deposit_id)
-    const savedInGoals = monthTransactions
-      .filter((t) => t.savings_deposit_id)
-      .reduce((sum, t) => sum + getMonthValue(t), 0);
+    let savedInGoals = 0;
+    monthTransactions
+      .filter((t) => isSavingsTransfer(t) && filterByOwner(t, "expense"))
+      .forEach((t) => {
+        savedInGoals += getValueForOwner(t, getMonthValue(t));
+      });
 
     // Real expenses (excluding savings deposits)
-    const realExpenses = monthTransactions
-      .filter((t) => t.type === "expense" && !t.savings_deposit_id)
-      .reduce((sum, t) => sum + getMonthValue(t), 0);
+    let realExpenses = 0;
+    monthTransactions
+      .filter((t) => t.type === "expense" && !isSavingsTransfer(t) && filterByOwner(t, "expense"))
+      .forEach((t) => {
+        realExpenses += getValueForOwner(t, getMonthValue(t));
+      });
 
     // Total income
-    const totalIncome = monthTransactions
-      .filter((t) => t.type === "income")
-      .reduce((sum, t) => sum + getMonthValue(t), 0);
+    let totalIncome = 0;
+    monthTransactions
+      .filter((t) => t.type === "income" && filterByOwner(t, "income"))
+      .forEach((t) => {
+        totalIncome += getValueForOwner(t, getMonthValue(t));
+      });
 
     // Savings rate (percentage of income saved)
     const savingsRate = totalIncome > 0 ? (savedInGoals / totalIncome) * 100 : 0;
@@ -142,7 +196,7 @@ export function MonthlySavingsReport({ month, year, className }: MonthlySavingsR
       expenseRate,
       balance: totalIncome - realExpenses - savedInGoals,
     };
-  }, [transactions, month, year]);
+  }, [transactions, month, year, ownerFilter, person1, person2]);
 
   const hasData = reportData.totalIncome > 0 || reportData.realExpenses > 0 || reportData.savedInGoals > 0;
 
@@ -164,6 +218,7 @@ export function MonthlySavingsReport({ month, year, className }: MonthlySavingsR
           value={formatCurrency(reportData.savedInGoals)}
           subtext={reportData.totalIncome > 0 ? `${reportData.savingsRate.toFixed(0)}% da receita` : undefined}
           variant="info"
+          delay={0}
         />
         <MetricItem
           icon={<TrendingDown className="w-4 h-4" />}
@@ -171,24 +226,27 @@ export function MonthlySavingsReport({ month, year, className }: MonthlySavingsR
           value={formatCurrency(reportData.realExpenses)}
           subtext={reportData.totalIncome > 0 ? `${reportData.expenseRate.toFixed(0)}% da receita` : undefined}
           variant="primary"
+          delay={50}
         />
         <MetricItem
           icon={<TrendingUp className="w-4 h-4" />}
           label="Receita Total"
           value={formatCurrency(reportData.totalIncome)}
           variant="success"
+          delay={100}
         />
         <MetricItem
           icon={<Wallet className="w-4 h-4" />}
           label="Saldo Livre"
           value={formatCurrency(reportData.balance)}
           variant={reportData.balance >= 0 ? "success" : "primary"}
+          delay={150}
         />
       </div>
 
       {/* Proportion Bar - Compact */}
       {reportData.totalIncome > 0 && (
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 animate-fade-up" style={{ animationDelay: "200ms" }}>
           <div className="h-2 rounded-full bg-muted overflow-hidden flex">
             <div 
               className="h-full bg-info transition-all duration-500"
