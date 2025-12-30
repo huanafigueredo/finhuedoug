@@ -158,9 +158,10 @@ export default function People() {
   };
 
   // Get person-specific expense transactions (for breakdown)
+  // Exclude savings goal deposits (internal transfers)
   const getPersonExpenses = (personName: string) => {
     return filteredTransactions.filter((t) => {
-      return t.type === "expense" && (t.for_who === personName || t.is_couple === true);
+      return t.type === "expense" && !t.savings_deposit_id && (t.for_who === personName || t.is_couple === true);
     });
   };
 
@@ -241,12 +242,13 @@ export default function People() {
       // Use the same installment projection logic
       const monthTransactions = transactions.filter((t) => shouldShowInMonth(t, m, y));
 
+      // Exclude savings goal deposits from expenses
       const personalExpenses = monthTransactions
-        .filter((t) => t.type === "expense" && t.for_who === personName && !t.is_couple)
+        .filter((t) => t.type === "expense" && t.for_who === personName && !t.is_couple && !t.savings_deposit_id)
         .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
       const coupleExpenses = monthTransactions
-        .filter((t) => t.type === "expense" && t.is_couple === true)
+        .filter((t) => t.type === "expense" && t.is_couple === true && !t.savings_deposit_id)
         .reduce((sum, t) => sum + getTransactionMonthValue(t), 0) / 2;
 
       const income = monthTransactions

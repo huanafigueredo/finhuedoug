@@ -138,7 +138,7 @@ export default function Dashboard() {
     const categoryMap: Record<string, number> = {};
     
     filteredTransactions
-      .filter((t) => t.type === "expense" && t.category)
+      .filter((t) => t.type === "expense" && t.category && !t.savings_deposit_id)
       .forEach((t) => {
         const cat = t.category || "Outros";
         categoryMap[cat] = (categoryMap[cat] || 0) + getMonthValue(t);
@@ -164,7 +164,7 @@ export default function Dashboard() {
     const bankMap: Record<string, { value: number; color: string }> = {};
     
     filteredTransactions
-      .filter((t) => t.type === "expense" && t.bank_id)
+      .filter((t) => t.type === "expense" && t.bank_id && !t.savings_deposit_id)
       .forEach((t) => {
         const bank = banks.find((b) => b.id === t.bank_id);
         const bankName = bank?.name || "Outros";
@@ -218,8 +218,9 @@ export default function Dashboard() {
         shouldShowInMonth(t, monthIdx, yearNum + yearOffset)
       );
 
+      // Exclude savings goal deposits from expenses
       const expenses = monthTransactions
-        .filter((t) => t.type === "expense")
+        .filter((t) => t.type === "expense" && !t.savings_deposit_id)
         .reduce((sum, t) => sum + getMonthValue(t), 0);
 
       result.push({
