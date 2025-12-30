@@ -49,6 +49,38 @@ export function useContasAgendadas(statusFilter?: string) {
   });
 }
 
+export function useContasHistorico(mes?: number, ano?: number) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["contas_historico", user?.id, mes, ano],
+    queryFn: async () => {
+      if (!user) return [];
+
+      let query = supabase
+        .from("contas_agendadas")
+        .select(`
+          *,
+          recorrencia:recorrencias(*)
+        `)
+        .in("status", ["confirmado", "ignorado"])
+        .order("confirmado_em", { ascending: false });
+
+      // Filter by competencia if month/year provided
+      if (mes && ano) {
+        const competencia = `${ano}-${String(mes).padStart(2, "0")}`;
+        query = query.eq("competencia", competencia);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as ContaAgendada[];
+    },
+    enabled: !!user,
+  });
+}
+
 export function useContasAVencer() {
   const { user } = useAuth();
 
