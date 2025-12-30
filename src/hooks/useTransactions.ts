@@ -69,6 +69,8 @@ export interface Transaction {
   tags: string[] | null;
   resumo_curto: string | null;
   status_extracao: string | null;
+  // Savings goal link
+  savings_deposit_id: string | null;
   // Joined fields
   bank_name?: string;
   payment_method_name?: string;

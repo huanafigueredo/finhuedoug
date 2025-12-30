@@ -35,6 +35,8 @@ export interface Transaction {
   installmentNumber?: number;
   totalInstallments?: number;
   installmentValue?: number;
+  // Savings goal link
+  savingsDepositId?: string | null;
 }
 
 interface TransactionRowProps {
@@ -130,7 +132,10 @@ export function TransactionRow({
         {transaction.isCouple ? formatCurrency(transaction.valuePerPerson) : "-"}
       </td>
       <td className="px-2 py-4">
-        <Badge variant={transaction.type} />
+        <div className="flex items-center gap-1.5">
+          <Badge variant={transaction.type} />
+          {transaction.savingsDepositId && <Badge variant="meta" />}
+        </div>
       </td>
       <td className="px-2 py-4" data-actions-dropdown>
         <DropdownMenu>
