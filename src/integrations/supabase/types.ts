@@ -476,6 +476,7 @@ export type Database = {
           goal_id: string
           id: string
           note: string | null
+          transaction_id: string | null
           user_id: string
         }
         Insert: {
@@ -485,6 +486,7 @@ export type Database = {
           goal_id: string
           id?: string
           note?: string | null
+          transaction_id?: string | null
           user_id: string
         }
         Update: {
@@ -494,6 +496,7 @@ export type Database = {
           goal_id?: string
           id?: string
           note?: string | null
+          transaction_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -502,6 +505,13 @@ export type Database = {
             columns: ["goal_id"]
             isOneToOne: false
             referencedRelation: "savings_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_deposits_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -618,6 +628,7 @@ export type Database = {
           recurring_duration: string | null
           recurring_end_date: string | null
           resumo_curto: string | null
+          savings_deposit_id: string | null
           status_extracao: string | null
           subcategory: string | null
           tags: string[] | null
@@ -659,6 +670,7 @@ export type Database = {
           recurring_duration?: string | null
           recurring_end_date?: string | null
           resumo_curto?: string | null
+          savings_deposit_id?: string | null
           status_extracao?: string | null
           subcategory?: string | null
           tags?: string[] | null
@@ -700,6 +712,7 @@ export type Database = {
           recurring_duration?: string | null
           recurring_end_date?: string | null
           resumo_curto?: string | null
+          savings_deposit_id?: string | null
           status_extracao?: string | null
           subcategory?: string | null
           tags?: string[] | null
@@ -757,6 +770,13 @@ export type Database = {
             columns: ["recipient_id"]
             isOneToOne: false
             referencedRelation: "recipients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_savings_deposit_id_fkey"
+            columns: ["savings_deposit_id"]
+            isOneToOne: false
+            referencedRelation: "savings_deposits"
             referencedColumns: ["id"]
           },
         ]

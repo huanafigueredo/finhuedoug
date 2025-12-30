@@ -9,6 +9,7 @@ export interface SavingsDeposit {
   deposited_by: string; // 'person1' ou 'person2'
   note: string | null;
   created_at: string;
+  transaction_id: string | null;
 }
 
 export interface SavingsDepositInput {
@@ -48,8 +49,17 @@ export function useCreateSavingsDeposit() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Inserir o depósito
-      const { data, error } = await supabase
+      // 1. Buscar informações da meta (título, bank_id, owner)
+      const { data: goal, error: goalError } = await supabase
+        .from("savings_goals")
+        .select("title, bank_id, owner, current_amount")
+        .eq("id", input.goal_id)
+        .single();
+
+      if (goalError) throw goalError;
+
+      // 2. Inserir o depósito
+      const { data: deposit, error: depositError } = await supabase
         .from("savings_deposits")
         .insert({
           user_id: user.id,
@@ -61,32 +71,65 @@ export function useCreateSavingsDeposit() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (depositError) throw depositError;
 
-      // Atualizar o current_amount da meta
-      const { data: currentGoal, error: fetchError } = await supabase
-        .from("savings_goals")
-        .select("current_amount")
-        .eq("id", input.goal_id)
+      // 3. Determinar for_who baseado no owner da meta
+      let forWho: string | null = null;
+      if (goal.owner === 'couple') {
+        forWho = 'Casal';
+      } else if (goal.owner === 'person1') {
+        forWho = 'person1';
+      } else if (goal.owner === 'person2') {
+        forWho = 'person2';
+      }
+
+      // 4. Criar transação vinculada
+      const { data: transaction, error: transactionError } = await supabase
+        .from("transactions")
+        .insert({
+          user_id: user.id,
+          type: 'expense',
+          category: 'Reservas e Metas',
+          subcategory: 'Meta de Economia',
+          description: `Depósito: ${goal.title}`,
+          total_value: input.amount, // em centavos
+          for_who: forWho,
+          paid_by: input.deposited_by,
+          bank_id: goal.bank_id,
+          savings_deposit_id: deposit.id,
+          date: new Date().toISOString().split('T')[0],
+          observacao: input.note || null,
+        } as any)
+        .select()
         .single();
 
-      if (fetchError) throw fetchError;
+      if (transactionError) throw transactionError;
 
-      const newAmount = (currentGoal?.current_amount || 0) + input.amount;
+      // 5. Atualizar o depósito com o transaction_id
+      const { error: updateDepositError } = await supabase
+        .from("savings_deposits")
+        .update({ transaction_id: transaction.id } as any)
+        .eq("id", deposit.id);
 
-      const { error: updateError } = await supabase
+      if (updateDepositError) throw updateDepositError;
+
+      // 6. Atualizar o current_amount da meta
+      const newAmount = (goal.current_amount || 0) + input.amount;
+
+      const { error: updateGoalError } = await supabase
         .from("savings_goals")
         .update({ current_amount: newAmount })
         .eq("id", input.goal_id);
 
-      if (updateError) throw updateError;
+      if (updateGoalError) throw updateGoalError;
 
-      return data;
+      return deposit;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["savings-deposits"] });
       queryClient.invalidateQueries({ queryKey: ["savings-deposits", variables.goal_id] });
       queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
@@ -96,14 +139,33 @@ export function useDeleteSavingsDeposit() {
 
   return useMutation({
     mutationFn: async ({ id, goalId, amount }: { id: string; goalId: string; amount: number }) => {
-      // Primeiro atualiza o valor da meta (subtrai o depósito)
-      const { data: currentGoal, error: fetchError } = await supabase
+      // 1. Buscar o depósito para obter o transaction_id
+      const { data: deposit, error: fetchDepositError } = await supabase
+        .from("savings_deposits")
+        .select("transaction_id")
+        .eq("id", id)
+        .single();
+
+      if (fetchDepositError) throw fetchDepositError;
+
+      // 2. Deletar a transação vinculada (se existir)
+      if (deposit?.transaction_id) {
+        const { error: deleteTransactionError } = await supabase
+          .from("transactions")
+          .delete()
+          .eq("id", deposit.transaction_id);
+
+        if (deleteTransactionError) throw deleteTransactionError;
+      }
+
+      // 3. Atualizar o valor da meta (subtrai o depósito)
+      const { data: currentGoal, error: fetchGoalError } = await supabase
         .from("savings_goals")
         .select("current_amount")
         .eq("id", goalId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchGoalError) throw fetchGoalError;
 
       const newAmount = Math.max(0, (currentGoal?.current_amount || 0) - amount);
 
@@ -114,17 +176,18 @@ export function useDeleteSavingsDeposit() {
 
       if (updateError) throw updateError;
 
-      // Depois deleta o depósito
-      const { error } = await supabase
+      // 4. Deletar o depósito
+      const { error: deleteError } = await supabase
         .from("savings_deposits")
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["savings-deposits"] });
       queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
     },
   });
 }
