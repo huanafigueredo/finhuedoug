@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ContaAgendada, useContasAgendadasMutations } from "@/hooks/useContasAgendadas";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatCurrencyInput, parseCurrencyToCents, centsToReais } from "@/lib/currency";
 
 interface ConfirmarPagamentoModalProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function ConfirmarPagamentoModal({
   const isMobile = useIsMobile();
   const [dataPagamento, setDataPagamento] = useState(format(new Date(), "yyyy-MM-dd"));
   const [valor, setValor] = useState(conta?.valor || 0);
+  const [valorDisplay, setValorDisplay] = useState("");
   const [observacao, setObservacao] = useState(conta?.observacao || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,10 +45,24 @@ export function ConfirmarPagamentoModal({
   useEffect(() => {
     if (conta) {
       setValor(conta.valor);
+      // Format value for display (convert from reais to cents then format)
+      if (conta.valor > 0) {
+        const cents = Math.round(conta.valor * 100);
+        setValorDisplay(formatCurrencyInput(cents.toString()));
+      } else {
+        setValorDisplay("");
+      }
       setObservacao(conta.observacao || "");
       setDataPagamento(format(new Date(), "yyyy-MM-dd"));
     }
   }, [conta]);
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCurrencyInput(e.target.value);
+    setValorDisplay(formatted);
+    const cents = parseCurrencyToCents(formatted);
+    setValor(centsToReais(cents));
+  };
 
   if (!conta) return null;
 
@@ -92,16 +108,22 @@ export function ConfirmarPagamentoModal({
         <Label htmlFor="valor" className="flex items-center gap-2">
           💰 Valor
         </Label>
-        <Input
-          id="valor"
-          type="number"
-          inputMode="decimal"
-          step="0.01"
-          min="0"
-          value={valor}
-          onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-          required
-        />
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            R$
+          </span>
+          <Input
+            id="valor"
+            type="text"
+            inputMode="decimal"
+            value={valorDisplay}
+            onChange={handleValorChange}
+            onFocus={(e) => e.target.select()}
+            placeholder="0,00"
+            className="pl-9"
+            required
+          />
+        </div>
         {valor !== conta.valor && (
           <p className="text-xs text-muted-foreground">
             Valor original: R$ {conta.valor.toFixed(2)}
