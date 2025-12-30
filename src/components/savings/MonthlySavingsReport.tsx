@@ -1,7 +1,5 @@
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Target, TrendingDown, TrendingUp, PiggyBank } from "lucide-react";
+import { Target, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "@/hooks/useTransactions";
 import { parseISO, differenceInMonths } from "date-fns";
@@ -68,6 +66,46 @@ interface MonthlySavingsReportProps {
   className?: string;
 }
 
+interface MetricItemProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  subtext?: string;
+  variant: "info" | "primary" | "success" | "neutral";
+}
+
+function MetricItem({ icon, label, value, subtext, variant }: MetricItemProps) {
+  const variantStyles = {
+    info: "bg-info/10 text-info border-info/20",
+    primary: "bg-primary/10 text-primary border-primary/20",
+    success: "bg-success/10 text-success border-success/20",
+    neutral: "bg-muted text-foreground border-border",
+  };
+
+  const iconBg = {
+    info: "bg-info/15 text-info",
+    primary: "bg-primary/15 text-primary",
+    success: "bg-success/15 text-success",
+    neutral: "bg-muted text-muted-foreground",
+  };
+
+  return (
+    <div className={cn(
+      "flex items-center gap-3 p-3 rounded-xl border transition-all hover:shadow-sm",
+      variantStyles[variant]
+    )}>
+      <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", iconBg[variant])}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
+        <p className="text-base font-semibold truncate">{value}</p>
+        {subtext && <p className="text-[10px] text-muted-foreground">{subtext}</p>}
+      </div>
+    </div>
+  );
+}
+
 export function MonthlySavingsReport({ month, year, className }: MonthlySavingsReportProps) {
   const { data: transactions = [] } = useTransactions();
 
@@ -110,135 +148,79 @@ export function MonthlySavingsReport({ month, year, className }: MonthlySavingsR
 
   if (!hasData) {
     return (
-      <Card className={cn("", className)}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center">
-              <PiggyBank className="w-4 h-4 text-info" />
-            </div>
-            Relatório Mensal de Economia
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Sem dados para o período selecionado</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className={cn("text-center py-6 text-muted-foreground text-sm", className)}>
+        Sem dados para o período selecionado
+      </div>
     );
   }
 
   return (
-    <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <div className="w-8 h-8 rounded-lg bg-info/15 flex items-center justify-center">
-            <PiggyBank className="w-4 h-4 text-info" />
-          </div>
-          Relatório Mensal de Economia
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Comparativo visual */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Guardado em Metas */}
-          <div className="p-4 rounded-xl bg-info/10 border border-info/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Target className="w-4 h-4 text-info" />
-              <span className="text-xs font-medium text-muted-foreground">Guardado em Metas</span>
-            </div>
-            <p className="text-xl font-bold text-info">
-              {formatCurrency(reportData.savedInGoals)}
-            </p>
-            {reportData.totalIncome > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {reportData.savingsRate.toFixed(1)}% da receita
-              </p>
-            )}
-          </div>
+    <div className={cn("space-y-3", className)}>
+      {/* Metrics Grid - Horizontal on desktop, 2x2 on mobile */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MetricItem
+          icon={<Target className="w-4 h-4" />}
+          label="Guardado em Metas"
+          value={formatCurrency(reportData.savedInGoals)}
+          subtext={reportData.totalIncome > 0 ? `${reportData.savingsRate.toFixed(0)}% da receita` : undefined}
+          variant="info"
+        />
+        <MetricItem
+          icon={<TrendingDown className="w-4 h-4" />}
+          label="Gastos Reais"
+          value={formatCurrency(reportData.realExpenses)}
+          subtext={reportData.totalIncome > 0 ? `${reportData.expenseRate.toFixed(0)}% da receita` : undefined}
+          variant="primary"
+        />
+        <MetricItem
+          icon={<TrendingUp className="w-4 h-4" />}
+          label="Receita Total"
+          value={formatCurrency(reportData.totalIncome)}
+          variant="success"
+        />
+        <MetricItem
+          icon={<Wallet className="w-4 h-4" />}
+          label="Saldo Livre"
+          value={formatCurrency(reportData.balance)}
+          variant={reportData.balance >= 0 ? "success" : "primary"}
+        />
+      </div>
 
-          {/* Gastos Reais */}
-          <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="w-4 h-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground">Gastos Reais</span>
-            </div>
-            <p className="text-xl font-bold text-primary">
-              {formatCurrency(reportData.realExpenses)}
-            </p>
-            {reportData.totalIncome > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                {reportData.expenseRate.toFixed(1)}% da receita
-              </p>
+      {/* Proportion Bar - Compact */}
+      {reportData.totalIncome > 0 && (
+        <div className="space-y-1.5">
+          <div className="h-2 rounded-full bg-muted overflow-hidden flex">
+            <div 
+              className="h-full bg-info transition-all duration-500"
+              style={{ width: `${reportData.savingsRate}%` }}
+            />
+            <div 
+              className="h-full bg-primary transition-all duration-500"
+              style={{ width: `${reportData.expenseRate}%` }}
+            />
+            <div 
+              className="h-full bg-success transition-all duration-500"
+              style={{ width: `${Math.max(0, 100 - reportData.savingsRate - reportData.expenseRate)}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-info" />
+              Metas {reportData.savingsRate.toFixed(0)}%
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Gastos {reportData.expenseRate.toFixed(0)}%
+            </span>
+            {reportData.balance > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                Livre {(100 - reportData.savingsRate - reportData.expenseRate).toFixed(0)}%
+              </span>
             )}
           </div>
         </div>
-
-        {/* Barra de proporção */}
-        {reportData.totalIncome > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Distribuição da Receita</span>
-              <span>{formatCurrency(reportData.totalIncome)}</span>
-            </div>
-            <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-              {/* Guardado */}
-              <div 
-                className="h-full bg-info transition-all duration-500"
-                style={{ width: `${reportData.savingsRate}%` }}
-              />
-              {/* Gastos */}
-              <div 
-                className="h-full bg-primary transition-all duration-500"
-                style={{ width: `${reportData.expenseRate}%` }}
-              />
-              {/* Sobra */}
-              <div 
-                className="h-full bg-success transition-all duration-500"
-                style={{ width: `${Math.max(0, 100 - reportData.savingsRate - reportData.expenseRate)}%` }}
-              />
-            </div>
-            <div className="flex items-center gap-4 text-xs">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-info" />
-                Metas ({reportData.savingsRate.toFixed(0)}%)
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" />
-                Gastos ({reportData.expenseRate.toFixed(0)}%)
-              </span>
-              {reportData.balance > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-success" />
-                  Sobra ({(100 - reportData.savingsRate - reportData.expenseRate).toFixed(0)}%)
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Resumo */}
-        <div className="pt-3 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-success" />
-              <span className="text-sm text-muted-foreground">Receita Total</span>
-            </div>
-            <span className="text-sm font-semibold text-success">
-              {formatCurrency(reportData.totalIncome)}
-            </span>
-          </div>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-sm text-muted-foreground">Saldo após gastos e metas</span>
-            <span className={cn(
-              "text-sm font-semibold",
-              reportData.balance >= 0 ? "text-success" : "text-destructive"
-            )}>
-              {formatCurrency(reportData.balance)}
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }
