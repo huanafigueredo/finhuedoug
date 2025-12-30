@@ -1,18 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGamification, Achievement } from "@/hooks/useGamification";
 import { useChallenges } from "@/hooks/useChallenges";
 import { useRewards } from "@/hooks/useRewards";
 import { useCoupleRanking } from "@/hooks/useCoupleRanking";
+import { useTransactions } from "@/hooks/useTransactions";
+import { useSavingsDeposits } from "@/hooks/useSavingsDeposits";
+import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import { XPProgressBar } from "@/components/gamification/XPProgressBar";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { AchievementCard } from "@/components/gamification/AchievementCard";
 import { ChallengeCard } from "@/components/gamification/ChallengeCard";
 import { RewardCard } from "@/components/gamification/RewardCard";
 import { CoupleRankingCard } from "@/components/gamification/CoupleRankingCard";
+import { FinancialRankingCard } from "@/components/gamification/FinancialRankingCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Target, Medal, Gift, Users } from "lucide-react";
+import { Trophy, Target, Medal, Gift, Users, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Gamification() {
@@ -54,6 +59,37 @@ export default function Gamification() {
     person2Name,
     isLoading: isLoadingRanking,
   } = useCoupleRanking();
+
+  // Financial data for ranking
+  const { data: transactions = [] } = useTransactions();
+  const { data: allDeposits = [] } = useSavingsDeposits();
+  const { data: userSettings } = useUserSettings();
+  
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  
+  const financialMetrics = useFinancialMetrics(transactions, currentMonth, currentYear);
+  
+  // Calculate savings per person for current month
+  const monthlySavings = useMemo(() => {
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
+    
+    const monthDeposits = allDeposits.filter(d => {
+      const depositDate = new Date(d.created_at);
+      return depositDate >= monthStart && depositDate <= monthEnd;
+    });
+    
+    const person1Savings = monthDeposits
+      .filter(d => d.deposited_by === "person1")
+      .reduce((sum, d) => sum + d.amount, 0) / 100; // cents to reais
+    
+    const person2Savings = monthDeposits
+      .filter(d => d.deposited_by === "person2")
+      .reduce((sum, d) => sum + d.amount, 0) / 100;
+    
+    return { person1Savings, person2Savings };
+  }, [allDeposits, currentMonth, currentYear]);
 
   // Initialize challenges on mount
   useEffect(() => {
@@ -248,6 +284,21 @@ export default function Gamification() {
 
           {/* Ranking Tab */}
           <TabsContent value="ranking" className="space-y-6">
+            {/* Financial Ranking Card */}
+            <FinancialRankingCard
+              person1Name={person1Name}
+              person2Name={person2Name}
+              person1Expenses={financialMetrics.person1TotalExpenses}
+              person2Expenses={financialMetrics.person2TotalExpenses}
+              person1Savings={monthlySavings.person1Savings}
+              person2Savings={monthlySavings.person2Savings}
+              person1Balance={financialMetrics.person1Balance}
+              person2Balance={financialMetrics.person2Balance}
+              person1AvatarUrl={userSettings?.person_1_avatar_url}
+              person2AvatarUrl={userSettings?.person_2_avatar_url}
+            />
+
+            {/* XP Ranking Card */}
             <CoupleRankingCard
               person1Name={person1Name}
               person2Name={person2Name}
@@ -255,6 +306,8 @@ export default function Gamification() {
               person2Data={currentMonthData.person2}
               historicalWins={historicalWins}
               currentLeader={currentLeader}
+              person1AvatarUrl={userSettings?.person_1_avatar_url}
+              person2AvatarUrl={userSettings?.person_2_avatar_url}
             />
 
             <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
@@ -263,8 +316,8 @@ export default function Gamification() {
                 <div>
                   <p className="font-medium text-foreground text-sm">Como funciona?</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Ganhe XP registrando transações, completando desafios e desbloqueando conquistas.
-                    Quem ganhar mais XP no mês leva o troféu! 🏆
+                    O ranking financeiro compara quem gastou menos, guardou mais e tem o melhor saldo do mês.
+                    O ranking de XP premia quem registra mais transações e completa desafios! 🏆
                   </p>
                 </div>
               </div>
