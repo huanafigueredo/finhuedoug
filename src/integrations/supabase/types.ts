@@ -415,6 +415,45 @@ export type Database = {
           },
         ]
       }
+      monthly_xp: {
+        Row: {
+          achievements_count: number
+          challenges_completed: number
+          created_at: string
+          id: string
+          month: number
+          person_name: string
+          updated_at: string
+          user_id: string
+          xp_earned: number
+          year: number
+        }
+        Insert: {
+          achievements_count?: number
+          challenges_completed?: number
+          created_at?: string
+          id?: string
+          month: number
+          person_name: string
+          updated_at?: string
+          user_id: string
+          xp_earned?: number
+          year: number
+        }
+        Update: {
+          achievements_count?: number
+          challenges_completed?: number
+          created_at?: string
+          id?: string
+          month?: number
+          person_name?: string
+          updated_at?: string
+          user_id?: string
+          xp_earned?: number
+          year?: number
+        }
+        Relationships: []
+      }
       payment_methods: {
         Row: {
           created_at: string | null
@@ -549,6 +588,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valor_padrao?: number
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          code: string
+          created_at: string
+          description: string
+          id: string
+          is_active: boolean
+          level_required: number
+          name: string
+          preview_data: Json | null
+          type: string
+          xp_required: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+          is_active?: boolean
+          level_required?: number
+          name: string
+          preview_data?: Json | null
+          type: string
+          xp_required?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+          is_active?: boolean
+          level_required?: number
+          name?: string
+          preview_data?: Json | null
+          type?: string
+          xp_required?: number
         }
         Relationships: []
       }
@@ -942,6 +1020,8 @@ export type Database = {
         Row: {
           created_at: string
           current_streak: number
+          equipped_frame: string | null
+          equipped_theme: string | null
           id: string
           last_activity_date: string | null
           level: number
@@ -955,6 +1035,8 @@ export type Database = {
         Insert: {
           created_at?: string
           current_streak?: number
+          equipped_frame?: string | null
+          equipped_theme?: string | null
           id?: string
           last_activity_date?: string | null
           level?: number
@@ -968,6 +1050,8 @@ export type Database = {
         Update: {
           created_at?: string
           current_streak?: number
+          equipped_frame?: string | null
+          equipped_theme?: string | null
           id?: string
           last_activity_date?: string | null
           level?: number
@@ -979,6 +1063,38 @@ export type Database = {
           xp?: number
         }
         Relationships: []
+      }
+      user_rewards: {
+        Row: {
+          id: string
+          is_equipped: boolean
+          reward_id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_equipped?: boolean
+          reward_id: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_equipped?: boolean
+          reward_id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_settings: {
         Row: {
