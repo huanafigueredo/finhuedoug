@@ -25,6 +25,7 @@ import {
   Calendar,
   Sparkles,
   PiggyBank,
+  Target,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -125,6 +126,13 @@ export default function Dashboard() {
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => shouldShowInMonth(t, monthIndex, year));
   }, [transactions, monthIndex, year]);
+
+  // Total guardado em metas no mês (transações vinculadas a savings_deposit_id)
+  const totalSavedInGoals = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.savings_deposit_id)
+      .reduce((sum, t) => sum + getMonthValue(t), 0);
+  }, [filteredTransactions]);
 
   const categoryData = useMemo(() => {
     const categoryMap: Record<string, number> = {};
@@ -276,7 +284,7 @@ export default function Dashboard() {
           </div>
 
           {/* Metric Cards - Row 1: Totals */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <MetricCard
               title="Total de Despesas"
               value={formatCurrency(metrics.totalExpenses)}
@@ -300,6 +308,14 @@ export default function Dashboard() {
               emoji={metrics.totalBalance >= 0 ? "🎉" : "😅"}
               variant="accent"
               delay={200}
+            />
+            <MetricCard
+              title="Guardado em Metas"
+              value={formatCurrency(totalSavedInGoals)}
+              icon={Target}
+              emoji="🎯"
+              variant="info"
+              delay={250}
             />
           </div>
 
