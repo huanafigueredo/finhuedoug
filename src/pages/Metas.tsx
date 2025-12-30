@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SavingsGoalsCard } from "@/components/savings/SavingsGoalsCard";
-import { SavingsGoalsConfigSection } from "@/components/savings/SavingsGoalsConfigSection";
 import { MonthlySavingsReport } from "@/components/savings/MonthlySavingsReport";
-import { Accordion } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -98,22 +96,22 @@ export default function Metas() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Header com filtros de período */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col gap-4 mb-6">
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+            <h1 className="font-display text-2xl font-bold text-foreground">
               Metas de Economia 🎯
             </h1>
-            <p className="text-muted-foreground">
-              Acompanhe e gerencie suas metas de poupança
+            <p className="text-sm text-muted-foreground">
+              Acompanhe seu progresso
             </p>
           </div>
 
           {/* Filtros de período */}
           <div className="flex items-center gap-2">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-32 sm:w-40">
+              <SelectTrigger className="w-32">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
@@ -126,7 +124,7 @@ export default function Metas() {
             </Select>
 
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-24 sm:w-28">
+              <SelectTrigger className="w-24">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>
@@ -140,8 +138,8 @@ export default function Metas() {
           </div>
         </div>
 
-        {/* Relatório Mensal de Economia */}
-        <div className="mb-8 animate-fade-up">
+        {/* Relatório Mensal Compacto */}
+        <div className="mb-6 animate-fade-up">
           <MonthlySavingsReport 
             month={parseInt(selectedMonth)} 
             year={parseInt(selectedYear)} 
@@ -154,98 +152,56 @@ export default function Metas() {
           onValueChange={(v) => setSelectedTab(v as GoalOwnerFilter)}
           className="w-full"
         >
-          <div className="flex justify-center mb-6">
-            <TabsList className="grid grid-cols-3 w-full max-w-md bg-muted/50 p-1 rounded-2xl">
-              <TabsTrigger 
-                value="person1" 
-                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
-              >
-                {getTabIcon("person1")}
-                <span className="hidden sm:inline">{getTabLabel("person1")}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="couple" 
-                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
-              >
-                {getTabIcon("couple")}
-                <span className="hidden sm:inline">{getTabLabel("couple")}</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="person2" 
-                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all"
-              >
-                {getTabIcon("person2")}
-                <span className="hidden sm:inline">{getTabLabel("person2")}</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <TabsList className="grid grid-cols-3 w-full bg-muted/50 p-1 rounded-xl mb-4">
+            <TabsTrigger 
+              value="person1" 
+              className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all text-sm"
+            >
+              {getTabIcon("person1")}
+              <span className="hidden sm:inline truncate">{getTabLabel("person1")}</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="couple" 
+              className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all text-sm"
+            >
+              {getTabIcon("couple")}
+              <span className="hidden sm:inline">Casal</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="person2" 
+              className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all text-sm"
+            >
+              {getTabIcon("person2")}
+              <span className="hidden sm:inline truncate">{getTabLabel("person2")}</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <TabsContent value="person1" className="animate-fade-up">
-            <MetasContent 
+          <TabsContent value="person1" className="animate-fade-up mt-0">
+            <SavingsGoalsCard 
+              showConfigLink={false} 
               ownerFilter="person1" 
+              showDepositor={false}
               ownerLabel={person1}
-              month={parseInt(selectedMonth)}
-              year={parseInt(selectedYear)}
             />
           </TabsContent>
-          <TabsContent value="couple" className="animate-fade-up">
-            <MetasContent 
+          <TabsContent value="couple" className="animate-fade-up mt-0">
+            <SavingsGoalsCard 
+              showConfigLink={false} 
               ownerFilter="couple" 
-              ownerLabel="Casal" 
-              isCoupleTab
-              month={parseInt(selectedMonth)}
-              year={parseInt(selectedYear)}
+              showDepositor={true}
+              ownerLabel="Casal"
             />
           </TabsContent>
-          <TabsContent value="person2" className="animate-fade-up">
-            <MetasContent 
+          <TabsContent value="person2" className="animate-fade-up mt-0">
+            <SavingsGoalsCard 
+              showConfigLink={false} 
               ownerFilter="person2" 
+              showDepositor={false}
               ownerLabel={person2}
-              month={parseInt(selectedMonth)}
-              year={parseInt(selectedYear)}
             />
           </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
-  );
-}
-
-interface MetasContentProps {
-  ownerFilter: GoalOwnerFilter;
-  ownerLabel: string;
-  isCoupleTab?: boolean;
-  month: number;
-  year: number;
-}
-
-function MetasContent({ ownerFilter, ownerLabel, isCoupleTab, month, year }: MetasContentProps) {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Goals Overview */}
-      <div>
-        <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-          Metas de {ownerLabel}
-        </h2>
-        <SavingsGoalsCard 
-          showConfigLink={false} 
-          ownerFilter={ownerFilter} 
-          showDepositor={isCoupleTab}
-        />
-      </div>
-
-      {/* Config Section */}
-      <div>
-        <h2 className="font-display text-xl font-semibold text-foreground mb-4">
-          Gerenciar Metas
-        </h2>
-        <Accordion type="single" collapsible defaultValue="savings-goals">
-          <SavingsGoalsConfigSection 
-            ownerFilter={ownerFilter} 
-            ownerLabel={ownerLabel}
-          />
-        </Accordion>
-      </div>
-    </div>
   );
 }

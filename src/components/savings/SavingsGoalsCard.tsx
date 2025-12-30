@@ -23,14 +23,21 @@ import {
   History,
   User,
   Trash2,
+  ChevronDown,
+  Pencil,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
   useSavingsGoals, 
+  useCreateSavingsGoal,
+  useUpdateSavingsGoal,
+  useDeleteSavingsGoal,
   SavingsGoal,
   GoalOwnerFilter,
 } from "@/hooks/useSavingsGoals";
 import { useCreateSavingsDeposit, useSavingsDeposits, useDeleteSavingsDeposit, SavingsDeposit } from "@/hooks/useSavingsDeposits";
+import { useBanks } from "@/hooks/useBanks";
 import { format, parseISO, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -54,6 +61,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+const EMOJI_OPTIONS = ["🎯", "🏠", "🚗", "✈️", "💻", "📱", "🎓", "💍", "🎁", "🏖️", "💰", "🎮"];
 
 const formatCurrency = (valueInCents: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -65,9 +79,13 @@ const formatCurrency = (valueInCents: number) => {
 interface GoalItemProps {
   goal: SavingsGoal;
   showDepositor?: boolean;
+  onEdit: (goal: SavingsGoal) => void;
+  onDelete: (goal: SavingsGoal) => void;
+  isDeleting?: boolean;
 }
 
-function GoalItem({ goal, showDepositor }: GoalItemProps) {
+function GoalItem({ goal, showDepositor, onEdit, onDelete, isDeleting }: GoalItemProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [isAddingOpen, setIsAddingOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [depositToDelete, setDepositToDelete] = useState<SavingsDeposit | null>(null);
@@ -78,6 +96,7 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
   const { toast } = useToast();
   const { person1, person2 } = usePersonNames();
   const { data: deposits = [] } = useSavingsDeposits(goal.id);
+  const { data: banks = [] } = useBanks();
 
   const getDepositorName = (depositedBy: string) => {
     return depositedBy === "person1" ? person1 : person2;
@@ -175,91 +194,141 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
     .filter(d => d.deposited_by === "person2")
     .reduce((sum, d) => sum + d.amount, 0);
 
+  const bankName = goal.bank_id ? banks.find(b => b.id === goal.bank_id)?.name : null;
+
   return (
     <>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">{goal.icon}</span>
-            <span className="text-sm font-medium text-foreground">
-              {goal.title}
-            </span>
-            {isCompleted && (
-              <Badge variant="success" className="text-xs py-0 h-5">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                Concluída
-              </Badge>
-            )}
-          </div>
-          {!isCompleted && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsAddingOpen(true)}
-              className="h-7 px-2 text-xs"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Adicionar
-            </Button>
-          )}
-        </div>
-
-        <div className="relative">
-          <Progress
-            value={percentage}
-            className={cn(
-              "h-2",
-              isCompleted && "[&>div]:bg-success",
-              !isCompleted && "[&>div]:bg-primary"
-            )}
-          />
-        </div>
-
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            {formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}
-          </span>
-          <div className="flex items-center gap-2">
-            {!isCompleted && (
-              <span className="text-primary">
-                Faltam {formatCurrency(remaining)}
-              </span>
-            )}
-            {daysRemaining !== null && daysRemaining > 0 && !isCompleted && (
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {daysRemaining}d
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Mostrar contribuições por pessoa em metas do casal */}
-        {showDepositor && deposits.length > 0 && (
-          <div className="flex items-center justify-between pt-1 border-t border-border/50 mt-2">
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-primary" />
-                {person1}: {formatCurrency(person1Deposits)}
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-secondary" />
-                {person2}: {formatCurrency(person2Deposits)}
-              </span>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className={cn(
+          "rounded-xl border transition-all",
+          isCompleted 
+            ? "bg-success/5 border-success/20" 
+            : "bg-card border-border hover:border-primary/30"
+        )}>
+          <CollapsibleTrigger className="w-full p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">{goal.icon}</span>
+              <div className="flex-1 min-w-0 text-left">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-sm truncate">{goal.title}</span>
+                  {isCompleted && (
+                    <Badge variant="success" className="text-[10px] py-0 h-4">
+                      <CheckCircle className="w-2.5 h-2.5 mr-0.5" />
+                      Concluída
+                    </Badge>
+                  )}
+                </div>
+                <Progress
+                  value={percentage}
+                  className={cn(
+                    "h-1.5 mt-1.5",
+                    isCompleted && "[&>div]:bg-success",
+                    !isCompleted && "[&>div]:bg-primary"
+                  )}
+                />
+                <div className="flex items-center justify-between mt-1 text-[11px] text-muted-foreground">
+                  <span>{formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}</span>
+                  <span className="text-primary font-medium">{percentage}%</span>
+                </div>
+              </div>
+              <ChevronDown className={cn(
+                "w-4 h-4 text-muted-foreground transition-transform shrink-0",
+                isOpen && "rotate-180"
+              )} />
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsHistoryOpen(true)}
-              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <History className="w-3 h-3 mr-1" />
-              Histórico
-            </Button>
-          </div>
-        )}
-      </div>
+          </CollapsibleTrigger>
 
+          <CollapsibleContent>
+            <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/50">
+              {/* Info adicional */}
+              <div className="flex flex-wrap gap-2 pt-3 text-xs text-muted-foreground">
+                {!isCompleted && remaining > 0 && (
+                  <span className="flex items-center gap-1 bg-primary/5 px-2 py-1 rounded-md">
+                    Faltam {formatCurrency(remaining)}
+                  </span>
+                )}
+                {daysRemaining !== null && daysRemaining > 0 && !isCompleted && (
+                  <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
+                    <Calendar className="w-3 h-3" />
+                    {daysRemaining} dias
+                  </span>
+                )}
+                {bankName && (
+                  <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
+                    <Building2 className="w-3 h-3" />
+                    {bankName}
+                  </span>
+                )}
+              </div>
+
+              {/* Contribuições por pessoa (metas casal) */}
+              {showDepositor && deposits.length > 0 && (
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    {person1}: {formatCurrency(person1Deposits)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-secondary" />
+                    {person2}: {formatCurrency(person2Deposits)}
+                  </span>
+                </div>
+              )}
+
+              {/* Ações */}
+              <div className="flex flex-wrap gap-2">
+                {!isCompleted && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={() => setIsAddingOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Depositar
+                  </Button>
+                )}
+                {deposits.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <History className="w-3 h-3 mr-1" />
+                    Histórico
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEdit(goal)}
+                  className="h-8 text-xs"
+                >
+                  <Pencil className="w-3 h-3 mr-1" />
+                  Editar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDelete(goal)}
+                  disabled={isDeleting}
+                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  ) : (
+                    <Trash2 className="w-3 h-3 mr-1" />
+                  )}
+                  Excluir
+                </Button>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+
+      {/* Dialog Adicionar Depósito */}
       <Dialog open={isAddingOpen} onOpenChange={setIsAddingOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -272,7 +341,6 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Seletor de quem está depositando (apenas para metas do casal) */}
             {showDepositor && (
               <div className="space-y-2">
                 <Label>Quem está depositando?</Label>
@@ -325,7 +393,7 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Histórico de Depósitos */}
+      {/* Modal de Histórico */}
       <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -366,11 +434,6 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
                         <p className="text-xs text-muted-foreground">
                           {format(parseISO(deposit.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                         </p>
-                        {deposit.note && (
-                          <p className="text-xs text-muted-foreground mt-0.5 italic">
-                            "{deposit.note}"
-                          </p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -392,7 +455,6 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
             </ScrollArea>
           )}
 
-          {/* Resumo */}
           {deposits.length > 0 && (
             <div className="pt-3 border-t border-border/50 mt-2">
               <div className="flex items-center justify-between text-sm">
@@ -415,7 +477,7 @@ function GoalItem({ goal, showDepositor }: GoalItemProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmação de exclusão */}
+      {/* Confirmação de exclusão de depósito */}
       <AlertDialog open={!!depositToDelete} onOpenChange={() => setDepositToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -453,6 +515,7 @@ interface SavingsGoalsCardProps {
   showConfigLink?: boolean;
   ownerFilter?: GoalOwnerFilter;
   showDepositor?: boolean;
+  ownerLabel?: string;
 }
 
 export function SavingsGoalsCard({ 
@@ -460,22 +523,153 @@ export function SavingsGoalsCard({
   showConfigLink = true,
   ownerFilter,
   showDepositor = false,
+  ownerLabel,
 }: SavingsGoalsCardProps) {
   const { data: goals = [], isLoading } = useSavingsGoals(ownerFilter);
+  const { data: banks = [] } = useBanks();
+  const createGoal = useCreateSavingsGoal();
+  const updateGoal = useUpdateSavingsGoal();
+  const deleteGoal = useDeleteSavingsGoal();
+  const { toast } = useToast();
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
+  const [title, setTitle] = useState("");
+  const [targetAmount, setTargetAmount] = useState("");
+  const [currentAmount, setCurrentAmount] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState("🎯");
+  const [selectedBankId, setSelectedBankId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const formatCurrencyInput = (value: string): string => {
+    const cleaned = value.replace(/\D/g, "");
+    const cents = parseInt(cleaned) || 0;
+    if (cents === 0) return "";
+    return (cents / 100).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  const parseCurrencyInput = (value: string): number => {
+    const cleaned = value.replace(/\D/g, "");
+    return parseInt(cleaned) || 0;
+  };
+
+  const resetForm = () => {
+    setTitle("");
+    setTargetAmount("");
+    setCurrentAmount("");
+    setDeadline("");
+    setSelectedIcon("🎯");
+    setSelectedBankId(null);
+    setEditingGoal(null);
+  };
+
+  const openAddDialog = () => {
+    resetForm();
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (goal: SavingsGoal) => {
+    setEditingGoal(goal);
+    setTitle(goal.title);
+    setTargetAmount(formatCurrencyInput(String(goal.target_amount)));
+    setCurrentAmount(formatCurrencyInput(String(goal.current_amount)));
+    setDeadline(goal.deadline || "");
+    setSelectedIcon(goal.icon);
+    setSelectedBankId(goal.bank_id);
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      toast({
+        title: "Erro",
+        description: "Digite um título para a meta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const targetCents = parseCurrencyInput(targetAmount);
+    if (targetCents <= 0) {
+      toast({
+        title: "Erro",
+        description: "Digite um valor alvo maior que zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentCents = parseCurrencyInput(currentAmount);
+
+    try {
+      if (editingGoal) {
+        await updateGoal.mutateAsync({
+          id: editingGoal.id,
+          title: title.trim(),
+          target_amount: targetCents,
+          current_amount: currentCents,
+          deadline: deadline || null,
+          icon: selectedIcon,
+          bank_id: selectedBankId,
+        });
+        toast({
+          title: "Meta atualizada!",
+          description: `A meta "${title}" foi atualizada com sucesso.`,
+        });
+      } else {
+        await createGoal.mutateAsync({
+          title: title.trim(),
+          target_amount: targetCents,
+          current_amount: currentCents,
+          deadline: deadline || null,
+          icon: selectedIcon,
+          owner: ownerFilter || "couple",
+          bank_id: selectedBankId,
+        });
+        toast({
+          title: "Meta criada! 🎯",
+          description: `A meta "${title}" foi criada com sucesso.`,
+        });
+      }
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error?.message || "Não foi possível salvar a meta.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (goal: SavingsGoal) => {
+    setDeletingId(goal.id);
+    try {
+      await deleteGoal.mutateAsync(goal.id);
+      toast({
+        title: "Meta removida",
+        description: `A meta "${goal.title}" foi removida.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error?.message || "Não foi possível remover a meta.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading) {
     return (
       <Card className={cn("", className)}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
-              <Target className="w-4 h-4 text-success" />
-            </div>
-            Metas de Economia
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6 text-muted-foreground">
+        <CardContent className="py-8">
+          <div className="text-center text-muted-foreground">
             Carregando...
           </div>
         </CardContent>
@@ -483,105 +677,241 @@ export function SavingsGoalsCard({
     );
   }
 
-  if (goals.length === 0) {
-    return (
+  const activeGoals = goals.filter(g => g.current_amount < g.target_amount);
+  const completedGoals = goals.filter(g => g.current_amount >= g.target_amount);
+  const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0);
+
+  return (
+    <>
       <Card className={cn("", className)}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
-              <Target className="w-4 h-4 text-success" />
-            </div>
-            Metas de Economia
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-muted mb-3">
-              <Sparkles className="w-6 h-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Nenhuma meta definida
-            </p>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
+                <Target className="w-4 h-4 text-success" />
+              </div>
+              {ownerLabel ? `Metas de ${ownerLabel}` : "Metas de Economia"}
+            </CardTitle>
             {showConfigLink && (
               <Link
                 to="/metas"
-                className="text-sm text-primary hover:underline"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
               >
-                Criar metas →
+                Ver todas
               </Link>
             )}
           </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Botão Nova Meta */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={openAddDialog}
+            className="w-full"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Meta
+          </Button>
+
+          {goals.length === 0 ? (
+            <div className="text-center py-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-muted mb-3">
+                <Sparkles className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma meta definida
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Lista de metas ativas */}
+              <div className="space-y-2">
+                {activeGoals.map((goal, index) => (
+                  <div key={goal.id} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+                    <GoalItem 
+                      goal={goal} 
+                      showDepositor={showDepositor}
+                      onEdit={openEditDialog}
+                      onDelete={handleDelete}
+                      isDeleting={deletingId === goal.id}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Lista de metas concluídas */}
+              {completedGoals.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium pt-2">
+                    Concluídas ({completedGoals.length})
+                  </p>
+                  {completedGoals.map((goal, index) => (
+                    <div key={goal.id} className="animate-fade-up" style={{ animationDelay: `${(activeGoals.length + index) * 50}ms` }}>
+                      <GoalItem 
+                        goal={goal} 
+                        showDepositor={showDepositor}
+                        onEdit={openEditDialog}
+                        onDelete={handleDelete}
+                        isDeleting={deletingId === goal.id}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Resumo */}
+              <div className="pt-3 border-t border-border/50">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Total guardado</span>
+                  <span className="font-semibold text-success">
+                    {formatCurrency(totalSaved)}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
-    );
-  }
 
-  const activeGoals = goals.filter(
-    (g) => g.current_amount < g.target_amount
-  );
-  const completedGoals = goals.filter(
-    (g) => g.current_amount >= g.target_amount
-  );
-
-  // Mostrar até 3 metas ativas + resumo de concluídas
-  const displayGoals = activeGoals.slice(0, 3);
-  const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0);
-  const totalTarget = goals.reduce((sum, g) => sum + g.target_amount, 0);
-
-  return (
-    <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
-              <Target className="w-4 h-4 text-success" />
+      {/* Dialog Criar/Editar Meta */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingGoal ? "Editar Meta" : "Nova Meta"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingGoal
+                ? "Atualize os detalhes da sua meta."
+                : `Defina uma nova meta ${ownerLabel ? `para ${ownerLabel}` : ""}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {/* Seletor de Ícone */}
+            <div className="space-y-2">
+              <Label>Ícone</Label>
+              <div className="flex flex-wrap gap-2">
+                {EMOJI_OPTIONS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setSelectedIcon(emoji)}
+                    className={cn(
+                      "w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all",
+                      selectedIcon === emoji
+                        ? "bg-primary/15 ring-2 ring-primary"
+                        : "bg-secondary hover:bg-secondary/70"
+                    )}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
-            Metas de Economia
-          </CardTitle>
-          {showConfigLink && (
-            <Link
-              to="/metas"
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+
+            {/* Título */}
+            <div className="space-y-2">
+              <Label>Título</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Viagem de férias"
+                maxLength={50}
+              />
+            </div>
+
+            {/* Valor Alvo */}
+            <div className="space-y-2">
+              <Label>Valor alvo</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={targetAmount}
+                  onChange={(e) => setTargetAmount(formatCurrencyInput(e.target.value))}
+                  placeholder="0,00"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {/* Valor Atual */}
+            <div className="space-y-2">
+              <Label>Valor já guardado (opcional)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={currentAmount}
+                  onChange={(e) => setCurrentAmount(formatCurrencyInput(e.target.value))}
+                  placeholder="0,00"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {/* Prazo */}
+            <div className="space-y-2">
+              <Label>Prazo (opcional)</Label>
+              <Input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+              />
+            </div>
+
+            {/* Banco */}
+            <div className="space-y-2">
+              <Label>Banco (opcional)</Label>
+              <Select
+                value={selectedBankId || "none"}
+                onValueChange={(value) => setSelectedBankId(value === "none" ? null : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {banks.map((bank) => (
+                    <SelectItem key={bank.id} value={bank.id}>
+                      <div className="flex items-center gap-2">
+                        {bank.color && (
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: bank.color }}
+                          />
+                        )}
+                        {bank.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              onClick={handleSave}
+              disabled={createGoal.isPending || updateGoal.isPending}
+              className="w-full"
             >
-              Gerenciar
-            </Link>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Goals List */}
-        <div className="space-y-4 max-h-48 overflow-y-auto pr-1">
-          {displayGoals.map((goal) => (
-            <GoalItem key={goal.id} goal={goal} showDepositor={showDepositor} />
-          ))}
-        </div>
-
-        {activeGoals.length > 3 && (
-          <p className="text-xs text-muted-foreground text-center">
-            +{activeGoals.length - 3} outras metas ativas
-          </p>
-        )}
-
-        {/* Summary Footer */}
-        <div className="pt-3 border-t border-border/50">
-          <div className="flex items-center justify-between text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">Total guardado</p>
-              <p className="font-semibold text-success">
-                {formatCurrency(totalSaved)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">
-                {completedGoals.length} meta{completedGoals.length !== 1 ? "s" : ""} concluída{completedGoals.length !== 1 ? "s" : ""}
-              </p>
-              <p className="font-semibold text-foreground">
-                {totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0}% do total
-              </p>
-            </div>
+              {(createGoal.isPending || updateGoal.isPending) ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Target className="w-4 h-4 mr-2" />
+              )}
+              {editingGoal ? "Salvar" : "Criar Meta"}
+            </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
