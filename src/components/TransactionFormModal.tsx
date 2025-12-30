@@ -45,6 +45,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useBudgetAlert } from "@/hooks/useBudgetAlert";
+import { useGamificationEvents } from "@/hooks/useGamificationEvents";
 import {
   parseCurrencyToCents,
   centsToReais,
@@ -112,6 +113,7 @@ export function TransactionFormModal({
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const { checkBudgetAlert } = useBudgetAlert();
+  const { triggerGamificationEvent } = useGamificationEvents();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
@@ -449,6 +451,15 @@ export function TransactionFormModal({
         }, 500);
       } else {
         await createTransaction.mutateAsync(transactionData);
+        
+        // Trigger gamification event for transaction creation
+        const personName = paidBy === person2 ? "person2" : "person1";
+        await triggerGamificationEvent({
+          actionType: "transaction_created",
+          personName,
+          metadata: { type, category },
+        });
+        
         setShowSuccess(true);
         setTimeout(() => {
           let toastDescription = "O lançamento foi registrado com sucesso.";
