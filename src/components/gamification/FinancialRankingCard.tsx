@@ -87,9 +87,9 @@ export function FinancialRankingCard({
       person1Value: person1Savings,
       person2Value: person2Savings,
       winner: savingsWinner,
-      colorClass: "text-blue-500",
-      bgClass: "bg-blue-500/10",
-      borderClass: "border-blue-500/30",
+      colorClass: "text-pink-500",
+      bgClass: "bg-pink-500/10",
+      borderClass: "border-pink-500/30",
       lowerIsBetter: false,
     },
     {
@@ -153,8 +153,8 @@ export function FinancialRankingCard({
               avatarUrl={person2AvatarUrl}
               frame={overallWinner === "person2" ? "champion" : person2Frame}
               size="lg"
-              gradientFrom="from-blue-400"
-              gradientTo="to-blue-600"
+              gradientFrom="from-purple-400"
+              gradientTo="to-purple-600"
             />
             {overallWinner === "person2" && (
               <span className="absolute -top-2 -right-1 text-xl">👑</span>
@@ -216,7 +216,7 @@ export function FinancialRankingCard({
                 </div>
                 <div className={cn(
                   "p-3 rounded-xl bg-background/50 text-center transition-all",
-                  p2IsWinner && "ring-2 ring-blue-500/50"
+                  p2IsWinner && "ring-2 ring-purple-500/50"
                 )}>
                   <p className="text-xs text-muted-foreground mb-1">{person2Name}</p>
                   <p className={cn(
