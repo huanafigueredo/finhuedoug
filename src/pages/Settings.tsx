@@ -40,6 +40,7 @@ import {
   ChevronRight,
   UserCircle,
   Settings as SettingsIcon,
+  Sparkles,
 } from "lucide-react";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
@@ -53,6 +54,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
+import { PersonalizationSection } from "@/components/settings/PersonalizationSection";
 
 interface ConfigItem {
   id: string;
@@ -65,6 +67,7 @@ interface ConfigItem {
 // Sidebar navigation items
 const navSections = [
   { id: "general", label: "Geral", icon: SettingsIcon },
+  { id: "personalization", label: "Personalização", icon: Sparkles },
   { id: "people", label: "Pessoas", icon: UserCircle },
   { id: "banks", label: "Bancos", icon: CreditCard },
   { id: "payment-methods", label: "Formas de Pagamento", icon: Wallet },
@@ -485,6 +488,15 @@ export default function Settings() {
                   <p className="text-sm font-medium text-foreground">Dezembro 2025</p>
                 </div>
               </div>
+            </SectionWrapper>
+
+            {/* Personalization Section */}
+            <SectionWrapper
+              id="personalization"
+              title="Personalização"
+              description="Equipe temas e molduras de avatar desbloqueados."
+            >
+              <PersonalizationSection />
             </SectionWrapper>
 
             {/* People Section */}
