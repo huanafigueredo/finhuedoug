@@ -216,6 +216,7 @@ export default function Transactions() {
             isNewStyleInstallment: true,
             firstInstallmentDate: rawDate,
             startInstallment: startInstallment,
+            savingsDepositId: t.savings_deposit_id || null,
           };
         }
 
@@ -246,6 +247,7 @@ export default function Transactions() {
           isNewStyleInstallment: false,
           firstInstallmentDate: undefined,
           startInstallment: undefined,
+          savingsDepositId: t.savings_deposit_id || null,
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null)

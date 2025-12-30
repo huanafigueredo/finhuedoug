@@ -187,7 +187,10 @@ export function TransactionCard({
           </div>
           
           <div className="flex items-center gap-2">
-            <Badge variant={transaction.type} />
+            <div className="flex items-center gap-1.5">
+              <Badge variant={transaction.type} />
+              {transaction.savingsDepositId && <Badge variant="meta" />}
+            </div>
             <div data-actions-dropdown>
               <DropdownMenu onOpenChange={(open) => !open && resetSwipe()}>
                 <DropdownMenuTrigger asChild>
