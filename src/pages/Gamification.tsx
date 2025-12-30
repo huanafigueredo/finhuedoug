@@ -2,15 +2,22 @@ import { useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useGamification, Achievement } from "@/hooks/useGamification";
 import { useChallenges } from "@/hooks/useChallenges";
+import { useRewards } from "@/hooks/useRewards";
+import { useCoupleRanking } from "@/hooks/useCoupleRanking";
 import { XPProgressBar } from "@/components/gamification/XPProgressBar";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { AchievementCard } from "@/components/gamification/AchievementCard";
 import { ChallengeCard } from "@/components/gamification/ChallengeCard";
+import { RewardCard } from "@/components/gamification/RewardCard";
+import { CoupleRankingCard } from "@/components/gamification/CoupleRankingCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Trophy, Target, Flame, Medal } from "lucide-react";
+import { Trophy, Target, Medal, Gift, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Gamification() {
+  const { toast } = useToast();
+
   const {
     gamification,
     achievements,
@@ -27,12 +34,34 @@ export default function Gamification() {
     initializeChallenges,
   } = useChallenges();
 
+  const {
+    themes,
+    frames,
+    badges,
+    userRewards,
+    availableToUnlock,
+    unlockedRewardIds,
+    isLoading: isLoadingRewards,
+    unlockReward,
+    equipReward,
+  } = useRewards();
+
+  const {
+    currentMonthData,
+    historicalWins,
+    currentLeader,
+    person1Name,
+    person2Name,
+    isLoading: isLoadingRanking,
+  } = useCoupleRanking();
+
   // Initialize challenges on mount
   useEffect(() => {
     initializeChallenges();
   }, []);
 
-  const isLoading = isLoadingGamification || isLoadingChallenges;
+  const isLoading =
+    isLoadingGamification || isLoadingChallenges || isLoadingRewards || isLoadingRanking;
 
   // Group achievements by category
   const achievementsByCategory = achievements.reduce(
@@ -51,6 +80,38 @@ export default function Gamification() {
     saving: { label: "Guardar Mais", icon: "💰", color: "green" },
     spending: { label: "Gastar Menos", icon: "📉", color: "pink" },
     revenue: { label: "Gerar Receita", icon: "💵", color: "amber" },
+  };
+
+  const handleUnlockReward = async (rewardId: string, rewardName: string) => {
+    try {
+      await unlockReward(rewardId);
+      toast({
+        title: "🎉 Recompensa Desbloqueada!",
+        description: `Você desbloqueou: ${rewardName}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível desbloquear a recompensa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEquipReward = async (rewardId: string, type: string) => {
+    try {
+      await equipReward({ rewardId, type });
+      toast({
+        title: "Equipado!",
+        description: "Recompensa equipada com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível equipar a recompensa.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -85,6 +146,7 @@ export default function Gamification() {
 
   const completedWeekly = weeklyChallenges.filter((c) => c.completed).length;
   const completedMonthly = monthlyChallenges.filter((c) => c.completed).length;
+  const totalUnlockedRewards = userRewards.length;
 
   return (
     <AppLayout>
@@ -97,7 +159,7 @@ export default function Gamification() {
           <div>
             <h1 className="text-2xl font-bold text-foreground">Gamificação</h1>
             <p className="text-muted-foreground text-sm">
-              Acompanhe seu progresso e conquistas
+              Acompanhe seu progresso, conquistas e recompensas
             </p>
           </div>
         </div>
@@ -116,10 +178,7 @@ export default function Gamification() {
         </div>
 
         {/* Streak Card */}
-        <div
-          className="animate-fade-up"
-          style={{ animationDelay: "100ms" }}
-        >
+        <div className="animate-fade-up" style={{ animationDelay: "100ms" }}>
           <StreakCounter
             currentStreak={gamification.current_streak}
             longestStreak={gamification.longest_streak}
@@ -129,60 +188,94 @@ export default function Gamification() {
 
         {/* Stats Summary */}
         <div
-          className="grid grid-cols-3 gap-3 animate-fade-up"
+          className="grid grid-cols-4 gap-2 sm:gap-3 animate-fade-up"
           style={{ animationDelay: "150ms" }}
         >
-          <div className="p-4 rounded-2xl bg-card border border-border/50 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Medal className="w-5 h-5 text-amber-500" />
-            </div>
-            <p className="text-2xl font-bold text-foreground">
+          <div className="p-3 sm:p-4 rounded-2xl bg-card border border-border/50 text-center">
+            <Medal className="w-5 h-5 mx-auto text-amber-500 mb-1" />
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
               {userAchievements.length}
             </p>
-            <p className="text-xs text-muted-foreground">Conquistas</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Conquistas</p>
           </div>
-          <div className="p-4 rounded-2xl bg-card border border-border/50 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Target className="w-5 h-5 text-blue-500" />
-            </div>
-            <p className="text-2xl font-bold text-foreground">
-              {completedWeekly}/{weeklyChallenges.length}
+          <div className="p-3 sm:p-4 rounded-2xl bg-card border border-border/50 text-center">
+            <Target className="w-5 h-5 mx-auto text-blue-500 mb-1" />
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
+              {completedWeekly + completedMonthly}
             </p>
-            <p className="text-xs text-muted-foreground">Semanais</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Desafios</p>
           </div>
-          <div className="p-4 rounded-2xl bg-card border border-border/50 text-center">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <Flame className="w-5 h-5 text-purple-500" />
-            </div>
-            <p className="text-2xl font-bold text-foreground">
-              {completedMonthly}/{monthlyChallenges.length}
+          <div className="p-3 sm:p-4 rounded-2xl bg-card border border-border/50 text-center">
+            <Gift className="w-5 h-5 mx-auto text-purple-500 mb-1" />
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
+              {totalUnlockedRewards}
             </p>
-            <p className="text-xs text-muted-foreground">Mensais</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Recompensas</p>
+          </div>
+          <div className="p-3 sm:p-4 rounded-2xl bg-card border border-border/50 text-center">
+            <Users className="w-5 h-5 mx-auto text-pink-500 mb-1" />
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
+              {historicalWins.person1 + historicalWins.person2}
+            </p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">Disputas</p>
           </div>
         </div>
 
-        {/* Tabs for Achievements and Challenges */}
+        {/* Tabs */}
         <Tabs
-          defaultValue="achievements"
+          defaultValue="ranking"
           className="animate-fade-up"
           style={{ animationDelay: "200ms" }}
         >
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="achievements" className="gap-2">
-              <Medal className="w-4 h-4" />
+          <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsTrigger value="ranking" className="gap-1 text-xs sm:text-sm">
+              <Users className="w-4 h-4 hidden sm:block" />
+              Ranking
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="gap-1 text-xs sm:text-sm">
+              <Medal className="w-4 h-4 hidden sm:block" />
               Conquistas
             </TabsTrigger>
-            <TabsTrigger value="challenges" className="gap-2">
-              <Target className="w-4 h-4" />
+            <TabsTrigger value="challenges" className="gap-1 text-xs sm:text-sm">
+              <Target className="w-4 h-4 hidden sm:block" />
               Desafios
+            </TabsTrigger>
+            <TabsTrigger value="rewards" className="gap-1 text-xs sm:text-sm">
+              <Gift className="w-4 h-4 hidden sm:block" />
+              Loja
             </TabsTrigger>
           </TabsList>
 
+          {/* Ranking Tab */}
+          <TabsContent value="ranking" className="space-y-6">
+            <CoupleRankingCard
+              person1Name={person1Name}
+              person2Name={person2Name}
+              person1Data={currentMonthData.person1}
+              person2Data={currentMonthData.person2}
+              historicalWins={historicalWins}
+              currentLeader={currentLeader}
+            />
+
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💡</span>
+                <div>
+                  <p className="font-medium text-foreground text-sm">Como funciona?</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ganhe XP registrando transações, completando desafios e desbloqueando conquistas.
+                    Quem ganhar mais XP no mês leva o troféu! 🏆
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Achievements Tab */}
           <TabsContent value="achievements" className="space-y-6">
             {Object.entries(achievementsByCategory).map(
               ([category, categoryAchievements]) => {
-                const info =
-                  categoryInfo[category as keyof typeof categoryInfo];
+                const info = categoryInfo[category as keyof typeof categoryInfo];
                 const unlockedInCategory = categoryAchievements.filter((a) =>
                   unlockedAchievementIds.has(a.id)
                 ).length;
@@ -210,9 +303,7 @@ export default function Gamification() {
                           <AchievementCard
                             key={achievement.id}
                             achievement={achievement}
-                            isUnlocked={unlockedAchievementIds.has(
-                              achievement.id
-                            )}
+                            isUnlocked={unlockedAchievementIds.has(achievement.id)}
                             unlockedAt={userAchievement?.unlocked_at}
                           />
                         );
@@ -224,15 +315,14 @@ export default function Gamification() {
             )}
           </TabsContent>
 
+          {/* Challenges Tab */}
           <TabsContent value="challenges" className="space-y-6">
             {/* Weekly Challenges */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">📅</span>
-                  <h3 className="font-semibold text-foreground">
-                    Desafios Semanais
-                  </h3>
+                  <h3 className="font-semibold text-foreground">Desafios Semanais</h3>
                 </div>
                 <span className="text-sm text-muted-foreground">
                   {completedWeekly}/{weeklyChallenges.length} completos
@@ -260,9 +350,7 @@ export default function Gamification() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">🗓️</span>
-                  <h3 className="font-semibold text-foreground">
-                    Desafios Mensais
-                  </h3>
+                  <h3 className="font-semibold text-foreground">Desafios Mensais</h3>
                 </div>
                 <span className="text-sm text-muted-foreground">
                   {completedMonthly}/{monthlyChallenges.length} completos
@@ -282,6 +370,108 @@ export default function Gamification() {
                     Nenhum desafio mensal ativo
                   </p>
                 )}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Rewards Tab */}
+          <TabsContent value="rewards" className="space-y-6">
+            {/* Available to unlock notification */}
+            {availableToUnlock.length > 0 && (
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🎁</span>
+                  <p className="font-medium text-foreground">
+                    {availableToUnlock.length} recompensa(s) disponível(is) para desbloquear!
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Themes */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎨</span>
+                <h3 className="font-semibold text-foreground">Temas</h3>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {themes.map((reward) => {
+                  const isUnlocked = unlockedRewardIds.has(reward.id);
+                  const userReward = userRewards.find((ur) => ur.reward_id === reward.id);
+                  const canUnlock = availableToUnlock.some((r) => r.id === reward.id);
+
+                  return (
+                    <RewardCard
+                      key={reward.id}
+                      reward={reward}
+                      isUnlocked={isUnlocked}
+                      isEquipped={userReward?.is_equipped || false}
+                      canUnlock={canUnlock}
+                      currentXp={gamification.xp}
+                      currentLevel={gamification.level}
+                      onUnlock={() => handleUnlockReward(reward.id, reward.name)}
+                      onEquip={() => handleEquipReward(reward.id, reward.type)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Frames */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🖼️</span>
+                <h3 className="font-semibold text-foreground">Molduras de Avatar</h3>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {frames.map((reward) => {
+                  const isUnlocked = unlockedRewardIds.has(reward.id);
+                  const userReward = userRewards.find((ur) => ur.reward_id === reward.id);
+                  const canUnlock = availableToUnlock.some((r) => r.id === reward.id);
+
+                  return (
+                    <RewardCard
+                      key={reward.id}
+                      reward={reward}
+                      isUnlocked={isUnlocked}
+                      isEquipped={userReward?.is_equipped || false}
+                      canUnlock={canUnlock}
+                      currentXp={gamification.xp}
+                      currentLevel={gamification.level}
+                      onUnlock={() => handleUnlockReward(reward.id, reward.name)}
+                      onEquip={() => handleEquipReward(reward.id, reward.type)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Badges */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🏅</span>
+                <h3 className="font-semibold text-foreground">Badges Especiais</h3>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {badges.map((reward) => {
+                  const isUnlocked = unlockedRewardIds.has(reward.id);
+                  const userReward = userRewards.find((ur) => ur.reward_id === reward.id);
+                  const canUnlock = availableToUnlock.some((r) => r.id === reward.id);
+
+                  return (
+                    <RewardCard
+                      key={reward.id}
+                      reward={reward}
+                      isUnlocked={isUnlocked}
+                      isEquipped={userReward?.is_equipped || false}
+                      canUnlock={canUnlock}
+                      currentXp={gamification.xp}
+                      currentLevel={gamification.level}
+                      onUnlock={() => handleUnlockReward(reward.id, reward.name)}
+                      onEquip={() => handleEquipReward(reward.id, reward.type)}
+                    />
+                  );
+                })}
               </div>
             </div>
           </TabsContent>
