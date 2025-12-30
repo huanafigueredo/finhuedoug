@@ -45,6 +45,7 @@ interface Transaction {
   installment_number?: number | null;
   total_installments?: number | null;
   is_generated_installment?: boolean | null;
+  savings_deposit_id?: string | null;
   [key: string]: any;
 }
 
@@ -117,9 +118,13 @@ export function useFinancialMetrics(
       filtered = transactions.filter((t) => shouldShowInMonth(t, selectedMonth, selectedYear));
     }
 
+    // Helper to check if transaction is a savings goal deposit (internal transfer)
+    const isSavingsTransfer = (t: Transaction) => !!t.savings_deposit_id;
+
     // Total expenses (all) - use month value for installments
+    // Exclude savings goal deposits (internal transfers)
     const totalExpenses = filtered
-      .filter((t) => t.type === "expense")
+      .filter((t) => t.type === "expense" && !isSavingsTransfer(t))
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
     // Total income (all)
@@ -130,20 +135,21 @@ export function useFinancialMetrics(
     const totalBalance = totalIncome - totalExpenses;
 
     // Couple expenses (is_couple = true) - to be split 50/50
+    // Exclude savings goal deposits
     const coupleExpenses = filtered
-      .filter((t) => t.type === "expense" && t.is_couple === true)
+      .filter((t) => t.type === "expense" && t.is_couple === true && !isSavingsTransfer(t))
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
     
     const halfCoupleExpenses = coupleExpenses / 2;
 
-    // Individual expenses for Person 1 (excluding couple purchases)
+    // Individual expenses for Person 1 (excluding couple purchases and savings transfers)
     const person1IndividualExpenses = filtered
-      .filter((t) => t.type === "expense" && t.for_who === person1 && !t.is_couple)
+      .filter((t) => t.type === "expense" && t.for_who === person1 && !t.is_couple && !isSavingsTransfer(t))
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
-    // Individual expenses for Person 2 (excluding couple purchases)
+    // Individual expenses for Person 2 (excluding couple purchases and savings transfers)
     const person2IndividualExpenses = filtered
-      .filter((t) => t.type === "expense" && t.for_who === person2 && !t.is_couple)
+      .filter((t) => t.type === "expense" && t.for_who === person2 && !t.is_couple && !isSavingsTransfer(t))
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
     // Total expenses per person = individual + half of couple

@@ -326,9 +326,11 @@ export default function Transactions() {
     return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
   }, [transactionsData]);
 
-  // Calculate summary
+  // Calculate summary (exclude savings goal deposits from expenses)
   const summary = useMemo(() => {
-    const expenses = filteredTransactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.totalValue, 0);
+    const expenses = filteredTransactions
+      .filter(t => t.type === "expense" && !t.savingsDepositId)
+      .reduce((sum, t) => sum + t.totalValue, 0);
     const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
     return {
       expenses,
@@ -932,7 +934,7 @@ export default function Transactions() {
                               .filter(t => t.type === "income" && t.isCouple)
                               .reduce((sum, t) => sum + t.valuePerPerson, 0);
                             const expensesPerPerson = filteredTransactions
-                              .filter(t => t.type === "expense" && t.isCouple)
+                              .filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId)
                               .reduce((sum, t) => sum + t.valuePerPerson, 0);
                             const balancePerPerson = incomePerPerson - expensesPerPerson;
                             return (
