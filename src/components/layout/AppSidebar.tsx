@@ -63,7 +63,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <span className="font-display text-xl font-bold text-foreground">
-              CasalFin
+              together finanças
             </span>
           )}
         </Link>
