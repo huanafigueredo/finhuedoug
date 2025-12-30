@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Trophy, Crown, TrendingUp } from "lucide-react";
+import { AvatarWithFrame, FrameType } from "@/components/shared/AvatarWithFrame";
 
 interface CoupleRankingCardProps {
   person1Name: string;
@@ -20,6 +21,10 @@ interface CoupleRankingCardProps {
     ties: number;
   };
   currentLeader: "person1" | "person2" | "tie";
+  person1Frame?: FrameType;
+  person2Frame?: FrameType;
+  person1AvatarUrl?: string | null;
+  person2AvatarUrl?: string | null;
 }
 
 export function CoupleRankingCard({
@@ -29,6 +34,10 @@ export function CoupleRankingCard({
   person2Data,
   historicalWins,
   currentLeader,
+  person1Frame = "default",
+  person2Frame = "default",
+  person1AvatarUrl,
+  person2AvatarUrl,
 }: CoupleRankingCardProps) {
   const totalXp = person1Data.xp_earned + person2Data.xp_earned;
   const person1Percentage = totalXp > 0 ? (person1Data.xp_earned / totalXp) * 100 : 50;
@@ -54,9 +63,14 @@ export function CoupleRankingCard({
         {/* Person 1 */}
         <div className="flex-1 text-center">
           <div className="relative inline-block mb-2">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white text-xl font-bold">
-              {person1Name.charAt(0).toUpperCase()}
-            </div>
+            <AvatarWithFrame
+              name={person1Name}
+              avatarUrl={person1AvatarUrl}
+              frame={currentLeader === "person1" ? "champion" : person1Frame}
+              size="lg"
+              gradientFrom="from-pink-400"
+              gradientTo="to-pink-600"
+            />
             {currentLeader === "person1" && (
               <Crown className="absolute -top-2 -right-1 w-5 h-5 text-amber-500 rotate-12" />
             )}
@@ -78,9 +92,14 @@ export function CoupleRankingCard({
         {/* Person 2 */}
         <div className="flex-1 text-center">
           <div className="relative inline-block mb-2">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xl font-bold">
-              {person2Name.charAt(0).toUpperCase()}
-            </div>
+            <AvatarWithFrame
+              name={person2Name}
+              avatarUrl={person2AvatarUrl}
+              frame={currentLeader === "person2" ? "champion" : person2Frame}
+              size="lg"
+              gradientFrom="from-blue-400"
+              gradientTo="to-blue-600"
+            />
             {currentLeader === "person2" && (
               <Crown className="absolute -top-2 -right-1 w-5 h-5 text-amber-500 rotate-12" />
             )}

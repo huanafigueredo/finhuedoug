@@ -238,8 +238,10 @@ export function useCreateTransaction() {
       }
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      // Gamification events are triggered from the component level
+      // to have access to the paid_by field for personName
     },
   });
 }

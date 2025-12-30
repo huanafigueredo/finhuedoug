@@ -125,11 +125,12 @@ export function useCreateSavingsDeposit() {
 
       return deposit;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (deposit, variables) => {
       queryClient.invalidateQueries({ queryKey: ["savings-deposits"] });
       queryClient.invalidateQueries({ queryKey: ["savings-deposits", variables.goal_id] });
       queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      // Gamification events are triggered from the component level
     },
   });
 }
