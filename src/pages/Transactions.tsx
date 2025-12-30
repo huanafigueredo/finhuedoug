@@ -40,6 +40,7 @@ import {
 
 const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
+const metaOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];
 
 const days = ["Todos", ...Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"))];
@@ -103,6 +104,7 @@ export default function Transactions() {
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [coupleFilter, setCoupleFilter] = useState("Todos");
   const [installmentFilter, setInstallmentFilter] = useState("Todos");
+  const [metaFilter, setMetaFilter] = useState("Todos");
   const currentDate = new Date();
   const [dayFilter, setDayFilter] = useState("Todos");
   const [monthFilter, setMonthFilter] = useState((currentDate.getMonth() + 1).toString());
@@ -136,9 +138,10 @@ export default function Transactions() {
     if (typeFilter !== "Todos") count++;
     if (coupleFilter !== "Todos") count++;
     if (installmentFilter !== "Todos") count++;
+    if (metaFilter !== "Todos") count++;
     if (dayFilter !== "Todos") count++;
     return count;
-  }, [personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, dayFilter]);
+  }, [personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, dayFilter]);
 
   // Clear all filters
   const clearFilters = () => {
@@ -150,6 +153,7 @@ export default function Transactions() {
     setTypeFilter("Todos");
     setCoupleFilter("Todos");
     setInstallmentFilter("Todos");
+    setMetaFilter("Todos");
     setDayFilter("Todos");
     setSearch("");
   };
@@ -272,6 +276,11 @@ export default function Transactions() {
           const isInstallment = installmentFilter === "Sim";
           if (t.isInstallment !== isInstallment) return false;
         }
+        if (metaFilter !== "Todos") {
+          const hasMeta = metaFilter === "Sim";
+          const isMeta = !!t.savingsDepositId;
+          if (isMeta !== hasMeta) return false;
+        }
 
         if (!t.isNewStyleInstallment) {
           if (dayFilter !== "Todos") {
@@ -295,7 +304,7 @@ export default function Transactions() {
 
         return true;
       });
-  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, dayFilter, monthFilter, yearFilter]);
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, dayFilter, monthFilter, yearFilter]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -735,6 +744,22 @@ export default function Transactions() {
                           {installmentOptions.map((i) => (
                             <SelectItem key={i} value={i}>
                               {i}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Meta</label>
+                      <Select value={metaFilter} onValueChange={setMetaFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Meta" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {metaOptions.map((m) => (
+                            <SelectItem key={m} value={m}>
+                              {m}
                             </SelectItem>
                           ))}
                         </SelectContent>
