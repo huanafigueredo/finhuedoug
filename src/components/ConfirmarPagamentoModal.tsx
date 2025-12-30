@@ -95,6 +95,7 @@ export function ConfirmarPagamentoModal({
         <Input
           id="valor"
           type="number"
+          inputMode="decimal"
           step="0.01"
           min="0"
           value={valor}

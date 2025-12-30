@@ -680,6 +680,7 @@ export function TransactionFormModal({
                         <Label>Dia do mês</Label>
                         <Input
                           type="number"
+                          inputMode="numeric"
                           min={1}
                           max={31}
                           value={recurringDay}
@@ -984,6 +985,7 @@ export function TransactionFormModal({
                           <Label>Iniciar a partir da parcela</Label>
                           <Input
                             type="number"
+                            inputMode="numeric"
                             min={1}
                             max={totalInstallments - 1}
                             value={startFromInstallment}
