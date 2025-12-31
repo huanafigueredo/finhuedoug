@@ -137,55 +137,40 @@ function createThemeColors(hue: number, saturation: number = 75): { light: Theme
 }
 
 export const themes: Record<string, Theme> = {
-  default: {
+  theme_default: {
     name: "Padrão",
-    code: "default",
+    code: "theme_default",
     colors: createThemeColors(330, 75), // Pink theme (330 hue)
   },
-  ocean: {
+  theme_ocean: {
     name: "Oceano",
-    code: "ocean",
+    code: "theme_ocean",
     colors: createThemeColors(199, 89), // Cyan/teal
   },
-  sunset: {
+  theme_sunset: {
     name: "Pôr do Sol",
-    code: "sunset",
+    code: "theme_sunset",
     colors: createThemeColors(20, 90), // Orange
   },
-  forest: {
+  theme_forest: {
     name: "Floresta",
-    code: "forest",
+    code: "theme_forest",
     colors: createThemeColors(152, 60), // Green
   },
-  lavender: {
-    name: "Lavanda",
-    code: "lavender",
-    colors: createThemeColors(270, 60), // Purple
+  theme_galaxy: {
+    name: "Galáxia",
+    code: "theme_galaxy",
+    colors: createThemeColors(270, 75), // Purple/violet galaxy
   },
-  midnight: {
-    name: "Meia-Noite",
-    code: "midnight",
-    colors: createThemeColors(280, 65), // Deep purple instead of blue
-  },
-  rose_gold: {
-    name: "Rosê Gold",
-    code: "rose_gold",
-    colors: createThemeColors(350, 65), // Rose
-  },
-  arctic: {
-    name: "Ártico",
-    code: "arctic",
-    colors: createThemeColors(180, 70), // Teal (avoiding blue hue ~200)
-  },
-  autumn: {
-    name: "Outono",
-    code: "autumn",
-    colors: createThemeColors(30, 70), // Warm orange/brown
+  theme_gold: {
+    name: "Ouro",
+    code: "theme_gold",
+    colors: createThemeColors(45, 80), // Gold/amber
   },
 };
 
 export function getTheme(code: string): Theme {
-  return themes[code] || themes.default;
+  return themes[code] || themes.theme_default;
 }
 
 export function applyTheme(code: string, isDark: boolean) {

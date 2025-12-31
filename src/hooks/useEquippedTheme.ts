@@ -50,6 +50,6 @@ export function useEquippedTheme() {
   }, [gamificationData?.equipped_theme]);
 
   return {
-    equippedTheme: gamificationData?.equipped_theme || "default",
+    equippedTheme: gamificationData?.equipped_theme || "theme_default",
   };
 }

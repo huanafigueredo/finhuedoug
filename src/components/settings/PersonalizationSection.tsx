@@ -162,7 +162,7 @@ export function PersonalizationSection() {
   const handleThemePreviewStart = useCallback((themeCode: string) => {
     if (!isPreviewingRef.current) {
       // Store the current equipped theme code
-      originalThemeRef.current = equippedTheme?.code || "default";
+      originalThemeRef.current = equippedTheme?.code || "theme_default";
       isPreviewingRef.current = true;
     }
     const isDark = document.documentElement.classList.contains("dark");
