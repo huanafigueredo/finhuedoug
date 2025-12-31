@@ -66,17 +66,26 @@ export function useBudgetProgress(
       
       if (!isInMonth) return false;
       
-      // Aplicar filtro de pessoa
+      // Excluir transações de poupança (transferências internas)
+      if (t.savings_deposit_id) return false;
+      
+      // Aplicar filtro de pessoa baseado em paid_by (quem pagou) e for_who (para quem)
       switch (personFilter) {
         case "person1":
-          // Transações da pessoa 1 OU do casal (metade)
-          return t.for_who === person1Name || t.is_couple === true;
+          // Transações pagas pela pessoa 1, para a pessoa 1, ou do casal (metade)
+          return t.paid_by === person1Name || 
+                 t.for_who === person1Name || 
+                 t.for_who === "Casal" ||
+                 t.is_couple === true;
         case "person2":
-          // Transações da pessoa 2 OU do casal (metade)
-          return t.for_who === person2Name || t.is_couple === true;
+          // Transações pagas pela pessoa 2, para a pessoa 2, ou do casal (metade)
+          return t.paid_by === person2Name || 
+                 t.for_who === person2Name || 
+                 t.for_who === "Casal" ||
+                 t.is_couple === true;
         case "couple":
-          // Apenas transações do casal
-          return t.is_couple === true || t.for_who === "Casal";
+          // Apenas transações do casal (for_who = "Casal" ou is_couple = true)
+          return t.for_who === "Casal" || t.is_couple === true;
         case "all":
         default:
           return true;
