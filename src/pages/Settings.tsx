@@ -42,7 +42,11 @@ import {
   UserCircle,
   Settings as SettingsIcon,
   Sparkles,
+  LogOut,
+  AlertTriangle,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
 import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
 import { useRecipients, useAddRecipient, useUpdateRecipient, useDeleteRecipient } from "@/hooks/useRecipients";
@@ -77,6 +81,7 @@ const navSections = [
   { id: "recipients", label: "Para Quem", icon: Users },
   { id: "categories", label: "Categorias", icon: Folder },
   { id: "subcategories", label: "Subcategorias", icon: Tag },
+  { id: "account", label: "Conta", icon: LogOut },
 ];
 
 export default function Settings() {
@@ -91,6 +96,11 @@ export default function Settings() {
   const [newItemCategoryId, setNewItemCategoryId] = useState("");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ section: string; id: string; name: string } | null>(null);
+  const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
+  const [deleteAccountText, setDeleteAccountText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  const { user, signOut } = useAuth();
 
   // Section refs for scrolling
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -659,6 +669,42 @@ export default function Settings() {
               />
             </SectionWrapper>
 
+            {/* Account Section */}
+            <SectionWrapper
+              id="account"
+              title="Conta"
+              description="Gerencie sua conta e dados."
+            >
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-muted/30">
+                  <p className="text-sm text-muted-foreground mb-1">E-mail</p>
+                  <p className="text-sm font-medium text-foreground">{user?.email || "—"}</p>
+                </div>
+                
+                <Separator />
+                
+                <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-destructive mb-1">Zona de Perigo</h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Excluir sua conta é uma ação permanente. Todos os seus dados serão apagados e não poderão ser recuperados.
+                      </p>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteAccountConfirmOpen(true)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir minha conta
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </SectionWrapper>
+
           </div>
         </main>
       </div>
@@ -781,6 +827,116 @@ export default function Settings() {
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Excluir
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={deleteAccountConfirmOpen} onOpenChange={(open) => {
+        setDeleteAccountConfirmOpen(open);
+        if (!open) setDeleteAccountText("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Excluir conta permanentemente
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Esta ação é <strong>irreversível</strong>. Todos os seus dados serão excluídos permanentemente, incluindo:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>Todas as transações</li>
+                <li>Configurações de divisão</li>
+                <li>Metas de economia</li>
+                <li>Recorrências e contas agendadas</li>
+                <li>Perfis do casal</li>
+              </ul>
+              <p className="pt-2">
+                Para confirmar, digite <strong className="text-destructive">EXCLUIR</strong> abaixo:
+              </p>
+              <Input
+                value={deleteAccountText}
+                onChange={(e) => setDeleteAccountText(e.target.value)}
+                placeholder="Digite EXCLUIR para confirmar"
+                className="mt-2"
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAccount}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={deleteAccountText !== "EXCLUIR" || isDeletingAccount}
+              onClick={async () => {
+                setIsDeletingAccount(true);
+                try {
+                  // Delete all user data via Supabase RPC or cascading deletes
+                  const userId = user?.id;
+                  if (!userId) throw new Error("Usuário não autenticado");
+
+                  // Delete user data in order (due to foreign key constraints)
+                  // The order matters: children first, then parents
+                  await supabase.from("itens_lancamento").delete().eq("user_id", userId);
+                  await supabase.from("comprovantes_lancamento").delete().eq("user_id", userId);
+                  await supabase.from("savings_deposits").delete().eq("user_id", userId);
+                  await supabase.from("savings_goals").delete().eq("user_id", userId);
+                  await supabase.from("contas_agendadas").delete().eq("user_id", userId);
+                  await supabase.from("recorrencias").delete().eq("user_id", userId);
+                  await supabase.from("category_splits").delete().eq("user_id", userId);
+                  await supabase.from("category_budgets").delete().eq("user_id", userId);
+                  await supabase.from("split_settings").delete().eq("user_id", userId);
+                  await supabase.from("user_rewards").delete().eq("user_id", userId);
+                  await supabase.from("user_challenges").delete().eq("user_id", userId);
+                  await supabase.from("user_achievements").delete().eq("user_id", userId);
+                  await supabase.from("user_gamification").delete().eq("user_id", userId);
+                  await supabase.from("monthly_xp").delete().eq("user_id", userId);
+                  await supabase.from("monthly_financial_rankings").delete().eq("user_id", userId);
+                  await supabase.from("couple_members").delete().eq("user_id", userId);
+                  await supabase.from("banks").delete().eq("user_id", userId);
+                  await supabase.from("payment_methods").delete().eq("user_id", userId);
+                  await supabase.from("recipients").delete().eq("user_id", userId);
+                  await supabase.from("user_settings").delete().eq("user_id", userId);
+
+                  // Transactions need account_id deletion - get account first
+                  const { data: profile } = await supabase
+                    .from("profiles")
+                    .select("account_id")
+                    .eq("id", userId)
+                    .single();
+
+                  if (profile?.account_id) {
+                    await supabase.from("transactions").delete().eq("account_id", profile.account_id);
+                    await supabase.from("account_members").delete().eq("account_id", profile.account_id);
+                    await supabase.from("accounts").delete().eq("id", profile.account_id);
+                  }
+
+                  // Delete profile
+                  await supabase.from("profiles").delete().eq("id", userId);
+
+                  toast({
+                    title: "Conta excluída",
+                    description: "Sua conta foi excluída com sucesso. Você será redirecionado.",
+                  });
+
+                  // Sign out and redirect
+                  await signOut();
+                } catch (error: any) {
+                  console.error("Error deleting account:", error);
+                  toast({
+                    title: "Erro ao excluir conta",
+                    description: error?.message || "Não foi possível excluir sua conta. Tente novamente.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsDeletingAccount(false);
+                  setDeleteAccountConfirmOpen(false);
+                }
+              }}
+            >
+              {isDeletingAccount ? "Excluindo..." : "Excluir minha conta"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
