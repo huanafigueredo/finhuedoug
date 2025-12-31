@@ -82,12 +82,27 @@ export function useSplitCalculation() {
   );
 
   // Calculate split with category context (uses category rules if available)
+  // Now also accepts optional custom split percentages from the transaction itself
   const calculateSplitForTransaction = useCallback(
     (
       totalAmount: number,
       category?: string | null,
-      subcategory?: string | null
+      subcategory?: string | null,
+      customPerson1Percentage?: number | null,
+      customPerson2Percentage?: number | null
     ): SplitResult => {
+      // First check for transaction-level custom split
+      if (customPerson1Percentage !== undefined && customPerson1Percentage !== null &&
+          customPerson2Percentage !== undefined && customPerson2Percentage !== null) {
+        return {
+          person1: totalAmount * (customPerson1Percentage / 100),
+          person2: totalAmount * (customPerson2Percentage / 100),
+          person1Percentage: customPerson1Percentage,
+          person2Percentage: customPerson2Percentage,
+          mode: "personalizado",
+        };
+      }
+
       // Check for category-specific rule
       const categoryRule = getCategorySplit(categorySplits, category, subcategory);
 

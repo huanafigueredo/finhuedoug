@@ -32,6 +32,8 @@ import { useItensLancamento } from "@/hooks/useComprovantes";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import confetti from 'canvas-confetti';
+import { TransactionSplitEditor } from "@/components/transaction/TransactionSplitEditor";
+import { useUpdateTransactionSplit } from "@/hooks/useUpdateTransactionSplit";
 
 export interface TransactionDetails {
   id: string;
@@ -115,6 +117,22 @@ export function TransactionDetailsDialog({
   const { data: itensLancamento } = useItensLancamento(transaction?.id);
   const { data: linkedGoal } = useSavingsGoalFromDeposit(transaction?.savingsDepositId);
   const [showCelebration, setShowCelebration] = useState(false);
+  const updateSplitMutation = useUpdateTransactionSplit();
+  
+  const handleSaveSplit = async (person1Percentage: number, person2Percentage: number) => {
+    if (!transaction) return;
+    
+    await updateSplitMutation.mutateAsync({
+      transactionId: transaction.id,
+      person1Percentage,
+      person2Percentage,
+    });
+    
+    toast({
+      title: "Divisão atualizada",
+      description: `Nova divisão: ${person1Percentage}/${person2Percentage}`,
+    });
+  };
 
   // Check if this is the last installment and show celebration
   const isLastInstallment = transaction?.isInstallment && 
@@ -280,6 +298,14 @@ export function TransactionDetailsDialog({
                       {formatCurrency(transaction.valuePerPerson)}
                     </span>
                   )}
+                  
+                  {/* Split Editor */}
+                  <TransactionSplitEditor
+                    currentPerson1Percentage={transaction.splitPercentages?.person1 || 50}
+                    currentPerson2Percentage={transaction.splitPercentages?.person2 || 50}
+                    onSave={handleSaveSplit}
+                    isLoading={updateSplitMutation.isPending}
+                  />
                 </div>
               )}
             </div>

@@ -71,6 +71,9 @@ export interface Transaction {
   status_extracao: string | null;
   // Savings goal link
   savings_deposit_id: string | null;
+  // Custom split fields
+  custom_person1_percentage: number | null;
+  custom_person2_percentage: number | null;
   // Joined fields
   bank_name?: string;
   payment_method_name?: string;
