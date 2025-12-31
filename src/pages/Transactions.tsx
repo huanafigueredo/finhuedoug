@@ -88,8 +88,16 @@ export default function Transactions() {
   const { data: banksData = [] } = useBanks();
   const { data: paymentMethodsData = [] } = usePaymentMethods();
   const { data: categoriesData = [] } = useCategories();
-  const { members } = usePersonNames();
+  const { person1, person2, members } = usePersonNames();
   const deleteTransaction = useDeleteTransaction();
+
+  // Helper to translate person identifiers to names
+  const translatePerson = (personId: string | null | undefined): string => {
+    if (!personId || personId === "-") return "-";
+    if (personId === "person1") return person1;
+    if (personId === "person2") return person2;
+    return personId;
+  };
 
   // Dynamic persons from couple_members
   const persons = ["Todos", ...members.map(m => m.name)];
@@ -199,8 +207,8 @@ export default function Transactions() {
             rawDate: installmentDate,
             description: t.description,
             observacao: t.observacao,
-            person: t.paid_by || "-",
-            forWho: t.for_who || "-",
+            person: translatePerson(t.paid_by),
+            forWho: translatePerson(t.for_who),
             category: t.category || "-",
             subcategory: t.subcategory || "-",
             bank: t.bank_name || "-",
@@ -230,8 +238,8 @@ export default function Transactions() {
           rawDate,
           description: t.description,
           observacao: t.observacao,
-          person: t.paid_by || "-",
-          forWho: t.for_who || "-",
+          person: translatePerson(t.paid_by),
+          forWho: translatePerson(t.for_who),
           category: t.category || "-",
           subcategory: t.subcategory || "-",
           bank: t.bank_name || "-",
