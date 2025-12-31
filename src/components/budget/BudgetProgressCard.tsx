@@ -165,7 +165,7 @@ export function BudgetProgressCard({ summary, className, showConfigLink = true }
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Budget Items */}
-        <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+        <div className="space-y-4">
           {budgetProgress.map((item) => (
             <BudgetItem key={item.categoryId} item={item} />
           ))}
