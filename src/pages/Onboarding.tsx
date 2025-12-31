@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Heart, ArrowRight, ArrowLeft, Check, Users, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { TogetherLogo } from "@/components/shared/TogetherLogo";
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const { data: existingMembers = [] } = useCoupleMembers();
@@ -261,13 +263,17 @@ export default function Onboarding() {
 
       console.log("ONBOARDING - Etapa 3 concluída com sucesso");
 
+      // IMPORTANTE: Invalidar cache do onboarding status ANTES de navegar
+      // Isso garante que o ProtectedRoute vai ler o valor atualizado
+      await queryClient.invalidateQueries({ queryKey: ["profile-onboarding", user.id] });
+
       // SUCESSO - Só mostra toast e navega se tudo deu certo
       toast({
         title: "Configuração concluída! 🎉",
         description: "Seu together está pronto para usar.",
       });
 
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
 
     } catch (error) {
       console.error("ONBOARDING - Erro:", error);
