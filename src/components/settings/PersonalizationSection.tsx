@@ -70,9 +70,9 @@ function RewardCard({
       {/* Preview */}
       <div className="mb-2">
         {isTheme && themeData ? (
-          <div className="w-full h-10 rounded-lg overflow-hidden flex gap-1">
+          <div className="w-full h-6 rounded-md overflow-hidden flex gap-0.5">
             <div
-              className="flex-1 rounded-l-lg transition-colors duration-300"
+              className="flex-1 rounded-l-md transition-colors duration-300"
               style={{ backgroundColor: `hsl(${themeData.colors.light.primary})` }}
             />
             <div
@@ -80,7 +80,7 @@ function RewardCard({
               style={{ backgroundColor: `hsl(${themeData.colors.light.secondary})` }}
             />
             <div
-              className="flex-1 rounded-r-lg transition-colors duration-300"
+              className="flex-1 rounded-r-md transition-colors duration-300"
               style={{ backgroundColor: `hsl(${themeData.colors.light.accent})` }}
             />
           </div>
@@ -89,7 +89,7 @@ function RewardCard({
             <AvatarWithFrame
               name="E"
               frame={reward.code as FrameType}
-              size="md"
+              size="sm"
               gradientFrom="from-primary"
               gradientTo="to-primary/70"
             />
