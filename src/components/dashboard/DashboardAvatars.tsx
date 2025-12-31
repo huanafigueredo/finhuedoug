@@ -1,5 +1,6 @@
 import { CoupleMember } from "@/hooks/useCoupleMembers";
 import { AvatarWithFrame } from "@/components/shared/AvatarWithFrame";
+import { useEquippedFrame } from "@/hooks/useEquippedFrame";
 
 interface DashboardAvatarsProps {
   members: CoupleMember[];
@@ -7,6 +8,7 @@ interface DashboardAvatarsProps {
 
 export function DashboardAvatars({ members }: DashboardAvatarsProps) {
   const visibleMembers = members.filter((m) => m.show_on_dashboard);
+  const { equippedFrame } = useEquippedFrame();
 
   if (visibleMembers.length === 0) return null;
 
@@ -22,7 +24,7 @@ export function DashboardAvatars({ members }: DashboardAvatarsProps) {
             name={member.name}
             avatarUrl={member.avatar_url}
             size="md"
-            frame="default"
+            frame={equippedFrame}
           />
           <span className="text-xs font-medium text-foreground/80">
             {member.name}
