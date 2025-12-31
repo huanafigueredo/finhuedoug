@@ -11,16 +11,20 @@ export function DashboardAvatars({ members }: DashboardAvatarsProps) {
   if (visibleMembers.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      {visibleMembers.map((member) => (
-        <div key={member.id} className="relative group">
+    <div className="flex items-center gap-6 py-3 px-5 rounded-2xl bg-muted/40 border border-border/40">
+      {visibleMembers.map((member, index) => (
+        <div 
+          key={member.id} 
+          className="flex flex-col items-center gap-1.5 animate-fade-up"
+          style={{ animationDelay: `${index * 100}ms` }}
+        >
           <AvatarWithFrame
             name={member.name}
             avatarUrl={member.avatar_url}
-            size="sm"
+            size="md"
             frame="default"
           />
-          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          <span className="text-xs font-medium text-foreground/80">
             {member.name}
           </span>
         </div>
