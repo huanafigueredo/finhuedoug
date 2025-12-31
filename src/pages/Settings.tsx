@@ -393,6 +393,15 @@ export default function Settings() {
     allowColor?: boolean;
   }) => (
     <div className="space-y-1">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => openAddDialog(sectionKey)}
+        className="mb-3"
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Adicionar
+      </Button>
       {isLoading ? (
         <p className="text-sm text-muted-foreground py-2">Carregando...</p>
       ) : items.length === 0 ? (
@@ -400,15 +409,6 @@ export default function Settings() {
       ) : (
         items.map((item) => renderConfigItem(sectionKey, item))
       )}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => openAddDialog(sectionKey)}
-        className="mt-3"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Adicionar
-      </Button>
     </div>
   );
 
