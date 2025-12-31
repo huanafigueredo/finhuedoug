@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGamification } from "./useGamification";
-
+import { applyTheme } from "@/lib/themes";
 export interface Reward {
   id: string;
   code: string;
@@ -122,6 +122,9 @@ export function useRewards() {
         const updateData: Record<string, string> = {};
         if (reward.type === "theme") {
           updateData.equipped_theme = reward.code;
+          // Apply theme immediately
+          const isDark = document.documentElement.classList.contains("dark");
+          applyTheme(reward.code, isDark);
         } else if (reward.type === "avatar_frame") {
           updateData.equipped_frame = reward.code;
         }
@@ -133,10 +136,13 @@ export function useRewards() {
             .eq("user_id", user.id);
         }
       }
+
+      return reward;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-rewards"] });
       queryClient.invalidateQueries({ queryKey: ["user-gamification"] });
+      queryClient.invalidateQueries({ queryKey: ["user-gamification-theme"] });
     },
   });
 
