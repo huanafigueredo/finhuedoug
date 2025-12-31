@@ -252,7 +252,14 @@ export function TransactionDetailsDialog({
               </div>
               {transaction.isCouple && (
                 <div className="mt-2 pt-2 border-t border-border">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">Divisão</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1 flex items-center gap-2">
+                    Divisão
+                    {transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                        Proporcional
+                      </span>
+                    )}
+                  </span>
                   {transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
                     <div className="grid grid-cols-2 gap-2">
                       <div>

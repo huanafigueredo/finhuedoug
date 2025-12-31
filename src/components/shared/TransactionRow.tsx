@@ -137,6 +137,13 @@ export function TransactionRow({
       <td className="px-2 py-4 text-xs text-muted-foreground whitespace-nowrap text-right">
         {transaction.isCouple && transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
           <div className="flex flex-col gap-0.5">
+            <div className="flex items-center justify-end gap-1">
+              {transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                  {transaction.splitPercentages.person1}/{transaction.splitPercentages.person2}
+                </span>
+              )}
+            </div>
             <span>{transaction.person1Name}: {formatCurrency(transaction.person1Share)}</span>
             <span>{transaction.person2Name}: {formatCurrency(transaction.person2Share)}</span>
           </div>
