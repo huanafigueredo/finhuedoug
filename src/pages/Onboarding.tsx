@@ -45,11 +45,26 @@ export default function Onboarding() {
   const proportionalPerson1 = totalIncome > 0 ? Math.round((person1Income / totalIncome) * 100) : 50;
   const proportionalPerson2 = 100 - proportionalPerson1;
 
+  const FORBIDDEN_NAMES = ["pessoa 1", "pessoa 2"];
+
   const handleStep1Next = async () => {
-    if (!person1Name.trim() || !person2Name.trim()) {
+    const name1 = person1Name.trim();
+    const name2 = person2Name.trim();
+
+    if (!name1 || !name2) {
       toast({
         title: "Preencha os nomes",
         description: "Informe o nome das duas pessoas do casal.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate that names are not default placeholder names
+    if (FORBIDDEN_NAMES.includes(name1.toLowerCase()) || FORBIDDEN_NAMES.includes(name2.toLowerCase())) {
+      toast({
+        title: "Nomes inválidos",
+        description: "Por favor, use nomes reais em vez de 'Pessoa 1' ou 'Pessoa 2'.",
         variant: "destructive",
       });
       return;
