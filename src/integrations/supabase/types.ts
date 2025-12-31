@@ -578,6 +578,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          onboarding_completed_at: string | null
         }
         Insert: {
           account_id?: string | null
@@ -585,6 +586,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed_at?: string | null
         }
         Update: {
           account_id?: string | null
@@ -592,6 +594,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed_at?: string | null
         }
         Relationships: [
           {

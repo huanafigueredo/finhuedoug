@@ -174,6 +174,16 @@ export default function Onboarding() {
         }
       }
 
+      // Mark onboarding as completed in profile
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ onboarding_completed_at: new Date().toISOString() })
+          .eq("id", user.id);
+      }
+
       toast({
         title: "Configuração concluída! 🎉",
         description: "Seu together está pronto para usar.",
