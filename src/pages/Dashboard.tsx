@@ -206,17 +206,14 @@ export default function Dashboard() {
     <AppLayout>
       <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-up">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
-                {greeting.text}! {greeting.emoji}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Resumo financeiro do casal
-              </p>
-            </div>
-            <DashboardAvatars members={coupleMembers} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 animate-fade-up">
+          <div>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+              {greeting.text}! {greeting.emoji}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Resumo financeiro do casal
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -254,6 +251,13 @@ export default function Dashboard() {
             </Select>
           </div>
         </div>
+
+        {/* Avatares do casal */}
+        {coupleMembers.length > 0 && (
+          <div className="mb-6 animate-fade-up" style={{ animationDelay: "50ms" }}>
+            <DashboardAvatars members={coupleMembers} />
+          </div>
+        )}
 
         {/* Hero Balance Card */}
         <div className="mb-6">
