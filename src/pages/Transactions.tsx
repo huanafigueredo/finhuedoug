@@ -208,7 +208,7 @@ export default function Transactions() {
           
           // Calculate split for couple expenses
           const split = t.is_couple 
-            ? calculateSplitForTransaction(installmentValue, t.category, t.subcategory)
+            ? calculateSplitForTransaction(installmentValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
             : null;
 
           return {
@@ -251,7 +251,7 @@ export default function Transactions() {
         // Calculate split for couple expenses (non-installment)
         const baseValue = Number(t.total_value);
         const split = t.is_couple 
-          ? calculateSplitForTransaction(baseValue, t.category, t.subcategory)
+          ? calculateSplitForTransaction(baseValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
           : null;
 
         return {

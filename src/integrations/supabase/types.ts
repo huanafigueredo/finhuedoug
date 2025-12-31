@@ -891,6 +891,8 @@ export type Database = {
           category: string | null
           conta_agendada_id: string | null
           created_at: string | null
+          custom_person1_percentage: number | null
+          custom_person2_percentage: number | null
           date: string
           description: string
           for_who: string | null
@@ -933,6 +935,8 @@ export type Database = {
           category?: string | null
           conta_agendada_id?: string | null
           created_at?: string | null
+          custom_person1_percentage?: number | null
+          custom_person2_percentage?: number | null
           date: string
           description: string
           for_who?: string | null
@@ -975,6 +979,8 @@ export type Database = {
           category?: string | null
           conta_agendada_id?: string | null
           created_at?: string | null
+          custom_person1_percentage?: number | null
+          custom_person2_percentage?: number | null
           date?: string
           description?: string
           for_who?: string | null
