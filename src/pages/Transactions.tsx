@@ -483,6 +483,11 @@ export default function Transactions() {
         firstInstallmentDate: tx.firstInstallmentDate,
         startInstallment: tx.startInstallment,
         savingsDepositId: tx.savingsDepositId,
+        person1Share: tx.person1Share,
+        person2Share: tx.person2Share,
+        person1Name: tx.person1Name,
+        person2Name: tx.person2Name,
+        splitPercentages: tx.splitPercentages,
       } as any);
       setDetailsDialogOpen(true);
     }
@@ -1000,22 +1005,21 @@ export default function Transactions() {
                         <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
                           <span className="flex items-center justify-end gap-1.5">
                             <Heart className="w-4 h-4 text-primary fill-primary" />
-                            Por Pessoa (Casal):
+                            Divisão Individual:
                           </span>
                         </td>
-                        <td className="px-2 py-3 text-sm font-bold text-primary text-right">
+                        <td className="px-2 py-3 text-xs text-right">
                           {(() => {
-                            const incomePerPerson = filteredTransactions
-                              .filter(t => t.type === "income" && t.isCouple)
-                              .reduce((sum, t) => sum + t.valuePerPerson, 0);
-                            const expensesPerPerson = filteredTransactions
-                              .filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId)
-                              .reduce((sum, t) => sum + t.valuePerPerson, 0);
-                            const balancePerPerson = incomePerPerson - expensesPerPerson;
+                            const coupleExpenses = filteredTransactions.filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId);
+                            const person1Total = coupleExpenses.reduce((sum, t) => sum + (t.person1Share ?? t.valuePerPerson), 0);
+                            const person2Total = coupleExpenses.reduce((sum, t) => sum + (t.person2Share ?? t.valuePerPerson), 0);
+                            const person1Name = coupleExpenses[0]?.person1Name || "Pessoa 1";
+                            const person2Name = coupleExpenses[0]?.person2Name || "Pessoa 2";
                             return (
-                              <span className={balancePerPerson >= 0 ? "text-success" : "text-destructive"}>
-                                {formatCurrency(balancePerPerson)}
-                              </span>
+                              <div className="flex flex-col gap-0.5">
+                                <span className="text-foreground font-medium">{person1Name}: {formatCurrency(person1Total)}</span>
+                                <span className="text-foreground font-medium">{person2Name}: {formatCurrency(person2Total)}</span>
+                              </div>
                             );
                           })()}
                         </td>
