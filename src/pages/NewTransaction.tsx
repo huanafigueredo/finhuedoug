@@ -783,17 +783,23 @@ export default function NewTransaction() {
               )}
 
               {/* Value Preview */}
-              {isCouple && numericValue > 0 && !isInstallment && (
+              {isCouple && numericValue > 0 && (
                 <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                  <div className="text-sm text-muted-foreground mb-2">Divisão do valor</div>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Divisão do valor {isInstallment ? "(por parcela)" : ""}
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">{person1} ({splitResult.person1Percentage}%)</p>
-                      <p className="text-base font-semibold text-primary">{formatCurrency(splitResult.person1)}</p>
+                      <p className="text-base font-semibold text-primary">
+                        {formatCurrency(isInstallment ? installmentValue * (splitResult.person1Percentage / 100) : splitResult.person1)}
+                      </p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">{person2} ({splitResult.person2Percentage}%)</p>
-                      <p className="text-base font-semibold text-primary">{formatCurrency(splitResult.person2)}</p>
+                      <p className="text-base font-semibold text-primary">
+                        {formatCurrency(isInstallment ? installmentValue * (splitResult.person2Percentage / 100) : splitResult.person2)}
+                      </p>
                     </div>
                   </div>
                 </div>
