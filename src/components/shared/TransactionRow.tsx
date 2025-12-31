@@ -37,6 +37,12 @@ export interface Transaction {
   installmentValue?: number;
   // Savings goal link
   savingsDepositId?: string | null;
+  // Split fields for proportional/custom division
+  person1Share?: number;
+  person2Share?: number;
+  person1Name?: string;
+  person2Name?: string;
+  splitPercentages?: { person1: number; person2: number };
 }
 
 interface TransactionRowProps {
@@ -128,8 +134,15 @@ export function TransactionRow({
         {formatCurrency(transaction.totalValue)}
       </td>
       {/* Per Person Column */}
-      <td className="px-2 py-4 text-sm text-muted-foreground whitespace-nowrap text-right">
-        {transaction.isCouple ? formatCurrency(transaction.valuePerPerson) : "-"}
+      <td className="px-2 py-4 text-xs text-muted-foreground whitespace-nowrap text-right">
+        {transaction.isCouple && transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
+          <div className="flex flex-col gap-0.5">
+            <span>{transaction.person1Name}: {formatCurrency(transaction.person1Share)}</span>
+            <span>{transaction.person2Name}: {formatCurrency(transaction.person2Share)}</span>
+          </div>
+        ) : transaction.isCouple ? (
+          formatCurrency(transaction.valuePerPerson)
+        ) : "-"}
       </td>
       <td className="px-2 py-4">
         <div className="flex items-center gap-1.5 flex-wrap">

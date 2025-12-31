@@ -60,6 +60,12 @@ export interface TransactionDetails {
   startInstallment?: number;
   // Savings goal link
   savingsDepositId?: string | null;
+  // Split fields for proportional/custom division
+  person1Share?: number;
+  person2Share?: number;
+  person1Name?: string;
+  person2Name?: string;
+  splitPercentages?: { person1: number; person2: number };
 }
 
 // Hook to fetch savings goal info via deposit
@@ -245,11 +251,28 @@ export function TransactionDetailsDialog({
                 </span>
               </div>
               {transaction.isCouple && (
-                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border">
-                  <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Por pessoa</span>
-                  <span className="text-base sm:text-lg font-medium text-muted-foreground text-right">
-                    {formatCurrency(transaction.valuePerPerson)}
-                  </span>
+                <div className="mt-2 pt-2 border-t border-border">
+                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1">Divisão</span>
+                  {transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-xs text-muted-foreground">{transaction.person1Name} ({transaction.splitPercentages?.person1 || 50}%)</span>
+                        <span className="text-base sm:text-lg font-medium text-muted-foreground block">
+                          {formatCurrency(transaction.person1Share)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">{transaction.person2Name} ({transaction.splitPercentages?.person2 || 50}%)</span>
+                        <span className="text-base sm:text-lg font-medium text-muted-foreground block">
+                          {formatCurrency(transaction.person2Share)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-base sm:text-lg font-medium text-muted-foreground text-right">
+                      {formatCurrency(transaction.valuePerPerson)}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

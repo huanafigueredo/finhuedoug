@@ -202,12 +202,10 @@ export default function Transactions() {
           
           const installmentValue = t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!;
           
-          // Calculate valuePerPerson using split rules for couple expenses
-          let valuePerPerson = installmentValue;
-          if (t.is_couple) {
-            const split = calculateSplitForTransaction(installmentValue, t.category, t.subcategory);
-            valuePerPerson = split.person1; // Show person1's share by default
-          }
+          // Calculate split for couple expenses
+          const split = t.is_couple 
+            ? calculateSplitForTransaction(installmentValue, t.category, t.subcategory)
+            : null;
 
           return {
             id: t.id,
@@ -222,7 +220,7 @@ export default function Transactions() {
             bank: t.bank_name || "-",
             paymentMethod: t.payment_method_name || "-",
             totalValue: installmentValue,
-            valuePerPerson: valuePerPerson,
+            valuePerPerson: split?.person1 || installmentValue,
             isCouple: t.is_couple || false,
             type: t.type as "income" | "expense",
             isInstallment: true,
@@ -237,16 +235,20 @@ export default function Transactions() {
             firstInstallmentDate: rawDate,
             startInstallment: startInstallment,
             savingsDepositId: t.savings_deposit_id || null,
+            // Split fields for display
+            person1Share: split?.person1,
+            person2Share: split?.person2,
+            person1Name: person1,
+            person2Name: person2,
+            splitPercentages: split ? { person1: split.person1Percentage, person2: split.person2Percentage } : undefined,
           };
         }
 
-        // Calculate valuePerPerson using split rules for couple expenses (non-installment)
+        // Calculate split for couple expenses (non-installment)
         const baseValue = Number(t.total_value);
-        let valuePerPerson = baseValue;
-        if (t.is_couple) {
-          const split = calculateSplitForTransaction(baseValue, t.category, t.subcategory);
-          valuePerPerson = split.person1; // Show person1's share by default
-        }
+        const split = t.is_couple 
+          ? calculateSplitForTransaction(baseValue, t.category, t.subcategory)
+          : null;
 
         return {
           id: t.id,
@@ -261,7 +263,7 @@ export default function Transactions() {
           bank: t.bank_name || "-",
           paymentMethod: t.payment_method_name || "-",
           totalValue: Number(t.total_value),
-          valuePerPerson: valuePerPerson,
+          valuePerPerson: split?.person1 || baseValue,
           isCouple: t.is_couple || false,
           type: t.type as "income" | "expense",
           isInstallment: t.is_installment || false,
@@ -276,6 +278,12 @@ export default function Transactions() {
           firstInstallmentDate: undefined,
           startInstallment: undefined,
           savingsDepositId: t.savings_deposit_id || null,
+          // Split fields for display
+          person1Share: split?.person1,
+          person2Share: split?.person2,
+          person1Name: person1,
+          person2Name: person2,
+          splitPercentages: split ? { person1: split.person1Percentage, person2: split.person2Percentage } : undefined,
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null)

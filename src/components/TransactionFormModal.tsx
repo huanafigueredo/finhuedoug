@@ -1087,9 +1087,20 @@ export function TransactionFormModal({
                     )}
                     {isCouple && (
                       <div className="pt-2 border-t border-border">
-                        <div className="flex items-center justify-between text-[10px] sm:text-sm">
-                          <span className="text-muted-foreground">Por pessoa/parcela</span>
-                          <span className="font-medium text-primary">{formatCurrency(installmentValue / 2)}</span>
+                        <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">Divisão (cada parcela)</div>
+                        <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-sm">
+                          <div>
+                            <span className="text-muted-foreground">{person1}:</span>{" "}
+                            <span className="font-medium text-primary">
+                              {formatCurrency(installmentValue * (splitResult.person1Percentage / 100))}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">{person2}:</span>{" "}
+                            <span className="font-medium text-primary">
+                              {formatCurrency(installmentValue * (splitResult.person2Percentage / 100))}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}

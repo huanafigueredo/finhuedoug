@@ -262,7 +262,15 @@ export function TransactionCard({
           </div>
           {transaction.isCouple && (
             <div className="text-xs sm:text-sm text-muted-foreground">
-              P/ pessoa: <span className="font-medium text-foreground">{formatCurrency(transaction.valuePerPerson)}</span>
+              {transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
+                <span>
+                  <span className="font-medium text-foreground">{transaction.person1Name}: {formatCurrency(transaction.person1Share)}</span>
+                  <span className="mx-1 text-muted-foreground/50">|</span>
+                  <span className="font-medium text-foreground">{transaction.person2Name}: {formatCurrency(transaction.person2Share)}</span>
+                </span>
+              ) : (
+                <span>P/ pessoa: <span className="font-medium text-foreground">{formatCurrency(transaction.valuePerPerson)}</span></span>
+              )}
             </div>
           )}
         </div>
