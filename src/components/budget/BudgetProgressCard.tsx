@@ -164,15 +164,8 @@ export function BudgetProgressCard({ summary, className, showConfigLink = true }
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Budget Items */}
-        <div className="space-y-4">
-          {budgetProgress.map((item) => (
-            <BudgetItem key={item.categoryId} item={item} />
-          ))}
-        </div>
-
-        {/* Summary Footer */}
-        <div className="pt-4 border-t border-border/50">
+        {/* Summary Header */}
+        <div className="pb-4 border-b border-border/50">
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
               <p className="text-xs text-muted-foreground mb-1">Orçado</p>
@@ -203,6 +196,13 @@ export function BudgetProgressCard({ summary, className, showConfigLink = true }
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Budget Items */}
+        <div className="space-y-4">
+          {budgetProgress.map((item) => (
+            <BudgetItem key={item.categoryId} item={item} />
+          ))}
         </div>
       </CardContent>
     </Card>
