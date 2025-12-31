@@ -66,20 +66,20 @@ export function ContaCard({
           {/* Left action - Ignorar */}
           <div
             className={cn(
-              "absolute inset-y-0 left-0 w-20 flex items-center justify-center bg-destructive/90 text-white transition-opacity",
+              "absolute inset-y-0 left-0 w-16 sm:w-20 flex items-center justify-center bg-destructive/90 text-white transition-opacity",
               isSwipedLeft ? "opacity-100" : "opacity-0"
             )}
           >
-            <span className="text-2xl">⏭️</span>
+            <span className="text-xl sm:text-2xl">⏭️</span>
           </div>
           {/* Right action - Confirmar */}
           <div
             className={cn(
-              "absolute inset-y-0 right-0 w-20 flex items-center justify-center bg-success/90 text-white transition-opacity",
+              "absolute inset-y-0 right-0 w-16 sm:w-20 flex items-center justify-center bg-success/90 text-white transition-opacity",
               isSwipedRight ? "opacity-100" : "opacity-0"
             )}
           >
-            <span className="text-2xl">✅</span>
+            <span className="text-xl sm:text-2xl">✅</span>
           </div>
         </>
       )}
@@ -87,7 +87,7 @@ export function ContaCard({
       {/* Main Card Content */}
       <div
         className={cn(
-          "relative bg-card border rounded-xl p-4 shadow-sm transition-transform",
+          "relative bg-card border rounded-xl p-3 sm:p-4 shadow-sm transition-transform",
           isSwiping && "transition-none",
           isActioning && "opacity-50"
         )}
@@ -98,26 +98,26 @@ export function ContaCard({
         onTouchMove={isMobile ? handlers.onTouchMove : undefined}
         onTouchEnd={isMobile ? handlers.onTouchEnd : undefined}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Category Emoji */}
-          <div className="text-2xl">{categoryEmoji}</div>
+          <div className="text-xl sm:text-2xl shrink-0">{categoryEmoji}</div>
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-medium text-sm truncate">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <p className="font-medium text-xs sm:text-sm truncate max-w-[100px] sm:max-w-none">
                 {conta.recorrencia?.titulo || "Conta"}
               </p>
-              <Badge variant={urgency.variant} className="text-xs shrink-0">
+              <Badge variant={urgency.variant} className="text-[10px] sm:text-xs shrink-0 px-1.5 sm:px-2">
                 {urgency.emoji} {urgency.label}
               </Badge>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+            <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mt-0.5">
               <span>{formattedDate}</span>
               {conta.recorrencia?.pessoa && (
                 <>
                   <span>•</span>
-                  <span>{conta.recorrencia.pessoa}</span>
+                  <span className="truncate max-w-[50px] sm:max-w-none">{conta.recorrencia.pessoa}</span>
                 </>
               )}
             </div>
@@ -125,7 +125,7 @@ export function ContaCard({
 
           {/* Value and Actions */}
           <div className="text-right shrink-0">
-            <p className="font-semibold">{formatCurrency(conta.valor)}</p>
+            <p className="font-semibold text-sm sm:text-base">{formatCurrency(conta.valor)}</p>
             {!isMobile && (
               <div className="flex gap-1 mt-1">
                 <Button
@@ -150,7 +150,7 @@ export function ContaCard({
 
         {/* Observation */}
         {conta.observacao && (
-          <p className="text-xs text-muted-foreground mt-2 pl-9 truncate">
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 pl-7 sm:pl-9 truncate">
             {conta.observacao}
           </p>
         )}
