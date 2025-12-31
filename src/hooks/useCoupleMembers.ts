@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -130,17 +131,19 @@ export function useDeleteCoupleMember() {
 export function usePersonNames() {
   const { data: members = [], isLoading } = useCoupleMembers();
   
-  const person1 = members.find(m => m.position === 1);
-  const person2 = members.find(m => m.position === 2);
+  return useMemo(() => {
+    const person1 = members.find(m => m.position === 1);
+    const person2 = members.find(m => m.position === 2);
 
-  return {
-    person1: person1?.name || "Pessoa 1",
-    person2: person2?.name || "Pessoa 2",
-    person1Avatar: person1?.avatar_url || null,
-    person2Avatar: person2?.avatar_url || null,
-    person1Id: person1?.id || null,
-    person2Id: person2?.id || null,
-    members,
-    isLoading,
-  };
+    return {
+      person1: person1?.name || "Pessoa 1",
+      person2: person2?.name || "Pessoa 2",
+      person1Avatar: person1?.avatar_url || null,
+      person2Avatar: person2?.avatar_url || null,
+      person1Id: person1?.id || null,
+      person2Id: person2?.id || null,
+      members,
+      isLoading,
+    };
+  }, [members, isLoading]);
 }
