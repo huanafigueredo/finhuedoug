@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCategoryEmoji } from "@/lib/categoryEmojis";
 import { Recorrencia } from "@/hooks/useRecorrencias";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RecorrenciaCardProps {
   recorrencia: Recorrencia;
@@ -20,42 +21,39 @@ export function RecorrenciaCard({
   onDelete,
   index = 0,
 }: RecorrenciaCardProps) {
+  const isMobile = useIsMobile();
   const categoryEmoji = getCategoryEmoji(recorrencia.categoria);
 
   return (
     <div
       className={cn(
-        "bg-card border rounded-xl p-4 shadow-sm animate-fade-up",
+        "bg-card border rounded-xl p-3 sm:p-4 shadow-sm animate-fade-up",
         !recorrencia.ativo && "opacity-60"
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Category Emoji */}
-        <div className="text-2xl">{categoryEmoji}</div>
+        <div className="text-xl sm:text-2xl shrink-0">{categoryEmoji}</div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="font-medium text-sm truncate">{recorrencia.titulo}</p>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <p className="font-medium text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
+              {recorrencia.titulo}
+            </p>
             {!recorrencia.ativo && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted px-1.5 sm:px-2 py-0.5 rounded-full shrink-0">
                 Pausada
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+          <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground mt-0.5 flex-wrap">
             <span>Dia {recorrencia.dia_vencimento}</span>
             {recorrencia.pessoa && (
               <>
                 <span>•</span>
-                <span>{recorrencia.pessoa}</span>
-              </>
-            )}
-            {recorrencia.categoria && (
-              <>
-                <span>•</span>
-                <span>{recorrencia.categoria}</span>
+                <span className="truncate max-w-[60px] sm:max-w-none">{recorrencia.pessoa}</span>
               </>
             )}
           </div>
@@ -63,19 +61,25 @@ export function RecorrenciaCard({
 
         {/* Value */}
         <div className="text-right shrink-0">
-          <p className="font-semibold">{formatCurrency(recorrencia.valor_padrao)}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="font-semibold text-sm sm:text-base">{formatCurrency(recorrencia.valor_padrao)}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
             {recorrencia.tipo === "despesa" ? "Despesa" : "Receita"}
           </p>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 mt-3 pt-3 border-t border-border/50">
+      <div className={cn(
+        "flex gap-1 sm:gap-2 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50",
+        isMobile ? "flex-wrap" : ""
+      )}>
         <Button
           size="sm"
           variant="ghost"
-          className="flex-1 h-8 text-xs"
+          className={cn(
+            "h-7 sm:h-8 text-[10px] sm:text-xs",
+            isMobile ? "flex-1 min-w-[80px]" : "flex-1"
+          )}
           onClick={() => onEdit(recorrencia)}
         >
           ✏️ Editar
@@ -83,7 +87,10 @@ export function RecorrenciaCard({
         <Button
           size="sm"
           variant="ghost"
-          className="flex-1 h-8 text-xs"
+          className={cn(
+            "h-7 sm:h-8 text-[10px] sm:text-xs",
+            isMobile ? "flex-1 min-w-[80px]" : "flex-1"
+          )}
           onClick={() => onToggle(recorrencia)}
         >
           {recorrencia.ativo ? "⏸️ Pausar" : "▶️ Ativar"}
@@ -91,7 +98,10 @@ export function RecorrenciaCard({
         <Button
           size="sm"
           variant="ghost"
-          className="flex-1 h-8 text-xs text-destructive hover:text-destructive"
+          className={cn(
+            "h-7 sm:h-8 text-[10px] sm:text-xs text-destructive hover:text-destructive",
+            isMobile ? "flex-1 min-w-[80px]" : "flex-1"
+          )}
           onClick={() => onDelete(recorrencia)}
         >
           🗑️ Excluir

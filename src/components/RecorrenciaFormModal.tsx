@@ -4,12 +4,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerFooter,
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,11 +161,13 @@ export function RecorrenciaFormModal({
     }
   };
 
+  const title = recorrencia ? "✏️ Editar Recorrência" : "➕ Nova Recorrência";
+
   const formContent = (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form id="recorrencia-form" onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
       {/* Título */}
-      <div className="space-y-2">
-        <Label htmlFor="titulo">📝 Título *</Label>
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label htmlFor="titulo" className="text-xs sm:text-sm">📝 Título *</Label>
         <Input
           id="titulo"
           value={formData.titulo}
@@ -171,20 +175,21 @@ export function RecorrenciaFormModal({
             setFormData({ ...formData, titulo: e.target.value })
           }
           placeholder="Ex: Conta de luz"
+          className="h-9 sm:h-10 text-sm"
           required
         />
       </div>
 
       {/* Tipo */}
-      <div className="space-y-2">
-        <Label>🏷️ Tipo</Label>
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label className="text-xs sm:text-sm">🏷️ Tipo</Label>
         <Select
           value={formData.tipo}
           onValueChange={(value) =>
             setFormData({ ...formData, tipo: value, categoria: null, subcategoria: null })
           }
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-9 sm:h-10 text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -195,11 +200,11 @@ export function RecorrenciaFormModal({
       </div>
 
       {/* Valor e Dia */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="valor">💰 Valor Padrão *</Label>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label htmlFor="valor" className="text-xs sm:text-sm">💰 Valor *</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+            <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-muted-foreground">
               R$
             </span>
             <Input
@@ -210,21 +215,21 @@ export function RecorrenciaFormModal({
               onChange={handleValorChange}
               onFocus={(e) => e.target.select()}
               placeholder="0,00"
-              className="pl-9"
+              className="pl-8 sm:pl-9 h-9 sm:h-10 text-sm"
               required
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label>📅 Dia Vencimento *</Label>
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-xs sm:text-sm">📅 Dia Venc. *</Label>
           <Select
             value={formData.dia_vencimento.toString()}
             onValueChange={(value) =>
               setFormData({ ...formData, dia_vencimento: parseInt(value) })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9 sm:h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -239,8 +244,8 @@ export function RecorrenciaFormModal({
       </div>
 
       {/* Data de Início */}
-      <div className="space-y-2">
-        <Label htmlFor="data_inicio">🗓️ Data de Início *</Label>
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label htmlFor="data_inicio" className="text-xs sm:text-sm">🗓️ Data de Início *</Label>
         <Input
           id="data_inicio"
           type="date"
@@ -248,21 +253,22 @@ export function RecorrenciaFormModal({
           onChange={(e) =>
             setFormData({ ...formData, data_inicio: e.target.value })
           }
+          className="h-9 sm:h-10 text-sm"
           required
         />
       </div>
 
       {/* Categoria */}
-      <div className="space-y-2">
-        <Label>{getCategoryEmoji(selectedCategory?.name)} Categoria</Label>
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label className="text-xs sm:text-sm">{getCategoryEmoji(selectedCategory?.name)} Categoria</Label>
         <Select
           value={formData.categoria || ""}
           onValueChange={(value) =>
             setFormData({ ...formData, categoria: value || null, subcategoria: null })
           }
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione uma categoria" />
+          <SelectTrigger className="h-9 sm:h-10 text-sm">
+            <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
             {filteredCategories.map((cat) => (
@@ -276,16 +282,16 @@ export function RecorrenciaFormModal({
 
       {/* Subcategoria */}
       {filteredSubcategories.length > 0 && (
-        <div className="space-y-2">
-          <Label>📂 Subcategoria</Label>
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-xs sm:text-sm">📂 Subcategoria</Label>
           <Select
             value={formData.subcategoria || ""}
             onValueChange={(value) =>
               setFormData({ ...formData, subcategoria: value || null })
             }
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione uma subcategoria" />
+            <SelectTrigger className="h-9 sm:h-10 text-sm">
+              <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
               {filteredSubcategories.map((sub) => (
@@ -299,16 +305,16 @@ export function RecorrenciaFormModal({
       )}
 
       {/* Pessoa */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>👤 Pago por</Label>
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-xs sm:text-sm">👤 Pago por</Label>
           <Select
             value={formData.pessoa || ""}
             onValueChange={(value) =>
               setFormData({ ...formData, pessoa: value || null })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9 sm:h-10 text-sm">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -321,15 +327,15 @@ export function RecorrenciaFormModal({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>🎯 Para quem</Label>
+        <div className="space-y-1.5 sm:space-y-2">
+          <Label className="text-xs sm:text-sm">🎯 Para quem</Label>
           <Select
             value={formData.para_quem || ""}
             onValueChange={(value) =>
               setFormData({ ...formData, para_quem: value || null })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="h-9 sm:h-10 text-sm">
               <SelectValue placeholder="Selecione" />
             </SelectTrigger>
             <SelectContent>
@@ -344,8 +350,8 @@ export function RecorrenciaFormModal({
       </div>
 
       {/* Observação */}
-      <div className="space-y-2">
-        <Label htmlFor="observacao">📝 Observação Padrão</Label>
+      <div className="space-y-1.5 sm:space-y-2">
+        <Label htmlFor="observacao" className="text-xs sm:text-sm">📝 Observação</Label>
         <Textarea
           id="observacao"
           value={formData.observacao_padrao || ""}
@@ -354,15 +360,16 @@ export function RecorrenciaFormModal({
           }
           placeholder="Detalhes sobre esta conta..."
           rows={2}
+          className="text-sm min-h-[60px]"
         />
       </div>
 
       {/* Lembretes */}
-      <div className="space-y-3 p-4 rounded-lg bg-secondary/50">
-        <Label className="text-sm font-medium">🔔 Lembretes</Label>
+      <div className="space-y-2 p-3 sm:p-4 rounded-lg bg-secondary/50">
+        <Label className="text-xs sm:text-sm font-medium">🔔 Lembretes</Label>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">7 dias antes</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">7 dias antes</span>
             <Switch
               checked={formData.lembrete_7_dias}
               onCheckedChange={(checked) =>
@@ -371,7 +378,7 @@ export function RecorrenciaFormModal({
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">3 dias antes</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">3 dias antes</span>
             <Switch
               checked={formData.lembrete_3_dias}
               onCheckedChange={(checked) =>
@@ -380,7 +387,7 @@ export function RecorrenciaFormModal({
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">1 dia antes</span>
+            <span className="text-xs sm:text-sm text-muted-foreground">1 dia antes</span>
             <Switch
               checked={formData.lembrete_1_dia}
               onCheckedChange={(checked) =>
@@ -390,33 +397,43 @@ export function RecorrenciaFormModal({
           </div>
         </div>
       </div>
-
-      {/* Buttons */}
-      <div className="flex justify-end gap-3 pt-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Salvando..." : recorrencia ? "💾 Salvar" : "➕ Criar Recorrência"}
-        </Button>
-      </div>
     </form>
   );
 
-  const title = recorrencia ? "✏️ Editar Recorrência" : "➕ Nova Recorrência";
+  const footerButtons = (
+    <div className="flex gap-2 sm:gap-3 w-full">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => onOpenChange(false)}
+        className="flex-1 h-10 sm:h-11 text-sm"
+      >
+        Cancelar
+      </Button>
+      <Button 
+        type="submit" 
+        form="recorrencia-form" 
+        disabled={isSubmitting}
+        className="flex-1 h-10 sm:h-11 text-sm"
+      >
+        {isSubmitting ? "Salvando..." : "💾 Salvar"}
+      </Button>
+    </div>
+  );
 
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="px-4 pb-6 max-h-[90vh] overflow-y-auto">
-          <DrawerHeader className="text-left">
-            <DrawerTitle>{title}</DrawerTitle>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="text-left pb-2">
+            <DrawerTitle className="text-base">{title}</DrawerTitle>
           </DrawerHeader>
-          {formContent}
+          <div className="px-4 overflow-y-auto flex-1 pb-2">
+            {formContent}
+          </div>
+          <DrawerFooter className="pt-2">
+            {footerButtons}
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     );
@@ -429,6 +446,9 @@ export function RecorrenciaFormModal({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         {formContent}
+        <DialogFooter className="pt-4">
+          {footerButtons}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
