@@ -3,10 +3,11 @@ import { cn } from "@/lib/utils";
 import { useRewards, Reward } from "@/hooks/useRewards";
 import { useGamification } from "@/hooks/useGamification";
 import { useToast } from "@/hooks/use-toast";
-import { themes } from "@/lib/themes";
+import { themes, applyTheme } from "@/lib/themes";
 import { AvatarWithFrame, FrameType } from "@/components/shared/AvatarWithFrame";
 import { Button } from "@/components/ui/button";
 import { celebrateAchievement } from "@/lib/celebrations";
+import { useCallback, useRef } from "react";
 
 interface RewardCardProps {
   reward: Reward;
@@ -15,6 +16,8 @@ interface RewardCardProps {
   canUnlock: boolean;
   onUnlock: () => void;
   onEquip: () => void;
+  onHoverStart?: () => void;
+  onHoverEnd?: () => void;
 }
 
 function RewardCard({
@@ -24,6 +27,8 @@ function RewardCard({
   canUnlock,
   onUnlock,
   onEquip,
+  onHoverStart,
+  onHoverEnd,
 }: RewardCardProps) {
   const isTheme = reward.type === "theme";
   const themeData = isTheme ? themes[reward.code] : null;
@@ -31,14 +36,23 @@ function RewardCard({
   return (
     <div
       className={cn(
-        "relative p-4 rounded-xl border-2 transition-all duration-200",
+        "relative p-4 rounded-xl border-2 transition-all duration-300",
         isEquipped
           ? "border-primary bg-primary/5 shadow-lg"
           : isUnlocked
-          ? "border-border hover:border-primary/50 bg-card hover:bg-card/80"
+          ? "border-border hover:border-primary/50 bg-card hover:bg-card/80 hover:shadow-md hover:scale-[1.02]"
           : "border-border/50 bg-muted/30 opacity-60"
       )}
+      onMouseEnter={isTheme && isUnlocked && !isEquipped ? onHoverStart : undefined}
+      onMouseLeave={isTheme && isUnlocked && !isEquipped ? onHoverEnd : undefined}
     >
+      {/* Preview indicator for themes */}
+      {isTheme && isUnlocked && !isEquipped && (
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-muted text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          Passe o mouse para pré-visualizar
+        </div>
+      )}
+
       {/* Equipped badge */}
       {isEquipped && (
         <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
@@ -58,15 +72,15 @@ function RewardCard({
         {isTheme && themeData ? (
           <div className="w-full h-16 rounded-lg overflow-hidden flex gap-1">
             <div
-              className="flex-1 rounded-l-lg"
+              className="flex-1 rounded-l-lg transition-colors duration-300"
               style={{ backgroundColor: `hsl(${themeData.colors.light.primary})` }}
             />
             <div
-              className="flex-1"
+              className="flex-1 transition-colors duration-300"
               style={{ backgroundColor: `hsl(${themeData.colors.light.secondary})` }}
             />
             <div
-              className="flex-1 rounded-r-lg"
+              className="flex-1 rounded-r-lg transition-colors duration-300"
               style={{ backgroundColor: `hsl(${themeData.colors.light.accent})` }}
             />
           </div>
@@ -141,6 +155,27 @@ export function PersonalizationSection() {
     equipReward,
   } = useRewards();
 
+  // Track the original theme to restore on hover end
+  const originalThemeRef = useRef<string | null>(null);
+  const isPreviewingRef = useRef(false);
+
+  const handleThemePreviewStart = useCallback((themeCode: string) => {
+    if (!isPreviewingRef.current) {
+      // Store the current equipped theme code
+      originalThemeRef.current = equippedTheme?.code || "default";
+      isPreviewingRef.current = true;
+    }
+    const isDark = document.documentElement.classList.contains("dark");
+    applyTheme(themeCode, isDark);
+  }, [equippedTheme?.code]);
+
+  const handleThemePreviewEnd = useCallback(() => {
+    if (isPreviewingRef.current && originalThemeRef.current) {
+      const isDark = document.documentElement.classList.contains("dark");
+      applyTheme(originalThemeRef.current, isDark);
+      isPreviewingRef.current = false;
+    }
+  }, []);
   const handleUnlock = async (reward: Reward) => {
     try {
       await unlockReward(reward.id);
@@ -225,6 +260,8 @@ export function PersonalizationSection() {
               canUnlock={canUnlockReward(theme)}
               onUnlock={() => handleUnlock(theme)}
               onEquip={() => handleEquip(theme)}
+              onHoverStart={() => handleThemePreviewStart(theme.code)}
+              onHoverEnd={handleThemePreviewEnd}
             />
           ))}
         </div>
