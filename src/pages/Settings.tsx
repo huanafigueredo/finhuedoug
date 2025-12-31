@@ -876,43 +876,56 @@ export default function Settings() {
                   const userId = user?.id;
                   if (!userId) throw new Error("Usuário não autenticado");
 
-                  // Delete user data in order (due to foreign key constraints)
-                  // The order matters: children first, then parents
-                  await supabase.from("itens_lancamento").delete().eq("user_id", userId);
-                  await supabase.from("comprovantes_lancamento").delete().eq("user_id", userId);
-                  await supabase.from("savings_deposits").delete().eq("user_id", userId);
-                  await supabase.from("savings_goals").delete().eq("user_id", userId);
-                  await supabase.from("contas_agendadas").delete().eq("user_id", userId);
-                  await supabase.from("recorrencias").delete().eq("user_id", userId);
-                  await supabase.from("category_splits").delete().eq("user_id", userId);
-                  await supabase.from("category_budgets").delete().eq("user_id", userId);
-                  await supabase.from("split_settings").delete().eq("user_id", userId);
-                  await supabase.from("user_rewards").delete().eq("user_id", userId);
-                  await supabase.from("user_challenges").delete().eq("user_id", userId);
-                  await supabase.from("user_achievements").delete().eq("user_id", userId);
-                  await supabase.from("user_gamification").delete().eq("user_id", userId);
-                  await supabase.from("monthly_xp").delete().eq("user_id", userId);
-                  await supabase.from("monthly_financial_rankings").delete().eq("user_id", userId);
-                  await supabase.from("couple_members").delete().eq("user_id", userId);
-                  await supabase.from("banks").delete().eq("user_id", userId);
-                  await supabase.from("payment_methods").delete().eq("user_id", userId);
-                  await supabase.from("recipients").delete().eq("user_id", userId);
-                  await supabase.from("user_settings").delete().eq("user_id", userId);
-
-                  // Transactions need account_id deletion - get account first
+                  // Get account_id first for account-based tables
                   const { data: profile } = await supabase
                     .from("profiles")
                     .select("account_id")
                     .eq("id", userId)
                     .single();
 
+                  // Delete all user data in order (due to foreign key constraints)
+                  // Children first, then parents
+                  
+                  // Transaction-related (children first)
+                  await supabase.from("itens_lancamento").delete().eq("user_id", userId);
+                  await supabase.from("comprovantes_lancamento").delete().eq("user_id", userId);
+                  
+                  // Savings-related (deposits before goals)
+                  await supabase.from("savings_deposits").delete().eq("user_id", userId);
+                  await supabase.from("savings_goals").delete().eq("user_id", userId);
+                  
+                  // Scheduled bills and recurring
+                  await supabase.from("contas_agendadas").delete().eq("user_id", userId);
+                  await supabase.from("recorrencias").delete().eq("user_id", userId);
+                  
+                  // Budgets and splits
+                  await supabase.from("category_splits").delete().eq("user_id", userId);
+                  await supabase.from("category_budgets").delete().eq("user_id", userId);
+                  await supabase.from("split_settings").delete().eq("user_id", userId);
+                  
+                  // Gamification data
+                  await supabase.from("user_rewards").delete().eq("user_id", userId);
+                  await supabase.from("user_challenges").delete().eq("user_id", userId);
+                  await supabase.from("user_achievements").delete().eq("user_id", userId);
+                  await supabase.from("user_gamification").delete().eq("user_id", userId);
+                  await supabase.from("monthly_xp").delete().eq("user_id", userId);
+                  await supabase.from("monthly_financial_rankings").delete().eq("user_id", userId);
+                  
+                  // User configuration
+                  await supabase.from("couple_members").delete().eq("user_id", userId);
+                  await supabase.from("banks").delete().eq("user_id", userId);
+                  await supabase.from("payment_methods").delete().eq("user_id", userId);
+                  await supabase.from("recipients").delete().eq("user_id", userId);
+                  await supabase.from("user_settings").delete().eq("user_id", userId);
+
+                  // Account-based data (transactions use account_id)
                   if (profile?.account_id) {
                     await supabase.from("transactions").delete().eq("account_id", profile.account_id);
                     await supabase.from("account_members").delete().eq("account_id", profile.account_id);
                     await supabase.from("accounts").delete().eq("id", profile.account_id);
                   }
 
-                  // Delete profile
+                  // Finally delete profile
                   await supabase.from("profiles").delete().eq("id", userId);
 
                   toast({
