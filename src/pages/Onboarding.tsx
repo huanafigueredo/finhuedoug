@@ -11,6 +11,7 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { Slider } from "@/components/ui/slider";
 import { useAddCoupleMember, useCoupleMembers, useUpdateCoupleMember } from "@/hooks/useCoupleMembers";
 import { useSaveSplitSettings, SplitMode } from "@/hooks/useSplitSettings";
+import { useRecipients, useAddRecipient } from "@/hooks/useRecipients";
 import { useToast } from "@/hooks/use-toast";
 import { TogetherLogo } from "@/components/shared/TogetherLogo";
 
@@ -18,8 +19,10 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: existingMembers = [] } = useCoupleMembers();
+  const { data: existingRecipients = [] } = useRecipients();
   const addMember = useAddCoupleMember();
   const updateMember = useUpdateCoupleMember();
+  const addRecipient = useAddRecipient();
   const saveSplitSettings = useSaveSplitSettings();
 
   const [step, setStep] = useState(1);
@@ -68,6 +71,24 @@ export default function Onboarding() {
         await updateMember.mutateAsync({ id: member2.id, name: person2Name.trim() });
       } else {
         await addMember.mutateAsync({ name: person2Name.trim() });
+      }
+
+      // Sync with recipients ("Para quem" field)
+      const recipientNames = existingRecipients.map(r => r.name.toLowerCase());
+      
+      // Add person1 as recipient if not exists
+      if (!recipientNames.includes(person1Name.trim().toLowerCase())) {
+        await addRecipient.mutateAsync({ name: person1Name.trim() });
+      }
+      
+      // Add person2 as recipient if not exists
+      if (!recipientNames.includes(person2Name.trim().toLowerCase())) {
+        await addRecipient.mutateAsync({ name: person2Name.trim() });
+      }
+      
+      // Add "Casal" as recipient if not exists
+      if (!recipientNames.includes("casal")) {
+        await addRecipient.mutateAsync({ name: "Casal" });
       }
 
       setStep(2);
