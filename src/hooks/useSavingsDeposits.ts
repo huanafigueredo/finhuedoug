@@ -92,7 +92,7 @@ export function useCreateSavingsDeposit() {
           category: 'Reservas e Metas',
           subcategory: 'Meta de Economia',
           description: `Depósito: ${goal.title}`,
-          total_value: input.amount, // em centavos
+          total_value: input.amount / 100, // converter centavos para reais
           for_who: forWho,
           paid_by: input.deposited_by,
           bank_id: goal.bank_id,
