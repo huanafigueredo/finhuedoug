@@ -199,19 +199,19 @@ export default function Contas() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 pb-24 md:pb-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
             📅 Contas
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Gerencie suas contas recorrentes
           </p>
         </div>
 
         {/* Filters */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <ContasFilters
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
@@ -224,7 +224,7 @@ export default function Contas() {
         </div>
 
         {/* Hero Card */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <ContasHeroCard
             totalPendente={heroMetrics.totalPendente}
             totalPago={heroMetrics.totalPago}
@@ -236,20 +236,26 @@ export default function Contas() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-3 mb-6">
-            <TabsTrigger value="a-vencer" className="text-xs md:text-sm">
-              📅 A Vencer
+          <TabsList className="w-full grid grid-cols-3 mb-4 md:mb-6 h-auto p-1">
+            <TabsTrigger value="a-vencer" className="text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-2 flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1">
+              <span className="text-sm sm:text-base">📅</span>
+              <span className="hidden xs:inline">A Vencer</span>
+              <span className="xs:hidden">Vencer</span>
               {filteredContas.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs">
+                <span className="ml-0.5 sm:ml-1 px-1 sm:px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] sm:text-xs">
                   {filteredContas.length}
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="recorrentes" className="text-xs md:text-sm">
-              🔄 Recorrentes
+            <TabsTrigger value="recorrentes" className="text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-2 flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1">
+              <span className="text-sm sm:text-base">🔄</span>
+              <span className="hidden xs:inline">Recorrentes</span>
+              <span className="xs:hidden">Recorr.</span>
             </TabsTrigger>
-            <TabsTrigger value="historico" className="text-xs md:text-sm">
-              📋 Histórico
+            <TabsTrigger value="historico" className="text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-2 flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1">
+              <span className="text-sm sm:text-base">📋</span>
+              <span className="hidden xs:inline">Histórico</span>
+              <span className="xs:hidden">Histór.</span>
             </TabsTrigger>
           </TabsList>
 
@@ -386,13 +392,27 @@ export default function Contas() {
       {/* FAB Mobile */}
       {isMobile && activeTab === "recorrentes" && (
         <button
-          className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center text-2xl hover:scale-105 transition-transform z-50"
+          className="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-50"
           onClick={() => {
             setEditingRecorrencia(null);
             setRecorrenciaModalOpen(true);
           }}
+          aria-label="Nova Recorrência"
         >
-          ➕
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2.5" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
         </button>
       )}
 
