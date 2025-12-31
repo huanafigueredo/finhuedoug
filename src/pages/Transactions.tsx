@@ -43,6 +43,7 @@ const types = ["Todos", "Receita", "Despesa"];
 const coupleOptions = ["Todos", "Sim", "Não"];
 const metaOptions = ["Todos", "Sim", "Não"];
 const installmentOptions = ["Todos", "Sim", "Não"];
+const splitOptions = ["Todos", "Proporcional", "50/50"];
 
 const days = ["Todos", ...Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"))];
 const months = [
@@ -115,6 +116,7 @@ export default function Transactions() {
   const [coupleFilter, setCoupleFilter] = useState("Todos");
   const [installmentFilter, setInstallmentFilter] = useState("Todos");
   const [metaFilter, setMetaFilter] = useState("Todos");
+  const [splitFilter, setSplitFilter] = useState("Todos");
   const currentDate = new Date();
   const [dayFilter, setDayFilter] = useState("Todos");
   const [monthFilter, setMonthFilter] = useState((currentDate.getMonth() + 1).toString());
@@ -149,9 +151,10 @@ export default function Transactions() {
     if (coupleFilter !== "Todos") count++;
     if (installmentFilter !== "Todos") count++;
     if (metaFilter !== "Todos") count++;
+    if (splitFilter !== "Todos") count++;
     if (dayFilter !== "Todos") count++;
     return count;
-  }, [personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, dayFilter]);
+  }, [personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter]);
 
   // Clear all filters
   const clearFilters = () => {
@@ -164,6 +167,7 @@ export default function Transactions() {
     setCoupleFilter("Todos");
     setInstallmentFilter("Todos");
     setMetaFilter("Todos");
+    setSplitFilter("Todos");
     setDayFilter("Todos");
     setSearch("");
   };
@@ -313,6 +317,13 @@ export default function Transactions() {
           const isMeta = !!t.savingsDepositId;
           if (isMeta !== hasMeta) return false;
         }
+        if (splitFilter !== "Todos") {
+          // Only applies to couple transactions
+          if (!t.isCouple) return false;
+          const isProportional = t.splitPercentages && t.splitPercentages.person1 !== 50;
+          if (splitFilter === "Proporcional" && !isProportional) return false;
+          if (splitFilter === "50/50" && isProportional) return false;
+        }
 
         if (!t.isNewStyleInstallment) {
           if (dayFilter !== "Todos") {
@@ -336,7 +347,7 @@ export default function Transactions() {
 
         return true;
       });
-  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -800,6 +811,22 @@ export default function Transactions() {
                           {metaOptions.map((m) => (
                             <SelectItem key={m} value={m}>
                               {m}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Divisão</label>
+                      <Select value={splitFilter} onValueChange={setSplitFilter}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Divisão" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {splitOptions.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
                             </SelectItem>
                           ))}
                         </SelectContent>
