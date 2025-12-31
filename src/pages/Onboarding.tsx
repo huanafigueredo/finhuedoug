@@ -121,6 +121,7 @@ export default function Onboarding() {
   };
 
   const handleFinish = async () => {
+    // Validação de autenticação
     if (!user?.id) {
       toast({
         title: "Erro de autenticação",
@@ -130,8 +131,20 @@ export default function Onboarding() {
       return;
     }
 
+    // Validação para modo proporcional
+    if (splitMode === "proporcional" && (person1Income <= 0 || person2Income <= 0)) {
+      toast({
+        title: "Informe as rendas",
+        description: "Por favor, informe a renda mensal de ambas as pessoas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
+      // Calcular percentuais
       let p1Pct = 50;
       let p2Pct = 50;
 
@@ -143,16 +156,23 @@ export default function Onboarding() {
         p2Pct = person2Percentage;
       }
 
-      // Check if split settings already exist
-      const { data: existingSettings } = await supabase
+      console.log("ONBOARDING - Iniciando salvamento", { splitMode, p1Pct, p2Pct, userId: user.id });
+
+      // ETAPA 1: Salvar split_settings
+      console.log("ONBOARDING - Etapa 1: Salvando split_settings...");
+      
+      const { data: existingSettings, error: fetchError } = await supabase
         .from("split_settings")
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle();
 
+      if (fetchError) {
+        throw new Error(`Erro ao buscar configurações existentes: ${fetchError.message}`);
+      }
+
       if (existingSettings) {
-        // Update existing
-        const { error: splitError } = await supabase
+        const { error: updateError } = await supabase
           .from("split_settings")
           .update({
             mode: splitMode,
@@ -161,10 +181,11 @@ export default function Onboarding() {
           })
           .eq("id", existingSettings.id);
 
-        if (splitError) throw splitError;
+        if (updateError) {
+          throw new Error(`Erro ao atualizar configurações de divisão: ${updateError.message}`);
+        }
       } else {
-        // Insert new
-        const { error: splitError } = await supabase
+        const { error: insertError } = await supabase
           .from("split_settings")
           .insert({
             user_id: user.id,
@@ -173,53 +194,87 @@ export default function Onboarding() {
             person2_percentage: p2Pct,
           });
 
-        if (splitError) throw splitError;
-      }
-
-      // Update member incomes if in proportional mode
-      if (splitMode === "proporcional") {
-        const { data: members } = await supabase
-          .from("couple_members")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("position");
-        
-        if (members && members.length >= 2) {
-          const { error: income1Error } = await supabase
-            .from("couple_members")
-            .update({ monthly_income_cents: person1Income })
-            .eq("id", members[0].id);
-          
-          if (income1Error) throw income1Error;
-
-          const { error: income2Error } = await supabase
-            .from("couple_members")
-            .update({ monthly_income_cents: person2Income })
-            .eq("id", members[1].id);
-          
-          if (income2Error) throw income2Error;
+        if (insertError) {
+          throw new Error(`Erro ao criar configurações de divisão: ${insertError.message}`);
         }
       }
 
-      // Mark onboarding as completed in profile
+      console.log("ONBOARDING - Etapa 1 concluída com sucesso");
+
+      // ETAPA 2: Atualizar rendas se modo proporcional
+      if (splitMode === "proporcional") {
+        console.log("ONBOARDING - Etapa 2: Atualizando rendas...", { person1Income, person2Income });
+
+        const { data: members, error: membersError } = await supabase
+          .from("couple_members")
+          .select("id, position")
+          .eq("user_id", user.id)
+          .order("position");
+
+        if (membersError) {
+          throw new Error(`Erro ao buscar membros do casal: ${membersError.message}`);
+        }
+
+        if (!members || members.length < 2) {
+          throw new Error("Membros do casal não encontrados. Por favor, volte à etapa anterior.");
+        }
+
+        const member1 = members.find(m => m.position === 1);
+        const member2 = members.find(m => m.position === 2);
+
+        if (!member1 || !member2) {
+          throw new Error("Não foi possível identificar os membros do casal.");
+        }
+
+        const { error: income1Error } = await supabase
+          .from("couple_members")
+          .update({ monthly_income_cents: person1Income })
+          .eq("id", member1.id);
+
+        if (income1Error) {
+          throw new Error(`Erro ao salvar renda de ${person1Name}: ${income1Error.message}`);
+        }
+
+        const { error: income2Error } = await supabase
+          .from("couple_members")
+          .update({ monthly_income_cents: person2Income })
+          .eq("id", member2.id);
+
+        if (income2Error) {
+          throw new Error(`Erro ao salvar renda de ${person2Name}: ${income2Error.message}`);
+        }
+
+        console.log("ONBOARDING - Etapa 2 concluída com sucesso");
+      }
+
+      // ETAPA 3: Marcar onboarding como completo
+      console.log("ONBOARDING - Etapa 3: Marcando onboarding como completo...");
+      
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ onboarding_completed_at: new Date().toISOString() })
         .eq("id", user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        throw new Error(`Erro ao finalizar configuração: ${profileError.message}`);
+      }
 
+      console.log("ONBOARDING - Etapa 3 concluída com sucesso");
+
+      // SUCESSO - Só mostra toast e navega se tudo deu certo
       toast({
         title: "Configuração concluída! 🎉",
         description: "Seu together está pronto para usar.",
       });
 
       navigate("/dashboard");
+
     } catch (error) {
-      console.error("Onboarding error:", error);
+      console.error("ONBOARDING - Erro:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao salvar.";
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
