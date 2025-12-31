@@ -33,6 +33,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useGamificationEvents } from "@/hooks/useGamificationEvents";
+import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 
 // Validation schema for transactions
 const transactionSchema = z.object({
@@ -69,7 +70,7 @@ export default function NewTransaction() {
   const loadId = editId || duplicateId;
   
   const { toast } = useToast();
-  const { members } = usePersonNames();
+  const { members, person1, person2 } = usePersonNames();
   const persons = members.map(m => m.name);
   const { data: banks = [], isLoading: banksLoading } = useBanks();
   const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
@@ -78,6 +79,7 @@ export default function NewTransaction() {
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const { triggerGamificationEvent } = useGamificationEvents();
+  const { calculateSplitForTransaction } = useSplitCalculation();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
@@ -179,7 +181,10 @@ export default function NewTransaction() {
   const installmentValue = valueMode === "installment" 
     ? numericValue 
     : (isInstallment && totalInstallments > 1 ? numericValue / totalInstallments : numericValue);
-  const valuePerPerson = isCouple ? totalValue / 2 : totalValue;
+  
+  // Calculate value per person using split settings (proporcional, personalizado, or 50-50)
+  const splitResult = calculateSplitForTransaction(totalValue, category, subcategory);
+  const valuePerPerson = isCouple ? splitResult.person1 : totalValue;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -780,13 +785,16 @@ export default function NewTransaction() {
               {/* Value Preview */}
               {isCouple && numericValue > 0 && !isInstallment && (
                 <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Valor por pessoa
-                    </span>
-                    <span className="text-lg font-semibold text-primary">
-                      {formatCurrency(valuePerPerson)}
-                    </span>
+                  <div className="text-sm text-muted-foreground mb-2">Divisão do valor</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">{person1} ({splitResult.person1Percentage}%)</p>
+                      <p className="text-base font-semibold text-primary">{formatCurrency(splitResult.person1)}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">{person2} ({splitResult.person2Percentage}%)</p>
+                      <p className="text-base font-semibold text-primary">{formatCurrency(splitResult.person2)}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -911,11 +919,20 @@ export default function NewTransaction() {
                           </div>
                           {isCouple && (
                             <div className="pt-2 border-t border-border">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="text-muted-foreground">Valor por pessoa (cada parcela)</span>
-                                <span className="font-medium text-primary">
-                                  {formatCurrency(installmentValue / 2)}
-                                </span>
+                              <div className="text-xs text-muted-foreground mb-1">Divisão (cada parcela)</div>
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">{person1}:</span>{" "}
+                                  <span className="font-medium text-primary">
+                                    {formatCurrency(installmentValue * (splitResult.person1Percentage / 100))}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">{person2}:</span>{" "}
+                                  <span className="font-medium text-primary">
+                                    {formatCurrency(installmentValue * (splitResult.person2Percentage / 100))}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           )}
