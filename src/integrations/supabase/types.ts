@@ -346,6 +346,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           id: string
+          monthly_income_cents: number | null
           name: string
           position: number
           show_on_dashboard: boolean
@@ -356,6 +357,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           id?: string
+          monthly_income_cents?: number | null
           name: string
           position?: number
           show_on_dashboard?: boolean
@@ -366,6 +368,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           id?: string
+          monthly_income_cents?: number | null
           name?: string
           position?: number
           show_on_dashboard?: boolean
@@ -787,6 +790,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      split_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          mode: string
+          person1_percentage: number | null
+          person2_percentage: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mode?: string
+          person1_percentage?: number | null
+          person2_percentage?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mode?: string
+          person1_percentage?: number | null
+          person2_percentage?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       subcategories: {
         Row: {

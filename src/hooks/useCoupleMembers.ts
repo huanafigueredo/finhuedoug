@@ -10,6 +10,7 @@ export interface CoupleMember {
   avatar_url: string | null;
   position: number;
   show_on_dashboard: boolean;
+  monthly_income_cents: number;
   created_at: string;
   updated_at: string;
 }

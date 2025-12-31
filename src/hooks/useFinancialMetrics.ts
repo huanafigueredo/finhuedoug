@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { parseISO, differenceInMonths } from "date-fns";
 import { usePersonNames } from "./useUserSettings";
+import { useSplitCalculation } from "./useSplitCalculation";
 
 export interface FinancialMetrics {
   // Total geral
@@ -10,13 +11,16 @@ export interface FinancialMetrics {
   
   // Despesas do casal (is_couple = true)
   coupleExpenses: number;
-  halfCoupleExpenses: number;
   
   // Despesas individuais (excluindo casal)
   person1IndividualExpenses: number;
   person2IndividualExpenses: number;
   
-  // Total por pessoa (individual + metade do casal)
+  // Split amounts from couple expenses (based on split settings)
+  person1CoupleShare: number;
+  person2CoupleShare: number;
+  
+  // Total por pessoa (individual + share of couple)
   person1TotalExpenses: number;
   person2TotalExpenses: number;
   
@@ -24,13 +28,18 @@ export interface FinancialMetrics {
   person1Income: number;
   person2Income: number;
   
-  // Saldo por pessoa (receitas - despesas incluindo metade do casal)
+  // Saldo por pessoa (receitas - despesas incluindo share do casal)
   person1Balance: number;
   person2Balance: number;
   
   // Nomes das pessoas
   person1Name: string;
   person2Name: string;
+  
+  // Split info
+  splitMode: string;
+  person1Percentage: number;
+  person2Percentage: number;
 }
 
 interface Transaction {
@@ -109,6 +118,7 @@ export function useFinancialMetrics(
   selectedYear?: number
 ): FinancialMetrics {
   const { person1, person2 } = usePersonNames();
+  const { calculateSplit, currentPercentages, mode } = useSplitCalculation();
   
   return useMemo(() => {
     // Filter transactions by month/year if provided (including dynamic installments)
@@ -134,13 +144,16 @@ export function useFinancialMetrics(
 
     const totalBalance = totalIncome - totalExpenses;
 
-    // Couple expenses (is_couple = true) - to be split 50/50
+    // Couple expenses (is_couple = true) - to be split according to settings
     // Exclude savings goal deposits
     const coupleExpenses = filtered
       .filter((t) => t.type === "expense" && t.is_couple === true && !isSavingsTransfer(t))
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
     
-    const halfCoupleExpenses = coupleExpenses / 2;
+    // Calculate split based on settings
+    const coupleSplit = calculateSplit(coupleExpenses);
+    const person1CoupleShare = coupleSplit.person1;
+    const person2CoupleShare = coupleSplit.person2;
 
     // Individual expenses for Person 1 (excluding couple purchases and savings transfers)
     const person1IndividualExpenses = filtered
@@ -152,9 +165,9 @@ export function useFinancialMetrics(
       .filter((t) => t.type === "expense" && t.for_who === person2 && !t.is_couple && !isSavingsTransfer(t))
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
-    // Total expenses per person = individual + half of couple
-    const person1TotalExpenses = person1IndividualExpenses + halfCoupleExpenses;
-    const person2TotalExpenses = person2IndividualExpenses + halfCoupleExpenses;
+    // Total expenses per person = individual + share of couple
+    const person1TotalExpenses = person1IndividualExpenses + person1CoupleShare;
+    const person2TotalExpenses = person2IndividualExpenses + person2CoupleShare;
 
     // Income per person
     const person1Income = filtered
@@ -165,7 +178,7 @@ export function useFinancialMetrics(
       .filter((t) => t.type === "income" && t.for_who === person2)
       .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
-    // Balance per person = income - expenses (including half of couple)
+    // Balance per person = income - expenses (including share of couple)
     const person1Balance = person1Income - person1TotalExpenses;
     const person2Balance = person2Income - person2TotalExpenses;
 
@@ -174,7 +187,8 @@ export function useFinancialMetrics(
       totalIncome,
       totalBalance,
       coupleExpenses,
-      halfCoupleExpenses,
+      person1CoupleShare,
+      person2CoupleShare,
       person1IndividualExpenses,
       person2IndividualExpenses,
       person1TotalExpenses,
@@ -185,6 +199,9 @@ export function useFinancialMetrics(
       person2Balance,
       person1Name: person1,
       person2Name: person2,
+      splitMode: mode,
+      person1Percentage: currentPercentages.person1Percentage,
+      person2Percentage: currentPercentages.person2Percentage,
     };
-  }, [transactions, selectedMonth, selectedYear, person1, person2]);
+  }, [transactions, selectedMonth, selectedYear, person1, person2, calculateSplit, currentPercentages, mode]);
 }

@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import { PersonalizationSection } from "@/components/settings/PersonalizationSection";
+import { SplitSettingsSection } from "@/components/settings/SplitSettingsSection";
 
 interface ConfigItem {
   id: string;
@@ -70,6 +71,7 @@ const navSections = [
   { id: "general", label: "Geral", icon: SettingsIcon },
   { id: "personalization", label: "Personalização", icon: Sparkles },
   { id: "people", label: "Pessoas", icon: UserCircle },
+  { id: "split", label: "Divisão de Despesas", icon: Wallet },
   { id: "banks", label: "Bancos", icon: CreditCard },
   { id: "payment-methods", label: "Formas de Pagamento", icon: Wallet },
   { id: "recipients", label: "Para Quem", icon: Users },
@@ -580,6 +582,15 @@ export default function Settings() {
                   Adicionar Pessoa
                 </Button>
               </div>
+            </SectionWrapper>
+
+            {/* Split Settings Section */}
+            <SectionWrapper
+              id="split"
+              title="Divisão de Despesas"
+              description="Configure como as despesas do casal são divididas entre vocês."
+            >
+              <SplitSettingsSection />
             </SectionWrapper>
 
             {/* Banks Section */}
