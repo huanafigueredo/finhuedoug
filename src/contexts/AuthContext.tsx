@@ -71,10 +71,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Even if signOut fails (e.g., session already expired), clear local state
       console.warn('SignOut error (session may already be invalid):', error);
     } finally {
-      // Always clear local state and redirect
+      // Always clear local state and redirect to landing page
       setSession(null);
       setUser(null);
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 
