@@ -8,6 +8,7 @@ import { PersonComparisonCard } from "@/components/dashboard/PersonComparisonCar
 import { RecentTransactionsList } from "@/components/dashboard/RecentTransactionsList";
 import { UpcomingBillsList } from "@/components/dashboard/UpcomingBillsList";
 import { GamificationWidget } from "@/components/gamification/GamificationWidget";
+import { DashboardAvatars } from "@/components/dashboard/DashboardAvatars";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
 import {
@@ -23,6 +24,7 @@ import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
 import { useGamification } from "@/hooks/useGamification";
+import { useCoupleMembers } from "@/hooks/useCoupleMembers";
 import { format, parseISO, differenceInMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -94,6 +96,7 @@ export default function Dashboard() {
   const { data: transactions = [], isLoading: loadingTransactions } = useTransactions();
   const { data: banks = [] } = useBanks();
   const { data: contasAVencer = [] } = useContasAVencer();
+  const { data: coupleMembers = [] } = useCoupleMembers();
   const { updateStreak } = useGamification();
 
   const monthIndex = months.indexOf(selectedMonth);
@@ -204,13 +207,16 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-up">
-          <div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
-              {greeting.text}! {greeting.emoji}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Resumo financeiro do casal
-            </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
+                {greeting.text}! {greeting.emoji}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Resumo financeiro do casal
+              </p>
+            </div>
+            <DashboardAvatars members={coupleMembers} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

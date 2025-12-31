@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -529,19 +530,42 @@ export default function Settings() {
                           <p className="text-xs text-muted-foreground">Pessoa {person.position}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEditPersonDialog(person)}
-                          className="p-1.5 rounded-md hover:bg-muted transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                        </button>
-                        <button
-                          onClick={() => handleDeletePerson(person.id, person.name)}
-                          className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                        </button>
+                      <div className="flex items-center gap-3">
+                        {/* Dashboard toggle */}
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor={`dashboard-${person.id}`} className="text-xs text-muted-foreground hidden sm:inline">
+                            Dashboard
+                          </Label>
+                          <Switch
+                            id={`dashboard-${person.id}`}
+                            checked={person.show_on_dashboard}
+                            onCheckedChange={async (checked) => {
+                              try {
+                                await updateCoupleMember.mutateAsync({ id: person.id, show_on_dashboard: checked });
+                                toast({
+                                  title: checked ? "Avatar será exibido no Dashboard" : "Avatar removido do Dashboard",
+                                });
+                              } catch (error) {
+                                toast({ title: "Erro ao atualizar", variant: "destructive" });
+                              }
+                            }}
+                          />
+                        </div>
+                        {/* Edit/Delete buttons */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEditPersonDialog(person)}
+                            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePerson(person.id, person.name)}
+                            className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
