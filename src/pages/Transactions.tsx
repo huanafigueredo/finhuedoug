@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePersonNames } from "@/hooks/useUserSettings";
+import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 
 import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -90,6 +91,7 @@ export default function Transactions() {
   const { data: categoriesData = [] } = useCategories();
   const { person1, person2, members } = usePersonNames();
   const deleteTransaction = useDeleteTransaction();
+  const { calculateSplitForTransaction } = useSplitCalculation();
 
   // Helper to translate person identifiers to names
   const translatePerson = (personId: string | null | undefined): string => {
@@ -199,7 +201,13 @@ export default function Transactions() {
           const installmentDate = addMonths(rawDate, monthsFromStart);
           
           const installmentValue = t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!;
-          const valuePerPerson = t.is_couple ? installmentValue / 2 : installmentValue;
+          
+          // Calculate valuePerPerson using split rules for couple expenses
+          let valuePerPerson = installmentValue;
+          if (t.is_couple) {
+            const split = calculateSplitForTransaction(installmentValue, t.category, t.subcategory);
+            valuePerPerson = split.person1; // Show person1's share by default
+          }
 
           return {
             id: t.id,
@@ -232,6 +240,14 @@ export default function Transactions() {
           };
         }
 
+        // Calculate valuePerPerson using split rules for couple expenses (non-installment)
+        const baseValue = Number(t.total_value);
+        let valuePerPerson = baseValue;
+        if (t.is_couple) {
+          const split = calculateSplitForTransaction(baseValue, t.category, t.subcategory);
+          valuePerPerson = split.person1; // Show person1's share by default
+        }
+
         return {
           id: t.id,
           date: format(rawDate, "dd/MM/yyyy"),
@@ -245,7 +261,7 @@ export default function Transactions() {
           bank: t.bank_name || "-",
           paymentMethod: t.payment_method_name || "-",
           totalValue: Number(t.total_value),
-          valuePerPerson: Number(t.value_per_person || t.total_value),
+          valuePerPerson: valuePerPerson,
           isCouple: t.is_couple || false,
           type: t.type as "income" | "expense",
           isInstallment: t.is_installment || false,
@@ -312,7 +328,7 @@ export default function Transactions() {
 
         return true;
       });
-  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, dayFilter, monthFilter, yearFilter]);
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();

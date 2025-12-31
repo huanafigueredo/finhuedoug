@@ -3,6 +3,7 @@ import { Target, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTransactions } from "@/hooks/useTransactions";
 import { usePersonNames } from "@/hooks/useUserSettings";
+import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 import { parseISO, differenceInMonths } from "date-fns";
 import { GoalOwnerFilter } from "@/hooks/useSavingsGoals";
 
@@ -116,6 +117,7 @@ function MetricItem({ icon, label, value, subtext, variant, delay = 0 }: MetricI
 export function MonthlySavingsReport({ month, year, ownerFilter, className }: MonthlySavingsReportProps) {
   const { data: transactions = [] } = useTransactions();
   const { person1, person2 } = usePersonNames();
+  const { calculateSplitForTransaction } = useSplitCalculation();
 
   const reportData = useMemo(() => {
     // Filter transactions for the selected month
@@ -144,15 +146,16 @@ export function MonthlySavingsReport({ month, year, ownerFilter, className }: Mo
       return t.for_who === personName;
     };
 
-    // Calculate value based on owner filter
+    // Calculate value based on owner filter using split rules
     const getValueForOwner = (t: any, baseValue: number) => {
       if (!ownerFilter || ownerFilter === "all" || ownerFilter === "couple") {
         return baseValue;
       }
       
-      // For individual: if it's a couple expense, take half
+      // For individual: if it's a couple expense, use split calculation
       if (t.is_couple === true) {
-        return baseValue / 2;
+        const split = calculateSplitForTransaction(baseValue, t.category, t.subcategory);
+        return ownerFilter === "person1" ? split.person1 : split.person2;
       }
       
       return baseValue;
@@ -196,7 +199,7 @@ export function MonthlySavingsReport({ month, year, ownerFilter, className }: Mo
       expenseRate,
       balance: totalIncome - realExpenses - savedInGoals,
     };
-  }, [transactions, month, year, ownerFilter, person1, person2]);
+  }, [transactions, month, year, ownerFilter, person1, person2, calculateSplitForTransaction]);
 
   const hasData = reportData.totalIncome > 0 || reportData.realExpenses > 0 || reportData.savedInGoals > 0;
 

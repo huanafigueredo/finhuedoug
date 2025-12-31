@@ -23,6 +23,7 @@ import {
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
+import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 import { parseISO, subMonths, format, differenceInMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
@@ -132,6 +133,7 @@ export default function People() {
 
   const { data: transactions = [] } = useTransactions();
   const { data: banks = [] } = useBanks();
+  const { calculateSplitForTransaction } = useSplitCalculation();
 
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
@@ -165,17 +167,20 @@ export default function People() {
     });
   };
 
-  // Calculate category breakdown for a person
+  // Calculate category breakdown for a person using split rules
   const getCategoryBreakdown = (personName: string) => {
     const expenses = getPersonExpenses(personName);
     const categoryTotals: Record<string, number> = {};
+    const isPerson1 = personName === metrics.person1Name;
 
     expenses.forEach((t) => {
       const category = t.category || "Outros";
       let value = getTransactionMonthValue(t);
       
       if (t.is_couple) {
-        value = value / 2;
+        // Use split calculation for couple expenses
+        const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+        value = isPerson1 ? split.person1 : split.person2;
       }
       
       categoryTotals[category] = (categoryTotals[category] || 0) + value;
@@ -191,10 +196,11 @@ export default function People() {
       .slice(0, 6);
   };
 
-  // Calculate bank breakdown for a person
+  // Calculate bank breakdown for a person using split rules
   const getBankBreakdown = (personName: string) => {
     const expenses = getPersonExpenses(personName);
     const bankTotals: Record<string, number> = {};
+    const isPerson1 = personName === metrics.person1Name;
 
     expenses.forEach((t) => {
       if (!t.bank_id) return;
@@ -203,7 +209,9 @@ export default function People() {
       let value = getTransactionMonthValue(t);
       
       if (t.is_couple) {
-        value = value / 2;
+        // Use split calculation for couple expenses
+        const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+        value = isPerson1 ? split.person1 : split.person2;
       }
       
       bankTotals[bankName] = (bankTotals[bankName] || 0) + value;
@@ -229,10 +237,11 @@ export default function People() {
       .slice(0, 5);
   };
 
-  // Calculate monthly evolution for a person (last 6 months)
+  // Calculate monthly evolution for a person (last 6 months) using split rules
   const getMonthlyEvolution = (personName: string) => {
     const monthsData = [];
     const currentMonthDate = new Date(year, monthIndex, 1);
+    const isPerson1 = personName === metrics.person1Name;
 
     for (let i = 5; i >= 0; i--) {
       const monthDate = subMonths(currentMonthDate, i);
@@ -247,9 +256,14 @@ export default function People() {
         .filter((t) => t.type === "expense" && t.for_who === personName && !t.is_couple && !t.savings_deposit_id)
         .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
+      // Calculate couple expenses using split rules
       const coupleExpenses = monthTransactions
         .filter((t) => t.type === "expense" && t.is_couple === true && !t.savings_deposit_id)
-        .reduce((sum, t) => sum + getTransactionMonthValue(t), 0) / 2;
+        .reduce((sum, t) => {
+          const value = getTransactionMonthValue(t);
+          const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+          return sum + (isPerson1 ? split.person1 : split.person2);
+        }, 0);
 
       const income = monthTransactions
         .filter((t) => t.type === "income" && t.for_who === personName)
@@ -419,7 +433,12 @@ export default function People() {
               {recentTransactions.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3">
                   {recentTransactions.map((t, index) => {
-                    const value = t.is_couple ? getTransactionMonthValue(t) / 2 : getTransactionMonthValue(t);
+                    const baseValue = getTransactionMonthValue(t);
+                    let value = baseValue;
+                    if (t.is_couple) {
+                      const split = calculateSplitForTransaction(baseValue, t.category, t.subcategory);
+                      value = personName === metrics.person1Name ? split.person1 : split.person2;
+                    }
                     return (
                       <div 
                         key={t.id}
