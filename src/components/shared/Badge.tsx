@@ -12,7 +12,7 @@ export function Badge({ variant, children, className }: BadgeProps) {
     income: "bg-success/10 text-success border-success/20",
     expense: "bg-primary/10 text-primary border-primary/20",
     couple: "bg-primary/10 text-primary border-primary/20",
-    meta: "bg-info/10 text-info border-info/20",
+    meta: "bg-primary/10 text-primary border-primary/20",
   };
 
   if (variant === "couple") {

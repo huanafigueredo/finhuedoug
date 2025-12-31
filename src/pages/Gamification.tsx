@@ -160,7 +160,7 @@ export default function Gamification() {
   );
 
   const categoryInfo = {
-    consistency: { label: "Consistência", icon: "🔄", color: "blue" },
+    consistency: { label: "Consistência", icon: "🔄", color: "pink" },
     saving: { label: "Guardar Mais", icon: "💰", color: "green" },
     spending: { label: "Gastar Menos", icon: "📉", color: "pink" },
     revenue: { label: "Gerar Receita", icon: "💵", color: "amber" },
