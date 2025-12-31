@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Heart, ArrowRight, ArrowLeft, Check, Users, Percent } from "lucide-react";
+import { Heart, ArrowRight, ArrowLeft, Check, Users, Percent, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -329,23 +329,47 @@ export default function Onboarding() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="person1">Pessoa 1</Label>
-                  <Input
-                    id="person1"
-                    placeholder="Ex: Maria"
-                    value={person1Name}
-                    onChange={(e) => setPerson1Name(e.target.value)}
-                    className="text-center"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="person1"
+                      placeholder="Ex: Maria"
+                      value={person1Name}
+                      onChange={(e) => setPerson1Name(e.target.value)}
+                      className="text-center pr-8"
+                    />
+                    {person1Name && (
+                      <button
+                        type="button"
+                        onClick={() => setPerson1Name("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        aria-label="Limpar nome"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="person2">Pessoa 2</Label>
-                  <Input
-                    id="person2"
-                    placeholder="Ex: João"
-                    value={person2Name}
-                    onChange={(e) => setPerson2Name(e.target.value)}
-                    className="text-center"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="person2"
+                      placeholder="Ex: João"
+                      value={person2Name}
+                      onChange={(e) => setPerson2Name(e.target.value)}
+                      className="text-center pr-8"
+                    />
+                    {person2Name && (
+                      <button
+                        type="button"
+                        onClick={() => setPerson2Name("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        aria-label="Limpar nome"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
