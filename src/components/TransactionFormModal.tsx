@@ -1174,9 +1174,8 @@ export function TransactionFormModal({
             </div>
           </div>
         )}
-
-            </div>
-          </form>
+      </div>
+    </form>
   );
 
   if (isMobile) {
