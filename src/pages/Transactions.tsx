@@ -334,16 +334,21 @@ export default function Transactions() {
     return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
   }, [transactionsData]);
 
-  // Calculate summary (exclude savings goal deposits from expenses)
+  // Calculate summary (separate savings goal deposits from regular expenses)
   const summary = useMemo(() => {
-    const expenses = filteredTransactions
+    const regularExpenses = filteredTransactions
       .filter(t => t.type === "expense" && !t.savingsDepositId)
+      .reduce((sum, t) => sum + t.totalValue, 0);
+    const savingsDeposits = filteredTransactions
+      .filter(t => t.type === "expense" && !!t.savingsDepositId)
       .reduce((sum, t) => sum + t.totalValue, 0);
     const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
     return {
-      expenses,
+      expenses: regularExpenses,
+      savingsDeposits,
+      totalExpenses: regularExpenses + savingsDeposits,
       income,
-      balance: income - expenses,
+      balance: income - regularExpenses,
       count: filteredTransactions.length
     };
   }, [filteredTransactions]);
@@ -869,10 +874,10 @@ export default function Transactions() {
                       <th className="w-[90px] px-2 py-4 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         P/ Pessoa
                       </th>
-                      <th className="w-[75px] px-2 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[130px] px-2 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Tipo
                       </th>
-                      <th className="w-[50px] px-2 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="w-[48px] px-2 py-4">
                         
                       </th>
                     </tr>
@@ -895,7 +900,7 @@ export default function Transactions() {
                         Total do Mês:
                       </td>
                       <td className="px-2 py-3 text-sm font-bold text-primary text-right">
-                        {formatCurrency(summary.expenses)}
+                        {formatCurrency(summary.totalExpenses + summary.income)}
                       </td>
                       <td colSpan={3}></td>
                     </tr>
@@ -908,6 +913,17 @@ export default function Transactions() {
                       </td>
                       <td colSpan={3}></td>
                     </tr>
+                    {summary.savingsDeposits > 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
+                          🎯 Guardado em Metas:
+                        </td>
+                        <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
+                          {formatCurrency(summary.savingsDeposits)}
+                        </td>
+                        <td colSpan={3}></td>
+                      </tr>
+                    )}
                     <tr>
                       <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                         Receitas:
