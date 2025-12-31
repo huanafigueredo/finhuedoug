@@ -10,6 +10,7 @@ import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useFinancialRankingHistory } from "@/hooks/useFinancialRankingHistory";
 import { useRankingNotifications } from "@/hooks/useRankingNotifications";
+import { useEquippedFrame } from "@/hooks/useEquippedFrame";
 import { XPProgressBar } from "@/components/gamification/XPProgressBar";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { AchievementCard } from "@/components/gamification/AchievementCard";
@@ -62,6 +63,9 @@ export default function Gamification() {
     person2Name,
     isLoading: isLoadingRanking,
   } = useCoupleRanking();
+
+  // Equipped frame for avatars
+  const { equippedFrame } = useEquippedFrame();
 
   // Financial data for ranking
   const { data: transactions = [] } = useTransactions();
@@ -344,6 +348,8 @@ export default function Gamification() {
               person2Balance={financialMetrics.person2Balance}
               person1AvatarUrl={userSettings?.person_1_avatar_url}
               person2AvatarUrl={userSettings?.person_2_avatar_url}
+              person1Frame={equippedFrame}
+              person2Frame={equippedFrame}
             />
 
             {/* XP Ranking Card */}
@@ -356,6 +362,8 @@ export default function Gamification() {
               currentLeader={currentLeader}
               person1AvatarUrl={userSettings?.person_1_avatar_url}
               person2AvatarUrl={userSettings?.person_2_avatar_url}
+              person1Frame={equippedFrame}
+              person2Frame={equippedFrame}
             />
 
             {/* Ranking History Card */}
