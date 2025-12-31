@@ -1,6 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useCategoryBudgets } from "./useCategoryBudgets";
 import { useCategories } from "./useCategories";
+import { useSplitSettings } from "./useSplitSettings";
+import { useCoupleMembers } from "./useCoupleMembers";
+import { useCategorySplits, getCategorySplit } from "./useCategorySplits";
 import { Transaction } from "./useTransactions";
 import { parseISO } from "date-fns";
 
@@ -27,7 +30,7 @@ export interface BudgetSummary {
   hasExceeded: boolean;
 }
 
-function getMonthValueInCents(t: Transaction, personFilter: PersonFilter): number {
+function getBaseMonthValueInCents(t: Transaction): number {
   // Para transações parceladas, usar o valor da parcela
   // Converter de Reais para centavos (valores no banco estão em Reais)
   let value: number;
@@ -36,12 +39,6 @@ function getMonthValueInCents(t: Transaction, personFilter: PersonFilter): numbe
   } else {
     value = Number(t.total_value);
   }
-  
-  // Se filtro é por pessoa individual e é despesa do casal, pegar metade
-  if (personFilter !== "all" && personFilter !== "couple" && t.is_couple) {
-    value = value / 2;
-  }
-  
   return Math.round(value * 100);
 }
 
@@ -55,6 +52,59 @@ export function useBudgetProgress(
 ): BudgetSummary {
   const { data: budgets = [] } = useCategoryBudgets();
   const { data: categories = [] } = useCategories("expense");
+  const { data: splitSettings } = useSplitSettings();
+  const { data: members = [] } = useCoupleMembers();
+  const { data: categorySplits = [] } = useCategorySplits();
+
+  // Calculate split for a given category - memoized callback
+  const calculateSplitForCategory = useCallback(
+    (valueInCents: number, category?: string | null, subcategory?: string | null): { person1: number; person2: number } => {
+      // Check for category-specific rule first
+      const categoryRule = getCategorySplit(categorySplits, category, subcategory);
+      
+      if (categoryRule) {
+        const p1Pct = categoryRule.person1_percentage;
+        const p2Pct = categoryRule.person2_percentage;
+        return {
+          person1: Math.round(valueInCents * (p1Pct / 100)),
+          person2: Math.round(valueInCents * (p2Pct / 100)),
+        };
+      }
+
+      // Fallback to global settings
+      const mode = splitSettings?.mode || "50-50";
+
+      if (mode === "proporcional") {
+        const person1 = members.find((m) => m.position === 1);
+        const person2 = members.find((m) => m.position === 2);
+        const income1 = person1?.monthly_income_cents || 0;
+        const income2 = person2?.monthly_income_cents || 0;
+        const totalIncome = income1 + income2;
+
+        if (totalIncome === 0) {
+          return { person1: valueInCents / 2, person2: valueInCents / 2 };
+        }
+
+        return {
+          person1: Math.round(valueInCents * (income1 / totalIncome)),
+          person2: Math.round(valueInCents * (income2 / totalIncome)),
+        };
+      }
+
+      if (mode === "personalizado" && splitSettings) {
+        const p1Pct = splitSettings.person1_percentage || 50;
+        const p2Pct = splitSettings.person2_percentage || 50;
+        return {
+          person1: Math.round(valueInCents * (p1Pct / 100)),
+          person2: Math.round(valueInCents * (p2Pct / 100)),
+        };
+      }
+
+      // Default 50-50
+      return { person1: valueInCents / 2, person2: valueInCents / 2 };
+    },
+    [categorySplits, splitSettings, members]
+  );
 
   return useMemo(() => {
     // Filtrar transações do mês/ano selecionado e por pessoa
@@ -92,11 +142,20 @@ export function useBudgetProgress(
       }
     });
 
-    // Calcular gastos por categoria (em centavos)
+    // Calcular gastos por categoria (em centavos) using split rules
     const spentByCategory: Record<string, number> = {};
     monthTransactions.forEach((t) => {
       const cat = t.category || "Outros";
-      spentByCategory[cat] = (spentByCategory[cat] || 0) + getMonthValueInCents(t, personFilter);
+      const baseValue = getBaseMonthValueInCents(t);
+      
+      let valueToAdd = baseValue;
+      // Apply split rules for individual filters with couple expenses
+      if (personFilter !== "all" && personFilter !== "couple" && t.is_couple) {
+        const split = calculateSplitForCategory(baseValue, t.category, t.subcategory);
+        valueToAdd = personFilter === "person1" ? split.person1 : split.person2;
+      }
+      
+      spentByCategory[cat] = (spentByCategory[cat] || 0) + valueToAdd;
     });
 
     // Mapear orçamentos com progresso
@@ -145,5 +204,5 @@ export function useBudgetProgress(
       hasWarnings: budgetProgress.some((b) => b.status === "warning"),
       hasExceeded: budgetProgress.some((b) => b.status === "exceeded"),
     };
-  }, [transactions, budgets, categories, monthIndex, year, personFilter, person1Name, person2Name]);
+  }, [transactions, budgets, categories, monthIndex, year, personFilter, person1Name, person2Name, calculateSplitForCategory]);
 }

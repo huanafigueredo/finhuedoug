@@ -187,6 +187,25 @@ serve(async (req) => {
     const person1Name = userSettings?.person_1_name || "Huana";
     const person2Name = userSettings?.person_2_name || "Douglas";
 
+    // Fetch split settings for expense division
+    const { data: splitSettings } = await supabase
+      .from("split_settings")
+      .select("mode, person1_percentage, person2_percentage")
+      .eq("user_id", userId)
+      .single();
+
+    // Fetch category splits for category-specific rules
+    const { data: categorySplits } = await supabase
+      .from("category_splits")
+      .select("category_name, subcategory_name, person1_percentage, person2_percentage")
+      .eq("user_id", userId);
+
+    // Fetch couple members for proportional split calculation
+    const { data: coupleMembers } = await supabase
+      .from("couple_members")
+      .select("position, monthly_income_cents")
+      .eq("user_id", userId);
+
     // Fetch categories and banks for context
     const { data: categories } = await supabase
       .from("categories")
@@ -203,6 +222,76 @@ serve(async (req) => {
     const categoryNames = categories?.map(c => c.name).join(", ") || "";
     const bankNames = banks?.map(b => b.name).join(", ") || "";
     const paymentMethodNames = paymentMethods?.map(p => p.name).join(", ") || "";
+
+    // Helper function to calculate split percentages
+    function getSplitPercentages(category?: string | null, subcategory?: string | null): { p1Pct: number; p2Pct: number } {
+      // 1. Check for subcategory-specific rule
+      if (subcategory && categorySplits) {
+        const subRule = categorySplits.find(r => 
+          r.category_name === category && r.subcategory_name === subcategory
+        );
+        if (subRule) {
+          return { p1Pct: subRule.person1_percentage, p2Pct: subRule.person2_percentage };
+        }
+      }
+
+      // 2. Check for category-specific rule (without subcategory)
+      if (category && categorySplits) {
+        const catRule = categorySplits.find(r => 
+          r.category_name === category && !r.subcategory_name
+        );
+        if (catRule) {
+          return { p1Pct: catRule.person1_percentage, p2Pct: catRule.person2_percentage };
+        }
+      }
+
+      // 3. Use global settings
+      const mode = splitSettings?.mode || "50-50";
+
+      if (mode === "proporcional" && coupleMembers && coupleMembers.length >= 2) {
+        const person1 = coupleMembers.find(m => m.position === 1);
+        const person2 = coupleMembers.find(m => m.position === 2);
+        const income1 = person1?.monthly_income_cents || 0;
+        const income2 = person2?.monthly_income_cents || 0;
+        const totalIncome = income1 + income2;
+
+        if (totalIncome > 0) {
+          return { 
+            p1Pct: Math.round((income1 / totalIncome) * 100), 
+            p2Pct: Math.round((income2 / totalIncome) * 100) 
+          };
+        }
+      }
+
+      if (mode === "personalizado" && splitSettings) {
+        return { 
+          p1Pct: splitSettings.person1_percentage || 50, 
+          p2Pct: splitSettings.person2_percentage || 50 
+        };
+      }
+
+      // Default 50-50
+      return { p1Pct: 50, p2Pct: 50 };
+    }
+
+    // Get transaction value adjusted for person filter
+    function getPersonValue(t: any, personFilter?: string): number {
+      const baseValue = getTransactionValue(t);
+      
+      if (!personFilter || !t.is_couple) {
+        return baseValue;
+      }
+
+      const { p1Pct, p2Pct } = getSplitPercentages(t.category, t.subcategory);
+      
+      if (personFilter === person1Name) {
+        return baseValue * (p1Pct / 100);
+      } else if (personFilter === person2Name) {
+        return baseValue * (p2Pct / 100);
+      }
+      
+      return baseValue;
+    }
 
     const systemPrompt = `Você é um assistente financeiro do app together finanças, usado por ${person1Name} e ${person2Name}.
 Você responde perguntas sobre finanças do casal baseado nos dados do app.
@@ -498,19 +587,22 @@ Se for pergunta de conversa geral:
     let count = txList.length;
     let total = 0;
 
+    // Determine if we're filtering by a specific person
+    const personFilterValue = filters.pessoa && filters.pessoa.length === 1 ? filters.pessoa[0] : undefined;
+
     if (filters.metrica === "soma" || !filters.metrica) {
-      total = txList.reduce((sum, t) => sum + getTransactionValue(t), 0);
+      total = txList.reduce((sum, t) => sum + getPersonValue(t, personFilterValue), 0);
     } else if (filters.metrica === "media") {
-      total = count > 0 ? txList.reduce((sum, t) => sum + getTransactionValue(t), 0) / count : 0;
+      total = count > 0 ? txList.reduce((sum, t) => sum + getPersonValue(t, personFilterValue), 0) / count : 0;
     } else if (filters.metrica === "max") {
-      total = Math.max(...txList.map(t => getTransactionValue(t)), 0);
+      total = Math.max(...txList.map(t => getPersonValue(t, personFilterValue)), 0);
     } else if (filters.metrica === "min") {
-      total = count > 0 ? Math.min(...txList.map(t => getTransactionValue(t))) : 0;
+      total = count > 0 ? Math.min(...txList.map(t => getPersonValue(t, personFilterValue))) : 0;
     } else if (filters.metrica === "contagem") {
       total = count;
     }
 
-    // Group by if needed, using correct values for installments
+    // Group by if needed, using correct values for installments and split rules
     let groupedData: Record<string, number> | null = null;
     if (filters.agrupar_por) {
       groupedData = {};
@@ -523,7 +615,7 @@ Se for pergunta de conversa geral:
         } else {
           key = (t as any)[filters.agrupar_por] || "Sem categoria";
         }
-        groupedData[key] = (groupedData[key] || 0) + getTransactionValue(t);
+        groupedData[key] = (groupedData[key] || 0) + getPersonValue(t, personFilterValue);
       }
     }
 
