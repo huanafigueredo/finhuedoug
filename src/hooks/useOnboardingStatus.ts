@@ -1,16 +1,11 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useCoupleMembers } from "./useCoupleMembers";
-
-const DEFAULT_MEMBER_NAMES = ["Pessoa 1", "Pessoa 2"];
 
 export function useOnboardingStatus() {
   const { user } = useAuth();
-  const { data: members, isLoading: membersLoading } = useCoupleMembers();
   
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile-onboarding", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -24,27 +19,9 @@ export function useOnboardingStatus() {
     enabled: !!user?.id,
   });
 
-  const isLoading = membersLoading || profileLoading;
-
-  const isComplete = useMemo(() => {
-    // User must be authenticated
-    if (!user) return false;
-
-    // If profile has onboarding_completed_at, it's complete
-    if (profile?.onboarding_completed_at) return true;
-
-    // Fallback: check if members have personalized names
-    if (!members || members.length < 2) return false;
-
-    const member1 = members.find(m => m.position === 1);
-    const member2 = members.find(m => m.position === 2);
-
-    const hasPersonalizedNames = 
-      member1 && !DEFAULT_MEMBER_NAMES.includes(member1.name.trim()) &&
-      member2 && !DEFAULT_MEMBER_NAMES.includes(member2.name.trim());
-
-    return hasPersonalizedNames;
-  }, [user, members, profile]);
+  // Onboarding is complete ONLY when onboarding_completed_at is set
+  // This is set at the END of onboarding after all steps are done
+  const isComplete = !!profile?.onboarding_completed_at;
 
   return { isComplete, isLoading };
 }
