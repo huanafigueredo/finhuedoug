@@ -348,6 +348,7 @@ export type Database = {
           id: string
           name: string
           position: number
+          show_on_dashboard: boolean
           updated_at: string
           user_id: string
         }
@@ -357,6 +358,7 @@ export type Database = {
           id?: string
           name: string
           position?: number
+          show_on_dashboard?: boolean
           updated_at?: string
           user_id: string
         }
@@ -366,6 +368,7 @@ export type Database = {
           id?: string
           name?: string
           position?: number
+          show_on_dashboard?: boolean
           updated_at?: string
           user_id?: string
         }

@@ -9,6 +9,7 @@ export interface CoupleMember {
   name: string;
   avatar_url: string | null;
   position: number;
+  show_on_dashboard: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -79,15 +80,18 @@ export function useUpdateCoupleMember() {
     mutationFn: async ({ 
       id, 
       name, 
-      avatar_url 
+      avatar_url,
+      show_on_dashboard
     }: { 
       id: string; 
       name?: string; 
       avatar_url?: string | null;
+      show_on_dashboard?: boolean;
     }) => {
-      const updates: Partial<Pick<CoupleMember, "name" | "avatar_url">> = {};
+      const updates: Partial<Pick<CoupleMember, "name" | "avatar_url" | "show_on_dashboard">> = {};
       if (name !== undefined) updates.name = name;
       if (avatar_url !== undefined) updates.avatar_url = avatar_url;
+      if (show_on_dashboard !== undefined) updates.show_on_dashboard = show_on_dashboard;
 
       const { data, error } = await supabase
         .from("couple_members")
