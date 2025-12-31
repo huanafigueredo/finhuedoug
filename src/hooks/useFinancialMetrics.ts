@@ -118,7 +118,7 @@ export function useFinancialMetrics(
   selectedYear?: number
 ): FinancialMetrics {
   const { person1, person2 } = usePersonNames();
-  const { calculateSplit, currentPercentages, mode } = useSplitCalculation();
+  const { calculateSplitForTransaction, currentPercentages, mode } = useSplitCalculation();
   
   return useMemo(() => {
     // Filter transactions by month/year if provided (including dynamic installments)
@@ -146,14 +146,25 @@ export function useFinancialMetrics(
 
     // Couple expenses (is_couple = true) - to be split according to settings
     // Exclude savings goal deposits
-    const coupleExpenses = filtered
-      .filter((t) => t.type === "expense" && t.is_couple === true && !isSavingsTransfer(t))
-      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
+    const coupleTransactions = filtered.filter(
+      (t) => t.type === "expense" && t.is_couple === true && !isSavingsTransfer(t)
+    );
+
+    const coupleExpenses = coupleTransactions.reduce(
+      (sum, t) => sum + getTransactionMonthValue(t),
+      0
+    );
     
-    // Calculate split based on settings
-    const coupleSplit = calculateSplit(coupleExpenses);
-    const person1CoupleShare = coupleSplit.person1;
-    const person2CoupleShare = coupleSplit.person2;
+    // Calculate split for each couple transaction using category-aware split
+    let person1CoupleShare = 0;
+    let person2CoupleShare = 0;
+
+    for (const t of coupleTransactions) {
+      const value = getTransactionMonthValue(t);
+      const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+      person1CoupleShare += split.person1;
+      person2CoupleShare += split.person2;
+    }
 
     // Individual expenses for Person 1 (excluding couple purchases and savings transfers)
     const person1IndividualExpenses = filtered
@@ -203,5 +214,5 @@ export function useFinancialMetrics(
       person1Percentage: currentPercentages.person1Percentage,
       person2Percentage: currentPercentages.person2Percentage,
     };
-  }, [transactions, selectedMonth, selectedYear, person1, person2, calculateSplit, currentPercentages, mode]);
+  }, [transactions, selectedMonth, selectedYear, person1, person2, calculateSplitForTransaction, currentPercentages, mode]);
 }
