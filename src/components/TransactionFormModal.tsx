@@ -48,6 +48,7 @@ import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useBudgetAlert } from "@/hooks/useBudgetAlert";
 import { useGamificationEvents } from "@/hooks/useGamificationEvents";
+import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 import {
   parseCurrencyToCents,
   centsToReais,
@@ -116,6 +117,7 @@ export function TransactionFormModal({
   const updateTransaction = useUpdateTransaction();
   const { checkBudgetAlert } = useBudgetAlert();
   const { triggerGamificationEvent } = useGamificationEvents();
+  const { calculateSplitForTransaction } = useSplitCalculation();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [description, setDescription] = useState("");
@@ -328,7 +330,11 @@ export function TransactionFormModal({
   // Convert to reais for compatibility with existing code
   const totalValue = centsToReais(totalValueCents);
   const installmentValue = centsToReais(installmentValueCents);
-  const valuePerPerson = isCouple ? totalValue / 2 : totalValue;
+  
+  // Calculate value per person using split settings (proporcional, personalizado, or 50-50)
+  const splitResult = calculateSplitForTransaction(totalValue, category, subcategory);
+  // valuePerPerson represents how much person1 pays (based on split settings)
+  const valuePerPerson = isCouple ? splitResult.person1 : totalValue;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -865,12 +871,17 @@ export function TransactionFormModal({
             {/* Valor por pessoa - Only when isCouple is true */}
             {isCouple && numericValue > 0 && (
               <div className="space-y-1.5 sm:space-y-2">
-                <Label className="text-xs sm:text-sm">Valor por pessoa</Label>
-                <Input
-                  value={formatCurrency(valuePerPerson)}
-                  readOnly
-                  className="text-base sm:text-lg font-semibold bg-muted cursor-not-allowed h-9 sm:h-10"
-                />
+                <Label className="text-xs sm:text-sm">Divisão do valor</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <p className="text-xs text-muted-foreground">{person1} ({splitResult.person1Percentage}%)</p>
+                    <p className="text-sm sm:text-base font-semibold">{formatCurrency(splitResult.person1)}</p>
+                  </div>
+                  <div className="p-2 rounded-lg bg-muted">
+                    <p className="text-xs text-muted-foreground">{person2} ({splitResult.person2Percentage}%)</p>
+                    <p className="text-sm sm:text-base font-semibold">{formatCurrency(splitResult.person2)}</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
