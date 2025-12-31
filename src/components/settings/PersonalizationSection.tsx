@@ -68,9 +68,9 @@ function RewardCard({
       )}
 
       {/* Preview */}
-      <div className="mb-3">
+      <div className="mb-2">
         {isTheme && themeData ? (
-          <div className="w-full h-16 rounded-lg overflow-hidden flex gap-1">
+          <div className="w-full h-10 rounded-lg overflow-hidden flex gap-1">
             <div
               className="flex-1 rounded-l-lg transition-colors duration-300"
               style={{ backgroundColor: `hsl(${themeData.colors.light.primary})` }}
@@ -87,9 +87,9 @@ function RewardCard({
         ) : (
           <div className="flex justify-center">
             <AvatarWithFrame
-              name="Exemplo"
+              name="E"
               frame={reward.code as FrameType}
-              size="lg"
+              size="md"
               gradientFrom="from-primary"
               gradientTo="to-primary/70"
             />
