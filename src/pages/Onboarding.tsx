@@ -10,20 +10,22 @@ import { Progress } from "@/components/ui/progress";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Slider } from "@/components/ui/slider";
 import { useAddCoupleMember, useCoupleMembers, useUpdateCoupleMember } from "@/hooks/useCoupleMembers";
-import { useSaveSplitSettings, SplitMode } from "@/hooks/useSplitSettings";
+import { SplitMode } from "@/hooks/useSplitSettings";
 import { useRecipients, useAddRecipient } from "@/hooks/useRecipients";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { TogetherLogo } from "@/components/shared/TogetherLogo";
 
 export default function Onboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data: existingMembers = [] } = useCoupleMembers();
   const { data: existingRecipients = [] } = useRecipients();
   const addMember = useAddCoupleMember();
   const updateMember = useUpdateCoupleMember();
   const addRecipient = useAddRecipient();
-  const saveSplitSettings = useSaveSplitSettings();
 
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -119,6 +121,15 @@ export default function Onboarding() {
   };
 
   const handleFinish = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       let p1Pct = 50;
@@ -127,62 +138,76 @@ export default function Onboarding() {
       if (splitMode === "proporcional") {
         p1Pct = proportionalPerson1;
         p2Pct = proportionalPerson2;
-
-        // Also update member incomes
-        const member1 = existingMembers.find(m => m.position === 1);
-        const member2 = existingMembers.find(m => m.position === 2);
-        
-        if (member1) {
-          await updateMember.mutateAsync({ 
-            id: member1.id, 
-            name: member1.name,
-          });
-        }
-        if (member2) {
-          await updateMember.mutateAsync({ 
-            id: member2.id, 
-            name: member2.name,
-          });
-        }
       } else if (splitMode === "personalizado") {
         p1Pct = person1Percentage;
         p2Pct = person2Percentage;
       }
 
-      await saveSplitSettings.mutateAsync({
-        mode: splitMode,
-        person1_percentage: p1Pct,
-        person2_percentage: p2Pct,
-      });
+      // Check if split settings already exist
+      const { data: existingSettings } = await supabase
+        .from("split_settings")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingSettings) {
+        // Update existing
+        const { error: splitError } = await supabase
+          .from("split_settings")
+          .update({
+            mode: splitMode,
+            person1_percentage: p1Pct,
+            person2_percentage: p2Pct,
+          })
+          .eq("id", existingSettings.id);
+
+        if (splitError) throw splitError;
+      } else {
+        // Insert new
+        const { error: splitError } = await supabase
+          .from("split_settings")
+          .insert({
+            user_id: user.id,
+            mode: splitMode,
+            person1_percentage: p1Pct,
+            person2_percentage: p2Pct,
+          });
+
+        if (splitError) throw splitError;
+      }
 
       // Update member incomes if in proportional mode
       if (splitMode === "proporcional") {
-        const { data: members } = await import("@/integrations/supabase/client").then(m => 
-          m.supabase.from("couple_members").select("*").order("position")
-        );
+        const { data: members } = await supabase
+          .from("couple_members")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("position");
         
         if (members && members.length >= 2) {
-          const { supabase } = await import("@/integrations/supabase/client");
-          await supabase
+          const { error: income1Error } = await supabase
             .from("couple_members")
             .update({ monthly_income_cents: person1Income })
             .eq("id", members[0].id);
-          await supabase
+          
+          if (income1Error) throw income1Error;
+
+          const { error: income2Error } = await supabase
             .from("couple_members")
             .update({ monthly_income_cents: person2Income })
             .eq("id", members[1].id);
+          
+          if (income2Error) throw income2Error;
         }
       }
 
       // Mark onboarding as completed in profile
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("profiles")
-          .update({ onboarding_completed_at: new Date().toISOString() })
-          .eq("id", user.id);
-      }
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ onboarding_completed_at: new Date().toISOString() })
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Configuração concluída! 🎉",
@@ -191,6 +216,7 @@ export default function Onboarding() {
 
       navigate("/dashboard");
     } catch (error) {
+      console.error("Onboarding error:", error);
       toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar as configurações. Tente novamente.",
