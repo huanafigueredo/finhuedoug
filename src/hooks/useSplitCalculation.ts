@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useSplitSettings, SplitMode } from "./useSplitSettings";
 import { useCoupleMembers } from "./useCoupleMembers";
+import { useCategorySplits, getCategorySplit } from "./useCategorySplits";
 
 export interface SplitResult {
   person1: number;
@@ -13,9 +14,11 @@ export interface SplitResult {
 export function useSplitCalculation() {
   const { data: settings, isLoading: settingsLoading } = useSplitSettings();
   const { data: members = [], isLoading: membersLoading } = useCoupleMembers();
+  const { data: categorySplits = [], isLoading: categorySplitsLoading } = useCategorySplits();
 
-  const isLoading = settingsLoading || membersLoading;
+  const isLoading = settingsLoading || membersLoading || categorySplitsLoading;
 
+  // Calculate global split (without category context)
   const calculateSplit = useCallback(
     (totalAmount: number): SplitResult => {
       const mode: SplitMode = settings?.mode || "50-50";
@@ -78,14 +81,45 @@ export function useSplitCalculation() {
     [settings, members]
   );
 
+  // Calculate split with category context (uses category rules if available)
+  const calculateSplitForTransaction = useCallback(
+    (
+      totalAmount: number,
+      category?: string | null,
+      subcategory?: string | null
+    ): SplitResult => {
+      // Check for category-specific rule
+      const categoryRule = getCategorySplit(categorySplits, category, subcategory);
+
+      if (categoryRule) {
+        const p1Pct = categoryRule.person1_percentage;
+        const p2Pct = categoryRule.person2_percentage;
+
+        return {
+          person1: totalAmount * (p1Pct / 100),
+          person2: totalAmount * (p2Pct / 100),
+          person1Percentage: p1Pct,
+          person2Percentage: p2Pct,
+          mode: "personalizado", // Category rules are treated as custom
+        };
+      }
+
+      // Fallback to global split
+      return calculateSplit(totalAmount);
+    },
+    [categorySplits, calculateSplit]
+  );
+
   const currentPercentages = useMemo(() => {
     return calculateSplit(100);
   }, [calculateSplit]);
 
   return {
     calculateSplit,
+    calculateSplitForTransaction,
     settings,
     members,
+    categorySplits,
     isLoading,
     currentPercentages,
     mode: settings?.mode || "50-50",

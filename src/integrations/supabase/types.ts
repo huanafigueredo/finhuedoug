@@ -195,6 +195,39 @@ export type Database = {
           },
         ]
       }
+      category_splits: {
+        Row: {
+          category_name: string
+          created_at: string | null
+          id: string
+          person1_percentage: number
+          person2_percentage: number
+          subcategory_name: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_name: string
+          created_at?: string | null
+          id?: string
+          person1_percentage?: number
+          person2_percentage?: number
+          subcategory_name?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_name?: string
+          created_at?: string | null
+          id?: string
+          person1_percentage?: number
+          person2_percentage?: number
+          subcategory_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           code: string

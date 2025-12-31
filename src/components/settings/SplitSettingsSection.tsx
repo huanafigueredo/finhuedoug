@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { useSplitSettings, useSaveSplitSettings, SplitMode } from "@/hooks/useSplitSettings";
 import { useCoupleMembers, useUpdateCoupleMember } from "@/hooks/useCoupleMembers";
 import { useToast } from "@/hooks/use-toast";
+import { CategorySplitsSection } from "./CategorySplitsSection";
 
 export function SplitSettingsSection() {
   const { toast } = useToast();
@@ -256,8 +258,13 @@ export function SplitSettingsSection() {
 
       {/* Description */}
       <p className="text-xs text-muted-foreground text-center">
-        Esta configuração define como as despesas do casal são divididas nos relatórios e métricas.
+        Esta configuração é a divisão padrão. Você pode criar regras por categoria abaixo.
       </p>
+
+      <Separator className="my-6" />
+
+      {/* Category-specific rules */}
+      <CategorySplitsSection />
     </div>
   );
 }
