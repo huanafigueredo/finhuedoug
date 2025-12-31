@@ -292,7 +292,7 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 animate-fade-in">
           <div className="flex justify-center mb-4">
             <TogetherLogo size="lg" />
           </div>
@@ -315,7 +315,7 @@ export default function Onboarding() {
 
         {/* Step 1: Profiles */}
         {step === 1 && (
-          <Card className="shadow-card">
+          <Card className="shadow-card animate-fade-in" key="step-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-primary" />
@@ -368,7 +368,7 @@ export default function Onboarding() {
 
         {/* Step 2: Split Settings */}
         {step === 2 && (
-          <Card className="shadow-card">
+          <Card className="shadow-card animate-fade-in" key="step-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Percent className="w-5 h-5 text-primary" />
@@ -410,7 +410,7 @@ export default function Onboarding() {
 
               {/* Proporcional: Income inputs */}
               {splitMode === "proporcional" && (
-                <div className="space-y-4 p-4 bg-muted/50 rounded-xl">
+                <div className="space-y-4 p-4 bg-muted/50 rounded-xl animate-fade-in">
                   <p className="text-sm text-muted-foreground text-center">
                     Informe a renda mensal de cada pessoa
                   </p>
@@ -439,7 +439,7 @@ export default function Onboarding() {
 
               {/* Personalizado: Percentage slider */}
               {splitMode === "personalizado" && (
-                <div className="space-y-4 p-4 bg-muted/50 rounded-xl">
+                <div className="space-y-4 p-4 bg-muted/50 rounded-xl animate-fade-in">
                   <p className="text-sm text-muted-foreground text-center">
                     Defina os percentuais de cada pessoa
                   </p>
