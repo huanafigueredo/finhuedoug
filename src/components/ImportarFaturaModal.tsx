@@ -50,7 +50,7 @@ interface ImportarFaturaModalProps {
 
 export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [paidBy, setPaidBy] = useState<string>("person1");
   const [isCouple, setIsCouple] = useState(true);
   const [bankId, setBankId] = useState<string>("");
@@ -61,6 +61,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
     faturaData, 
     error, 
     analisarFatura, 
+    analisarMultiplasImagens,
     importarTransacoes, 
     resetFatura,
     toggleTransacao,
@@ -74,17 +75,49 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
   const { data: categories = [] } = useCategories();
   const { person1, person2 } = usePersonNames();
 
+  const isImageFile = (file: File) => {
+    return file.type === 'image/jpeg' || file.type === 'image/png';
+  };
+
+  const isPdfFile = (file: File) => {
+    return file.type === 'application/pdf';
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const fileArray = Array.from(files);
+    const firstFile = fileArray[0];
+    
+    // If first file is PDF, only accept that one file
+    if (isPdfFile(firstFile)) {
+      setSelectedFiles([firstFile]);
+      resetFatura();
+      return;
+    }
+    
+    // For images, accept up to 10
+    const imageFiles = fileArray.filter(isImageFile).slice(0, 10);
+    if (imageFiles.length > 0) {
+      setSelectedFiles(imageFiles);
       resetFatura();
     }
   };
 
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleAnalyze = async () => {
-    if (selectedFile) {
-      await analisarFatura(selectedFile);
+    if (selectedFiles.length === 0) return;
+    
+    // If PDF or single image, use single file analysis
+    if (selectedFiles.length === 1) {
+      await analisarFatura(selectedFiles[0]);
+    } else {
+      // Multiple images
+      await analisarMultiplasImagens(selectedFiles);
     }
   };
 
@@ -98,7 +131,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
       });
       if (count > 0) {
         onOpenChange(false);
-        setSelectedFile(null);
+        setSelectedFiles([]);
         resetFatura();
       }
     }
@@ -106,7 +139,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
   const handleClose = () => {
     onOpenChange(false);
-    setSelectedFile(null);
+    setSelectedFiles([]);
     resetFatura();
   };
 
@@ -114,6 +147,9 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
   const totalValue = faturaData?.transacoes
     .filter(t => t.selected)
     .reduce((sum, t) => sum + t.valor, 0) || 0;
+  
+  const hasImages = selectedFiles.length > 0 && selectedFiles.every(isImageFile);
+  const canAddMore = hasImages && selectedFiles.length < 10;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -132,44 +168,61 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
-                  "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
+                  "border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors",
                   "hover:border-primary hover:bg-primary/5",
-                  selectedFile ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+                  selectedFiles.length > 0 ? "border-primary bg-primary/5" : "border-muted-foreground/25"
                 )}
               >
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept=".jpg,.jpeg,.png,.pdf"
+                  multiple
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                {selectedFile ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
+                {selectedFiles.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {selectedFiles.map((file, index) => (
+                        <div 
+                          key={index}
+                          className="flex items-center gap-2 bg-background border rounded-lg px-3 py-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                          <div className="text-left min-w-0">
+                            <p className="font-medium text-sm truncate max-w-[150px]">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedFile(null);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    {canAddMore && (
+                      <p className="text-xs text-muted-foreground">
+                        Clique para adicionar mais imagens ({selectedFiles.length}/10)
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <>
                     <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                     <p className="font-medium">Clique para selecionar ou arraste o arquivo</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Formatos aceitos: JPEG, PNG, PDF (máx. 10MB)
+                      JPEG, PNG (até 10 imagens) ou PDF (máx. 10MB)
                     </p>
                   </>
                 )}
@@ -184,13 +237,13 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
               <Button
                 onClick={handleAnalyze}
-                disabled={!selectedFile || isAnalyzing}
+                disabled={selectedFiles.length === 0 || isAnalyzing}
                 className="w-full"
               >
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analisando com IA...
+                    Analisando {selectedFiles.length > 1 ? `${selectedFiles.length} imagens` : ''} com IA...
                   </>
                 ) : (
                   <>
