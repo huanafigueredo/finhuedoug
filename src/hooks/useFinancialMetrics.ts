@@ -55,6 +55,10 @@ interface Transaction {
   total_installments?: number | null;
   is_generated_installment?: boolean | null;
   savings_deposit_id?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  custom_person1_percentage?: number | null;
+  custom_person2_percentage?: number | null;
   [key: string]: any;
 }
 
@@ -161,7 +165,13 @@ export function useFinancialMetrics(
 
     for (const t of coupleTransactions) {
       const value = getTransactionMonthValue(t);
-      const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+      const split = calculateSplitForTransaction(
+        value, 
+        t.category, 
+        t.subcategory,
+        t.custom_person1_percentage,
+        t.custom_person2_percentage
+      );
       person1CoupleShare += split.person1;
       person2CoupleShare += split.person2;
     }
