@@ -27,6 +27,9 @@ export interface TransactionInsert {
   is_generated_installment?: boolean;
   start_from_installment?: number; // New field for already started purchases
   modo_valor_informado?: "total" | "installment"; // New field for value input mode
+  // Custom split fields
+  custom_person1_percentage?: number;
+  custom_person2_percentage?: number;
   // Recurring fields
   is_recurring?: boolean;
   recurring_day?: number;

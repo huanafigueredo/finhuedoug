@@ -11,6 +11,7 @@ export interface TransacaoExtraida {
   parcela_atual?: number;
   parcela_total?: number;
   selected?: boolean;
+  for_who?: "couple" | "person1" | "person2";
 }
 
 export interface FaturaExtraida {
@@ -49,8 +50,8 @@ export function useImportarFatura() {
 
       const data = response.data as FaturaExtraida;
       
-      // Mark all transactions as selected by default
-      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true }));
+      // Mark all transactions as selected by default with for_who = couple
+      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true, for_who: "couple" as const }));
       
       setFaturaData(data);
       return data;
@@ -95,8 +96,8 @@ export function useImportarFatura() {
 
       const data = response.data as FaturaExtraida;
       
-      // Mark all transactions as selected by default
-      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true }));
+      // Mark all transactions as selected by default with for_who = couple
+      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true, for_who: "couple" as const }));
       
       setFaturaData(data);
       return data;
@@ -130,6 +131,8 @@ export function useImportarFatura() {
       isCouple: boolean;
       bankId?: string;
       paymentMethodId?: string;
+      person1Name: string;
+      person2Name: string;
     }
   ): Promise<number> => {
     const transacoesParaImportar = transacoes.filter(t => t.selected);
@@ -141,12 +144,34 @@ export function useImportarFatura() {
         const [day, month, year] = transacao.data.split('/');
         const dateISO = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
+        // Determine split based on for_who
+        const forWho = transacao.for_who || "couple";
+        let is_couple = opcoes.isCouple;
+        let custom_person1_percentage: number | undefined;
+        let custom_person2_percentage: number | undefined;
+        let for_who_value: string | undefined;
+
+        if (forWho === "person1") {
+          is_couple = false;
+          custom_person1_percentage = 100;
+          custom_person2_percentage = 0;
+          for_who_value = opcoes.person1Name;
+        } else if (forWho === "person2") {
+          is_couple = false;
+          custom_person1_percentage = 0;
+          custom_person2_percentage = 100;
+          for_who_value = opcoes.person2Name;
+        } else {
+          // couple - use global isCouple setting
+          is_couple = opcoes.isCouple;
+        }
+
         const transactionData: TransactionInsert = {
           date: dateISO,
           description: transacao.descricao,
           type: "expense",
           total_value: transacao.valor, // Value already in REAIS from extraction
-          is_couple: opcoes.isCouple,
+          is_couple,
           paid_by: opcoes.paidBy,
           bank_id: opcoes.bankId,
           payment_method_id: opcoes.paymentMethodId,
@@ -157,6 +182,9 @@ export function useImportarFatura() {
           installment_value: transacao.parcela_atual && transacao.parcela_total 
             ? transacao.valor 
             : undefined,
+          custom_person1_percentage,
+          custom_person2_percentage,
+          for_who: for_who_value,
         };
 
         await createTransaction.mutateAsync(transactionData);

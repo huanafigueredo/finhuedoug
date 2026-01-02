@@ -181,6 +181,8 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
         isCouple,
         bankId: bankId || undefined,
         paymentMethodId: paymentMethodId || undefined,
+        person1Name: person1,
+        person2Name: person2,
       });
       if (count > 0) {
         // Get the first selected transaction's date to update filters
@@ -450,6 +452,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                             <TableHead className="w-24 whitespace-nowrap sticky top-0 bg-background">Data</TableHead>
                             <TableHead className="min-w-[140px] sticky top-0 bg-background">Descrição</TableHead>
                             <TableHead className="w-28 whitespace-nowrap sticky top-0 bg-background">Categoria</TableHead>
+                            <TableHead className="w-24 whitespace-nowrap sticky top-0 bg-background">Para quem</TableHead>
                             <TableHead className="w-20 text-right whitespace-nowrap sticky top-0 bg-background">Valor</TableHead>
                             <TableHead className="w-20 whitespace-nowrap sticky top-0 bg-background">Parcela</TableHead>
                           </TableRow>
@@ -490,6 +493,21 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                                         {cat.name}
                                       </SelectItem>
                                     ))}
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={transacao.for_who || "couple"}
+                                  onValueChange={(value) => updateTransacao(index, { for_who: value as "couple" | "person1" | "person2" })}
+                                >
+                                  <SelectTrigger className="h-7 text-xs min-w-[85px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="couple">Casal</SelectItem>
+                                    <SelectItem value="person1">{person1}</SelectItem>
+                                    <SelectItem value="person2">{person2}</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </TableCell>
