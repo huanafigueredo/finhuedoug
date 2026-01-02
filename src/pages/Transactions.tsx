@@ -5,6 +5,7 @@ import { TransactionCard } from "@/components/shared/TransactionCard";
 import { TransactionFormModal } from "@/components/TransactionFormModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionDetailsDialog, TransactionDetails } from "@/components/TransactionDetailsDialog";
+import { ImportarFaturaModal } from "@/components/ImportarFaturaModal";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X, CreditCard } from "lucide-react";
 import { exportTransactionsToPdf } from "@/lib/exportPdf";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +135,7 @@ export default function Transactions() {
   const [duplicateTransactionId, setDuplicateTransactionId] = useState<string | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<TransactionDetails | null>(null);
+  const [importarFaturaOpen, setImportarFaturaOpen] = useState(false);
 
   const banks = ["Todos", ...banksData.map((b) => b.name)];
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
@@ -567,6 +569,15 @@ export default function Transactions() {
                 >
                   <FileDown className="w-4 h-4" />
                   Exportar PDF
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setImportarFaturaOpen(true)}
+                  className="gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Importar Fatura
                 </Button>
                 <Button 
                   size="sm" 
@@ -1131,6 +1142,12 @@ export default function Transactions() {
         onOpenChange={setDetailsDialogOpen}
         transaction={selectedTransactionDetails}
         onEdit={handleEditFromDetails}
+      />
+
+      {/* Importar Fatura Modal */}
+      <ImportarFaturaModal
+        open={importarFaturaOpen}
+        onOpenChange={setImportarFaturaOpen}
       />
     </AppLayout>
   );
