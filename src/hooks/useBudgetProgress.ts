@@ -58,8 +58,23 @@ export function useBudgetProgress(
 
   // Calculate split for a given category - memoized callback
   const calculateSplitForCategory = useCallback(
-    (valueInCents: number, category?: string | null, subcategory?: string | null): { person1: number; person2: number } => {
-      // Check for category-specific rule first
+    (
+      valueInCents: number, 
+      category?: string | null, 
+      subcategory?: string | null,
+      customP1?: number | null,
+      customP2?: number | null
+    ): { person1: number; person2: number } => {
+      // Priority 1: Check for transaction-level custom split first
+      if (customP1 !== undefined && customP1 !== null &&
+          customP2 !== undefined && customP2 !== null) {
+        return {
+          person1: Math.round(valueInCents * (customP1 / 100)),
+          person2: Math.round(valueInCents * (customP2 / 100)),
+        };
+      }
+
+      // Priority 2: Check for category-specific rule
       const categoryRule = getCategorySplit(categorySplits, category, subcategory);
       
       if (categoryRule) {
@@ -71,7 +86,7 @@ export function useBudgetProgress(
         };
       }
 
-      // Fallback to global settings
+      // Priority 3: Fallback to global settings
       const mode = splitSettings?.mode || "50-50";
 
       if (mode === "proporcional") {
@@ -151,7 +166,13 @@ export function useBudgetProgress(
       let valueToAdd = baseValue;
       // Apply split rules for individual filters with couple expenses
       if (personFilter !== "all" && personFilter !== "couple" && t.is_couple) {
-        const split = calculateSplitForCategory(baseValue, t.category, t.subcategory);
+        const split = calculateSplitForCategory(
+          baseValue, 
+          t.category, 
+          t.subcategory,
+          t.custom_person1_percentage,
+          t.custom_person2_percentage
+        );
         valueToAdd = personFilter === "person1" ? split.person1 : split.person2;
       }
       
