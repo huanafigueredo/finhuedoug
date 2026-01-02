@@ -183,46 +183,54 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
 
   const handleImport = async () => {
-    if (faturaData) {
-      // Capture data before any state changes
-      const firstSelected = faturaData.transacoes.find(t => t.selected);
-      let targetMonth: number;
-      let targetYear: string;
+    if (!faturaData) return;
+    
+    // Check if any transaction is selected
+    const hasSelected = faturaData.transacoes.some(t => t.selected);
+    if (!hasSelected) {
+      return; // Hook will show toast
+    }
+    
+    // Capture data before any state changes
+    const firstSelected = faturaData.transacoes.find(t => t.selected);
+    let targetMonth: number;
+    let targetYear: string;
+    
+    if (firstSelected) {
+      const [, month, year] = firstSelected.data.split('/');
+      targetMonth = parseInt(month, 10);
+      targetYear = year;
+    } else {
+      const now = new Date();
+      targetMonth = now.getMonth() + 1;
+      targetYear = now.getFullYear().toString();
+    }
+    
+    const count = await importarTransacoes(faturaData.transacoes, {
+      paidBy,
+      isCouple,
+      bankId: bankId || undefined,
+      paymentMethodId: paymentMethodId || undefined,
+      person1Name: person1,
+      person2Name: person2,
+    });
+    
+    if (count > 0) {
+      // Build URL first
+      const targetUrl = `/lancamentos?month=${targetMonth}&year=${targetYear}`;
       
-      if (firstSelected) {
-        const [, month, year] = firstSelected.data.split('/');
-        targetMonth = parseInt(month, 10);
-        targetYear = year;
-      } else {
-        const now = new Date();
-        targetMonth = now.getMonth() + 1;
-        targetYear = now.getFullYear().toString();
-      }
+      // Reset internal state
+      setSelectedFiles([]);
       
-      const count = await importarTransacoes(faturaData.transacoes, {
-        paidBy,
-        isCouple,
-        bankId: bankId || undefined,
-        paymentMethodId: paymentMethodId || undefined,
-        person1Name: person1,
-        person2Name: person2,
-      });
+      // Close modal first
+      onOpenChange(false);
       
-      if (count > 0) {
-        // Reset state
-        setSelectedFiles([]);
+      // Wait for drawer/dialog animation to complete before navigating
+      setTimeout(() => {
         resetFatura();
-        
-        // Build URL
-        const targetUrl = `/lancamentos?month=${targetMonth}&year=${targetYear}`;
-        
-        // Close modal - use callback to navigate after close
-        onOpenChange(false);
-        
-        // Navigate immediately using window.location for guaranteed navigation
-        // This bypasses any React Router issues with Drawer/Dialog state
+        // Navigate using window.location for guaranteed navigation
         window.location.href = targetUrl;
-      }
+      }, 400);
     }
   };
 
