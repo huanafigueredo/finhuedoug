@@ -34,12 +34,7 @@ export function useImportarFatura() {
 
     try {
       // Convert file to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      const base64 = await fileToBase64(file);
 
       const response = await supabase.functions.invoke('extrair-fatura-cartao', {
         body: {
@@ -71,6 +66,61 @@ export function useImportarFatura() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const analisarMultiplasImagens = async (files: File[]): Promise<FaturaExtraida | null> => {
+    setIsAnalyzing(true);
+    setError(null);
+    setFaturaData(null);
+
+    try {
+      // Convert all files to base64
+      const imagesBase64 = await Promise.all(
+        files.map(async (file) => ({
+          base64: await fileToBase64(file),
+          type: file.type,
+        }))
+      );
+
+      const response = await supabase.functions.invoke('extrair-fatura-cartao', {
+        body: {
+          images: imagesBase64,
+          isMultipleImages: true,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Erro ao analisar imagens');
+      }
+
+      const data = response.data as FaturaExtraida;
+      
+      // Mark all transactions as selected by default
+      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true }));
+      
+      setFaturaData(data);
+      return data;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao analisar imagens';
+      setError(message);
+      toast({
+        title: "Erro na análise",
+        description: message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const importarTransacoes = async (
@@ -172,6 +222,7 @@ export function useImportarFatura() {
     faturaData,
     error,
     analisarFatura,
+    analisarMultiplasImagens,
     importarTransacoes,
     resetFatura,
     toggleTransacao,

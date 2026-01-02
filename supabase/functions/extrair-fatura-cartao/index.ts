@@ -42,9 +42,11 @@ serve(async (req) => {
   }
 
   try {
-    const { fileBase64, fileType } = await req.json();
+    const body = await req.json();
+    const { fileBase64, fileType, images, isMultipleImages } = body;
 
-    if (!fileBase64) {
+    // Validate input
+    if (!fileBase64 && (!images || images.length === 0)) {
       return new Response(
         JSON.stringify({ error: 'É necessário fornecer um arquivo (JPEG, PNG ou PDF)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -61,11 +63,11 @@ serve(async (req) => {
     }
 
     console.log('Iniciando extração de fatura de cartão...');
-    console.log('Tipo de arquivo:', fileType);
+    console.log('Múltiplas imagens:', isMultipleImages ? `${images.length} imagens` : 'Não');
 
     const systemPrompt = `Você é um assistente especializado em extrair transações de faturas de cartão de crédito brasileiras.
 
-Sua tarefa é analisar a imagem/PDF da fatura e extrair:
+Sua tarefa é analisar a(s) imagem(ns)/PDF da fatura e extrair:
 1. Nome do banco/cartão (ex: Nubank, Itaú, Bradesco, Inter, C6, etc.)
 2. Período da fatura (ex: "15/11/2024 a 15/12/2024")
 3. Valor total da fatura
@@ -77,25 +79,43 @@ Sua tarefa é analisar a imagem/PDF da fatura e extrair:
    - Se for parcelada, extrair parcela atual e total (ex: "AMAZON 3/10" = parcela_atual: 3, parcela_total: 10)
 
 IMPORTANTE:
+- Se houver múltiplas imagens, elas são partes da MESMA fatura - combine todas as transações
 - Identifique padrões de parcelas (ex: "LOJA X 2/5", "COMPRA Y PARC 3/12")
 - Normalize descrições (remover códigos internos, manter nome legível)
 - Valores devem ser números positivos (sem R$)
 - Datas no formato dd/mm/yyyy
 - Ignore taxas, juros, IOF - foque nas compras/transações
-- Se não conseguir ler algo, pule o item`;
+- Se não conseguir ler algo, pule o item
+- EVITE transações duplicadas - cada transação deve aparecer apenas uma vez`;
 
+    // Build user content with images
     const userContent: any[] = [
       {
         type: "text",
-        text: "Analise esta fatura de cartão de crédito e extraia todas as transações, informações do cartão/banco, período e valor total."
-      },
-      {
+        text: isMultipleImages 
+          ? `Analise estas ${images.length} imagens que fazem parte da mesma fatura de cartão de crédito. Extraia TODAS as transações de TODAS as imagens, combinando-as em uma única lista. Identifique o banco/cartão, período e valor total.`
+          : "Analise esta fatura de cartão de crédito e extraia todas as transações, informações do cartão/banco, período e valor total."
+      }
+    ];
+
+    // Add images to content
+    if (isMultipleImages && images && images.length > 0) {
+      for (const img of images) {
+        userContent.push({
+          type: "image_url",
+          image_url: {
+            url: img.base64.startsWith('data:') ? img.base64 : `data:${img.type || 'image/jpeg'};base64,${img.base64}`
+          }
+        });
+      }
+    } else {
+      userContent.push({
         type: "image_url",
         image_url: {
           url: fileBase64.startsWith('data:') ? fileBase64 : `data:${fileType || 'image/jpeg'};base64,${fileBase64}`
         }
-      }
-    ];
+      });
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
