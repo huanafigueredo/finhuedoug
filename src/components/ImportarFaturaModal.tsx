@@ -40,7 +40,8 @@ import {
   FileText, 
   X,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 import { useImportarFatura, TransacaoExtraida } from "@/hooks/useImportarFatura";
 import { useBanks } from "@/hooks/useBanks";
@@ -66,6 +67,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
   const [isCouple, setIsCouple] = useState(true);
   const [bankId, setBankId] = useState<string>("");
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
+  const [fallbackYear, setFallbackYear] = useState<string>(new Date().getFullYear().toString());
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -213,6 +215,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
       paymentMethodId: paymentMethodId || undefined,
       person1Name: person1,
       person2Name: person2,
+      fallbackYear: faturaData.hasInvalidYears ? fallbackYear : undefined,
     });
     
     if (count > 0) {
@@ -462,6 +465,33 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                   {faturaData.transacoes.length} transações
                 </Badge>
               </div>
+
+              {/* Year Selection Alert - shown when invalid years detected */}
+              {faturaData.hasInvalidYears && (
+                <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <div>
+                      <p className="text-sm font-medium text-amber-600">Ano não detectado</p>
+                      <p className="text-xs text-muted-foreground">
+                        O ano de algumas transações não foi identificado. Selecione o ano correto:
+                      </p>
+                    </div>
+                    <Select value={fallbackYear} onValueChange={setFallbackYear}>
+                      <SelectTrigger className="h-8 w-32 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
 
               {/* Options */}
               <div className="grid grid-cols-2 gap-2">
