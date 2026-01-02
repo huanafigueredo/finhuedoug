@@ -15,15 +15,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X, CreditCard } from "lucide-react";
+import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X, CreditCard, Trash2 } from "lucide-react";
 import { exportTransactionsToPdf } from "@/lib/exportPdf";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 
-import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
+import { useTransactions, useDeleteTransaction, useDeleteMultipleTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
@@ -93,6 +94,7 @@ export default function Transactions() {
   const { data: categoriesData = [] } = useCategories();
   const { person1, person2, members } = usePersonNames();
   const deleteTransaction = useDeleteTransaction();
+  const deleteMultipleTransactions = useDeleteMultipleTransactions();
   const { calculateSplitForTransaction } = useSplitCalculation();
 
   // Helper to translate person identifiers to names
@@ -136,6 +138,10 @@ export default function Transactions() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<TransactionDetails | null>(null);
   const [importarFaturaOpen, setImportarFaturaOpen] = useState(false);
+  
+  // Multi-select state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const banks = ["Todos", ...banksData.map((b) => b.name)];
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
@@ -542,6 +548,46 @@ export default function Transactions() {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   };
 
+  // Multi-select handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredTransactions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredTransactions.map(t => t.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    
+    try {
+      await deleteMultipleTransactions.mutateAsync(Array.from(selectedIds));
+      toast({
+        title: "Lançamentos excluídos",
+        description: `${selectedIds.size} lançamentos foram excluídos com sucesso.`,
+      });
+      setSelectedIds(new Set());
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir os lançamentos.",
+        variant: "destructive",
+      });
+    } finally {
+      setBulkDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="min-h-screen pb-32 md:pb-8">
@@ -573,6 +619,17 @@ export default function Transactions() {
 
               {/* Desktop buttons */}
               <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                {selectedIds.size > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                    className="gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Excluir ({selectedIds.size})
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -927,6 +984,13 @@ export default function Transactions() {
                 <table className="w-full table-fixed">
                   <thead className="bg-secondary/50">
                     <tr>
+                      <th className="w-[40px] px-2 py-4">
+                        <Checkbox
+                          checked={filteredTransactions.length > 0 && selectedIds.size === filteredTransactions.length}
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Selecionar todos"
+                        />
+                      </th>
                       <th className="w-[85px] px-3 py-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Data
                       </th>
@@ -964,18 +1028,32 @@ export default function Transactions() {
                   </thead>
                   <tbody>
                     {filteredTransactions.map((transaction) => (
-                      <TransactionRow
+                      <tr 
                         key={transaction.id}
-                        transaction={transaction}
-                        onEdit={handleEditClick}
-                        onDelete={handleDeleteClick}
-                        onDuplicate={handleDuplicateClick}
-                        onClick={handleRowClick}
-                      />
+                        className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => handleRowClick(transaction.id)}
+                      >
+                        <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(transaction.id)}
+                            onCheckedChange={() => toggleSelect(transaction.id)}
+                            aria-label={`Selecionar ${transaction.description}`}
+                          />
+                        </td>
+                        <TransactionRow
+                          transaction={transaction}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                          onDuplicate={handleDuplicateClick}
+                          onClick={handleRowClick}
+                          asFragment
+                        />
+                      </tr>
                     ))}
                   </tbody>
                   <tfoot className="bg-secondary/50 border-t border-border">
                     <tr className="bg-primary/10 border-b border-border">
+                      <td></td>
                       <td colSpan={7} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
                         Total do Mês:
                       </td>
@@ -985,6 +1063,7 @@ export default function Transactions() {
                       <td colSpan={3}></td>
                     </tr>
                     <tr>
+                      <td></td>
                       <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                         Despesas:
                       </td>
@@ -995,6 +1074,7 @@ export default function Transactions() {
                     </tr>
                     {summary.savingsDeposits > 0 && (
                       <tr>
+                        <td></td>
                         <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                           🎯 Guardado em Metas:
                         </td>
@@ -1005,6 +1085,7 @@ export default function Transactions() {
                       </tr>
                     )}
                     <tr>
+                      <td></td>
                       <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                         Receitas:
                       </td>
@@ -1014,6 +1095,7 @@ export default function Transactions() {
                       <td colSpan={3}></td>
                     </tr>
                     <tr className="border-t border-border">
+                      <td></td>
                       <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
                         Saldo:
                       </td>
@@ -1026,6 +1108,7 @@ export default function Transactions() {
                     </tr>
                     {filteredTransactions.some(t => t.isCouple) && (
                       <tr className="border-t border-border bg-primary/5">
+                        <td></td>
                         <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
                           <span className="flex items-center justify-end gap-1.5">
                             <Heart className="w-4 h-4 text-primary fill-primary" />
@@ -1137,6 +1220,29 @@ export default function Transactions() {
             <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDuplicate} className="w-full sm:w-auto">
               Duplicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir {selectedIds.size} lançamentos?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. <strong>Todos os {selectedIds.size} lançamentos selecionados serão removidos permanentemente.</strong>
+              <br /><br />
+              Lançamentos parcelados terão todas as suas parcelas excluídas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
+              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir {selectedIds.size}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
