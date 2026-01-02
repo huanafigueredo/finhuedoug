@@ -186,7 +186,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] w-[95vw] sm:w-full flex flex-col p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
@@ -300,30 +300,30 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
           {faturaData && (
             <>
               {/* Fatura Info */}
-              <div className="flex flex-wrap items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <span className="text-sm text-muted-foreground">Cartão:</span>
-                  <span className="ml-2 font-medium">{faturaData.banco_cartao}</span>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-4 p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between sm:justify-start">
+                  <span className="text-xs sm:text-sm text-muted-foreground">Cartão:</span>
+                  <span className="ml-2 font-medium text-sm">{faturaData.banco_cartao}</span>
                 </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">Período:</span>
-                  <span className="ml-2 font-medium">{faturaData.periodo_fatura}</span>
+                <div className="flex items-center justify-between sm:justify-start">
+                  <span className="text-xs sm:text-sm text-muted-foreground">Período:</span>
+                  <span className="ml-2 font-medium text-sm">{faturaData.periodo_fatura}</span>
                 </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">Total:</span>
-                  <span className="ml-2 font-medium">{formatCentsToDisplay(faturaData.valor_total * 100)}</span>
+                <div className="flex items-center justify-between sm:justify-start">
+                  <span className="text-xs sm:text-sm text-muted-foreground">Total:</span>
+                  <span className="ml-2 font-medium text-sm">{formatCentsToDisplay(faturaData.valor_total * 100)}</span>
                 </div>
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="secondary" className="w-fit sm:ml-auto">
                   {faturaData.transacoes.length} transações
                 </Badge>
               </div>
 
               {/* Options */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Pago por</Label>
                   <Select value={paidBy} onValueChange={setPaidBy}>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -335,7 +335,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                 <div className="space-y-1.5">
                   <Label className="text-xs">Banco</Label>
                   <Select value={bankId} onValueChange={setBankId}>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -350,7 +350,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                 <div className="space-y-1.5">
                   <Label className="text-xs">Forma de pagamento</Label>
                   <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
-                    <SelectTrigger className="h-9">
+                    <SelectTrigger className="h-9 text-sm">
                       <SelectValue placeholder="Selecionar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -362,7 +362,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-end pb-1">
+                <div className="flex items-end pb-1 col-span-2 sm:col-span-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
                       checked={isCouple}
@@ -374,87 +374,92 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
               </div>
 
               {/* Transactions Table */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Checkbox
                     checked={selectedCount === faturaData.transacoes.length}
                     onCheckedChange={(checked) => toggleAll(checked as boolean)}
                   />
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs sm:text-sm text-muted-foreground">
                     {selectedCount} de {faturaData.transacoes.length} selecionadas
                   </span>
                 </div>
-                <span className="text-sm font-medium">
+                <span className="text-xs sm:text-sm font-medium">
                   Total selecionado: {formatCentsToDisplay(totalValue * 100)}
                 </span>
               </div>
 
-              <ScrollArea className="flex-1 border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10"></TableHead>
-                      <TableHead className="w-24">Data</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead className="w-28">Categoria</TableHead>
-                      <TableHead className="w-20 text-right">Valor</TableHead>
-                      <TableHead className="w-20">Parcela</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {faturaData.transacoes.map((transacao, index) => (
-                      <TableRow 
-                        key={index}
-                        className={cn(!transacao.selected && "opacity-50")}
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={transacao.selected}
-                            onCheckedChange={() => toggleTransacao(index)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {transacao.data}
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={transacao.descricao}
-                            onChange={(e) => updateTransacao(index, { descricao: e.target.value })}
-                            className="h-7 text-sm"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={transacao.categoria_sugerida || ""}
-                            onValueChange={(value) => updateTransacao(index, { categoria_sugerida: value })}
+              {/* Scrollable Table Container */}
+              <div className="flex-1 border rounded-lg overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="overflow-x-auto">
+                    <Table className="min-w-[600px]">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-10 sticky left-0 bg-background z-10"></TableHead>
+                          <TableHead className="w-24 whitespace-nowrap">Data</TableHead>
+                          <TableHead className="min-w-[140px]">Descrição</TableHead>
+                          <TableHead className="w-28 whitespace-nowrap">Categoria</TableHead>
+                          <TableHead className="w-20 text-right whitespace-nowrap">Valor</TableHead>
+                          <TableHead className="w-20 whitespace-nowrap">Parcela</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {faturaData.transacoes.map((transacao, index) => (
+                          <TableRow 
+                            key={index}
+                            className={cn(!transacao.selected && "opacity-50")}
                           >
-                            <SelectTrigger className="h-7 text-xs">
-                              <SelectValue placeholder="-" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.name}>
-                                  {cat.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm">
-                          {formatCentsToDisplay(transacao.valor * 100)}
-                        </TableCell>
-                        <TableCell>
-                          {transacao.parcela_atual && transacao.parcela_total && (
-                            <Badge variant="outline" className="text-xs">
-                              {transacao.parcela_atual}/{transacao.parcela_total}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                            <TableCell className="sticky left-0 bg-background z-10">
+                              <Checkbox
+                                checked={transacao.selected}
+                                onCheckedChange={() => toggleTransacao(index)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-mono text-xs whitespace-nowrap">
+                              {transacao.data}
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={transacao.descricao}
+                                onChange={(e) => updateTransacao(index, { descricao: e.target.value })}
+                                className="h-7 text-sm min-w-[120px]"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={transacao.categoria_sugerida || ""}
+                                onValueChange={(value) => updateTransacao(index, { categoria_sugerida: value })}
+                              >
+                                <SelectTrigger className="h-7 text-xs min-w-[100px]">
+                                  <SelectValue placeholder="-" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.name}>
+                                      {cat.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm whitespace-nowrap">
+                              {formatCentsToDisplay(transacao.valor * 100)}
+                            </TableCell>
+                            <TableCell>
+                              {transacao.parcela_atual && transacao.parcela_total && (
+                                <Badge variant="outline" className="text-xs whitespace-nowrap">
+                                  {transacao.parcela_atual}/{transacao.parcela_total}
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </ScrollArea>
+              </div>
 
               {/* Actions */}
               <div className="flex gap-3 pt-2">
