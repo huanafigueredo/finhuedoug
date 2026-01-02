@@ -162,8 +162,9 @@ export function useImportarFatura() {
           custom_person2_percentage = 100;
           for_who_value = opcoes.person2Name;
         } else {
-          // couple - use global isCouple setting
-          is_couple = opcoes.isCouple;
+          // couple - SEMPRE define is_couple como true para despesas do casal
+          is_couple = true;
+          for_who_value = "Casal";
         }
 
         const transactionData: TransactionInsert = {
