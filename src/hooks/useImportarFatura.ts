@@ -46,10 +46,20 @@ export function useImportarFatura() {
       });
 
       if (response.error) {
+        console.error('Erro na resposta da Edge Function:', response.error);
+        // Verificar se é erro de rede/conexão
+        const errorMessage = response.error.message || '';
+        if (errorMessage.includes('FunctionsRelayError') || errorMessage.includes('Failed to send')) {
+          throw new Error('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
+        }
         throw new Error(response.error.message || 'Erro ao analisar fatura');
       }
 
       const data = response.data as FaturaExtraida;
+      
+      if (!data || !data.transacoes) {
+        throw new Error('Resposta inválida do servidor. Tente novamente.');
+      }
       
       // Mark all transactions as selected by default with for_who = couple
       data.transacoes = data.transacoes.map(t => ({ ...t, selected: true, for_who: "couple" as const }));
@@ -57,7 +67,19 @@ export function useImportarFatura() {
       setFaturaData(data);
       return data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao analisar fatura';
+      console.error('Erro ao analisar fatura:', err);
+      let message = 'Erro ao analisar fatura. Tente novamente.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('FunctionsRelayError') || err.message.includes('Failed to send')) {
+          message = 'Erro de conexão com o servidor. Verifique sua internet e tente novamente.';
+        } else if (err.message.includes('network') || err.message.includes('Network')) {
+          message = 'Problema de rede. Verifique sua conexão e tente novamente.';
+        } else {
+          message = err.message;
+        }
+      }
+      
       setError(message);
       toast({
         title: "Erro na análise",
@@ -92,10 +114,19 @@ export function useImportarFatura() {
       });
 
       if (response.error) {
+        console.error('Erro na resposta da Edge Function:', response.error);
+        const errorMessage = response.error.message || '';
+        if (errorMessage.includes('FunctionsRelayError') || errorMessage.includes('Failed to send')) {
+          throw new Error('Erro de conexão com o servidor. Verifique sua internet e tente novamente.');
+        }
         throw new Error(response.error.message || 'Erro ao analisar imagens');
       }
 
       const data = response.data as FaturaExtraida;
+      
+      if (!data || !data.transacoes) {
+        throw new Error('Resposta inválida do servidor. Tente novamente.');
+      }
       
       // Mark all transactions as selected by default with for_who = couple
       data.transacoes = data.transacoes.map(t => ({ ...t, selected: true, for_who: "couple" as const }));
@@ -103,7 +134,19 @@ export function useImportarFatura() {
       setFaturaData(data);
       return data;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao analisar imagens';
+      console.error('Erro ao analisar imagens:', err);
+      let message = 'Erro ao analisar imagens. Tente novamente.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('FunctionsRelayError') || err.message.includes('Failed to send')) {
+          message = 'Erro de conexão com o servidor. Verifique sua internet e tente novamente.';
+        } else if (err.message.includes('network') || err.message.includes('Network')) {
+          message = 'Problema de rede. Verifique sua conexão e tente novamente.';
+        } else {
+          message = err.message;
+        }
+      }
+      
       setError(message);
       toast({
         title: "Erro na análise",
