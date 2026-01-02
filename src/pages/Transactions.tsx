@@ -256,10 +256,15 @@ export default function Transactions() {
           };
         }
 
-        // Calculate split for couple expenses (non-installment)
-        const baseValue = Number(t.total_value);
+        // For installment transactions, use installment_value as the display value
+        const isLegacyInstallment = t.is_installment && t.total_installments && t.total_installments > 1;
+        const displayValue = isLegacyInstallment && t.installment_value 
+          ? Number(t.installment_value) 
+          : Number(t.total_value);
+        
+        // Calculate split for couple expenses
         const split = t.is_couple 
-          ? calculateSplitForTransaction(baseValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
+          ? calculateSplitForTransaction(displayValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
           : null;
 
         return {
@@ -274,8 +279,8 @@ export default function Transactions() {
           subcategory: t.subcategory || "-",
           bank: t.bank_name || "-",
           paymentMethod: t.payment_method_name || "-",
-          totalValue: Number(t.total_value),
-          valuePerPerson: split?.person1 || baseValue,
+          totalValue: displayValue,
+          valuePerPerson: split?.person1 || displayValue,
           isCouple: t.is_couple || false,
           type: t.type as "income" | "expense",
           isInstallment: t.is_installment || false,
