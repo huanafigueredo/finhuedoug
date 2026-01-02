@@ -124,19 +124,11 @@ export function useCreateTransaction() {
       if (transactionData.is_installment && transactionData.total_installments && transactionData.total_installments > 1) {
         const startFrom = start_from_installment || 1;
         
-        // Calculate installment value based on input mode
-        let totalValue: number;
-        let installmentValue: number;
-        
-        if (modo_valor_informado === "installment") {
-          // User informed installment value, calculate total
-          installmentValue = transactionData.total_value;
-          totalValue = installmentValue * transactionData.total_installments;
-        } else {
-          // User informed total value, calculate installment
-          totalValue = transactionData.total_value;
-          installmentValue = totalValue / transactionData.total_installments;
-        }
+        // Use values already calculated by the form - do NOT recalculate here
+        // The form sends total_value (total purchase amount) and installment_value (monthly payment)
+        // Both values are in reais and already validated
+        const totalValue = transactionData.total_value;
+        const installmentValue = transactionData.installment_value || (totalValue / transactionData.total_installments);
         
         // Create a SINGLE record for the entire installment purchase
         // The date is the first installment date

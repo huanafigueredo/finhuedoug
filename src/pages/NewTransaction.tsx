@@ -34,6 +34,15 @@ import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useGamificationEvents } from "@/hooks/useGamificationEvents";
 import { useSplitCalculation } from "@/hooks/useSplitCalculation";
+import {
+  parseCurrencyToCents,
+  centsToReais,
+  reaisToCents,
+  formatCentsToDisplay,
+  calculateInstallmentCents,
+  calculateTotalFromInstallmentCents,
+  validateInstallmentValues,
+} from "@/lib/currency";
 
 // Validation schema for transactions
 const transactionSchema = z.object({
@@ -148,7 +157,18 @@ export default function NewTransaction() {
         setPaidBy(transaction.paid_by || "");
         setForWho(transaction.for_who || "");
         setIsCouple(transaction.is_couple || false);
-        setValue(transaction.total_value.toString().replace(".", ","));
+        // For installment transactions, show installment value; otherwise show total
+        const isNewStyleInstallment = transaction.is_installment && 
+          transaction.installment_value && 
+          transaction.installment_value > 0 &&
+          !transaction.is_generated_installment;
+        
+        if (isNewStyleInstallment) {
+          setValue(formatCentsToDisplay(reaisToCents(transaction.installment_value!)));
+          setValueMode("installment");
+        } else {
+          setValue(formatCentsToDisplay(reaisToCents(transaction.total_value)));
+        }
         setIncomeOrigin(transaction.income_origin || "");
         setIsInstallment(transaction.is_installment || false);
         setTotalInstallments(transaction.total_installments || 2);
@@ -172,15 +192,36 @@ export default function NewTransaction() {
     }
   }, [isEditMode, isDuplicateMode, loadId, transactionsData, transactionsLoading, banks, paymentMethods, categoriesData, isInitialized]);
 
-  const numericValue = parseFloat(value.replace(/[^\d,]/g, "").replace(",", ".")) || 0;
+  // Parse input value to cents using currency utilities
+  const inputValueCents = parseCurrencyToCents(value);
+  const numericValue = centsToReais(inputValueCents);
   
   // Calculate total and installment values based on mode
-  const totalValue = valueMode === "total" 
-    ? numericValue 
-    : numericValue * totalInstallments;
-  const installmentValue = valueMode === "installment" 
-    ? numericValue 
-    : (isInstallment && totalInstallments > 1 ? numericValue / totalInstallments : numericValue);
+  let totalValueCents: number;
+  let installmentValueCents: number;
+  
+  if (valueMode === "installment") {
+    // User is entering installment value, calculate total
+    installmentValueCents = inputValueCents;
+    totalValueCents = calculateTotalFromInstallmentCents(installmentValueCents, totalInstallments);
+  } else {
+    // User is entering total value, calculate installment
+    totalValueCents = inputValueCents;
+    installmentValueCents = isInstallment && totalInstallments > 1 
+      ? calculateInstallmentCents(totalValueCents, totalInstallments)
+      : totalValueCents;
+  }
+  
+  // Validate installment values to prevent errors
+  if (isInstallment && totalInstallments > 1) {
+    const validated = validateInstallmentValues(totalValueCents, installmentValueCents, totalInstallments);
+    totalValueCents = validated.totalCents;
+    installmentValueCents = validated.installmentCents;
+  }
+  
+  // Convert to reais for display and submission
+  const totalValue = centsToReais(totalValueCents);
+  const installmentValue = centsToReais(installmentValueCents);
   
   // Calculate value per person using split settings (proporcional, personalizado, or 50-50)
   const splitResult = calculateSplitForTransaction(totalValue, category, subcategory);
@@ -336,22 +377,11 @@ export default function NewTransaction() {
     }).format(value);
   };
 
-  // Format value as Brazilian currency mask
+  // Format value as Brazilian currency mask using centralized currency utilities
   const formatCurrencyMask = (input: string): string => {
-    // Remove everything except digits
-    const digits = input.replace(/\D/g, "");
-    if (!digits) return "";
-    
-    // Convert to number (cents)
-    const cents = parseInt(digits, 10);
-    // Convert to reais
-    const reais = cents / 100;
-    
-    // Format as Brazilian currency
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(reais);
+    const cents = parseCurrencyToCents(input);
+    if (cents === 0) return "";
+    return formatCentsToDisplay(cents);
   };
 
   const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
