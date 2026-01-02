@@ -13,6 +13,7 @@ export interface TransacaoExtraida {
   tipo?: "despesa" | "receita";
   selected?: boolean;
   for_who?: "couple" | "person1" | "person2";
+  hasInvalidYear?: boolean;
 }
 
 export interface FaturaExtraida {
@@ -20,6 +21,7 @@ export interface FaturaExtraida {
   periodo_fatura: string;
   valor_total: number;
   transacoes: TransacaoExtraida[];
+  hasInvalidYears?: boolean;
 }
 
 export function useImportarFatura() {
@@ -63,7 +65,15 @@ export function useImportarFatura() {
       }
       
       // Mark all transactions as selected by default with for_who = couple
-      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true, for_who: "couple" as const }));
+      // Also detect invalid years
+      let hasInvalidYears = false;
+      data.transacoes = data.transacoes.map(t => {
+        const [, , yearRaw] = t.data.split('/');
+        const hasInvalidYear = !/^\d{4}$/.test(yearRaw);
+        if (hasInvalidYear) hasInvalidYears = true;
+        return { ...t, selected: true, for_who: "couple" as const, hasInvalidYear };
+      });
+      data.hasInvalidYears = hasInvalidYears;
       
       setFaturaData(data);
       return data;
@@ -130,7 +140,15 @@ export function useImportarFatura() {
       }
       
       // Mark all transactions as selected by default with for_who = couple
-      data.transacoes = data.transacoes.map(t => ({ ...t, selected: true, for_who: "couple" as const }));
+      // Also detect invalid years
+      let hasInvalidYears = false;
+      data.transacoes = data.transacoes.map(t => {
+        const [, , yearRaw] = t.data.split('/');
+        const hasInvalidYear = !/^\d{4}$/.test(yearRaw);
+        if (hasInvalidYear) hasInvalidYears = true;
+        return { ...t, selected: true, for_who: "couple" as const, hasInvalidYear };
+      });
+      data.hasInvalidYears = hasInvalidYears;
       
       setFaturaData(data);
       return data;
@@ -178,6 +196,7 @@ export function useImportarFatura() {
       paymentMethodId?: string;
       person1Name: string;
       person2Name: string;
+      fallbackYear?: string;
     }
   ): Promise<number> => {
     const transacoesParaImportar = transacoes.filter(t => t.selected);
@@ -199,9 +218,9 @@ export function useImportarFatura() {
         try {
           // Parse date from dd/mm/yyyy to yyyy-mm-dd
           const [day, month, yearRaw] = transacao.data.split('/');
-          // Treat invalid years (like "XXXX", "xxxx") as current year
-          const currentYear = new Date().getFullYear().toString();
-          const year = /^\d{4}$/.test(yearRaw) ? yearRaw : currentYear;
+          // Use fallbackYear if provided, otherwise use current year for invalid years
+          const fallbackYear = opcoes.fallbackYear || new Date().getFullYear().toString();
+          const year = /^\d{4}$/.test(yearRaw) ? yearRaw : fallbackYear;
           const dateISO = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
           // Determine split based on for_who
