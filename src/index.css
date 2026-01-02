@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    /* MDO-inspired color palette - Vibrant & Modern */
-    --background: 68 50% 94%;
-    --foreground: 240 10% 15%;
+    /* Modern Fintech color palette - Clean & Neutral */
+    --background: 0 0% 98%;
+    --foreground: 220 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 15%;
+    --card-foreground: 220 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 15%;
+    --popover-foreground: 220 15% 15%;
 
     --primary: 330 75% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 68 40% 88%;
-    --secondary-foreground: 240 10% 15%;
+    --secondary: 220 10% 96%;
+    --secondary-foreground: 220 15% 15%;
 
-    --muted: 68 30% 90%;
-    --muted-foreground: 240 5% 45%;
+    --muted: 220 10% 94%;
+    --muted-foreground: 220 10% 45%;
 
     --accent: 160 50% 45%;
     --accent-foreground: 0 0% 100%;
@@ -38,37 +38,36 @@
     --info: 330 75% 55%;
     --info-foreground: 0 0% 100%;
 
-    --border: 68 25% 85%;
-    --input: 68 25% 85%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
     --ring: 330 75% 55%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 10% 15%;
+    --sidebar-foreground: 220 15% 15%;
     --sidebar-primary: 330 75% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 68 40% 88%;
-    --sidebar-accent-foreground: 240 10% 15%;
-    --sidebar-border: 68 25% 85%;
+    --sidebar-accent: 220 10% 96%;
+    --sidebar-accent-foreground: 220 15% 15%;
+    --sidebar-border: 220 15% 90%;
     --sidebar-ring: 330 75% 55%;
 
-    /* MDO Custom tokens */
+    /* Custom tokens */
     --pink: 330 75% 55%;
     --pink-light: 330 75% 70%;
     --pink-glow: 330 75% 85%;
-    --lime: 68 50% 94%;
-    --lime-light: 68 50% 97%;
+    --neutral-50: 0 0% 98%;
+    --neutral-100: 220 10% 96%;
+    --neutral-200: 220 15% 90%;
     --green: 145 60% 42%;
     --green-light: 145 60% 55%;
     --yellow: 40 90% 55%;
     --yellow-light: 40 90% 70%;
     --purple: 280 60% 55%;
     --purple-light: 280 60% 70%;
-    --blue: 330 75% 55%;
-    --blue-light: 330 75% 70%;
-    --dark: 240 10% 15%;
-    --dark-soft: 240 10% 25%;
+    --dark: 220 15% 15%;
+    --dark-soft: 220 10% 25%;
 
     /* Modern shadows */
     --shadow-sm: 0 2px 8px -2px hsl(240 10% 15% / 0.05);

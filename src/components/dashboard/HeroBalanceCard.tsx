@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, TrendingUp, TrendingDown, Target } from "lucide-react";
 
 interface HeroBalanceCardProps {
   balance: number;
@@ -24,72 +24,80 @@ export function HeroBalanceCard({
 
   return (
     <div
-      className="relative p-6 sm:p-8 rounded-3xl bg-card border border-border/50 shadow-card overflow-hidden animate-fade-up"
+      className="relative p-6 sm:p-8 rounded-2xl bg-card border border-border/50 overflow-hidden animate-fade-up"
       style={{ animationFillMode: "forwards" }}
     >
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-success/5 pointer-events-none" />
-
       <div className="relative z-10">
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">
-              Saldo de {monthName}
-            </p>
-            <h2
-              className={cn(
-                "font-display text-4xl sm:text-5xl font-bold tracking-tight",
-                balance >= 0 ? "text-foreground" : "text-destructive"
-              )}
-            >
-              {formatCurrency(balance)}
-            </h2>
-          </div>
-          <span className="text-4xl">{balance >= 0 ? "✨" : "😅"}</span>
+        <div className="mb-6">
+          <p className="text-sm text-muted-foreground mb-2">
+            Saldo disponível • {monthName}
+          </p>
+          <h2
+            className={cn(
+              "text-4xl sm:text-5xl font-bold tracking-tight",
+              balance >= 0 ? "text-foreground" : "text-destructive"
+            )}
+          >
+            {formatCurrency(balance)}
+          </h2>
         </div>
 
         {/* Visual progress bar */}
         <div className="mb-6">
-          <div className="h-3 rounded-full bg-secondary overflow-hidden flex">
+          <div className="h-2 rounded-full bg-secondary overflow-hidden flex">
             <div
-              className="h-full bg-success transition-all duration-700 ease-out rounded-l-full"
+              className="h-full bg-success transition-all duration-700 ease-out"
               style={{ width: `${incomePercent}%` }}
             />
             <div
-              className="h-full bg-primary transition-all duration-700 ease-out rounded-r-full"
+              className="h-full bg-primary transition-all duration-700 ease-out"
               style={{ width: `${100 - incomePercent}%` }}
             />
           </div>
         </div>
 
-        {/* Mini stats row */}
-        <div className="flex flex-wrap items-center gap-4 sm:gap-8">
+        {/* Stats row */}
+        <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-success" />
-            <span className="text-sm text-muted-foreground">Receitas</span>
-            <span className="text-sm font-semibold text-foreground">
-              {formatCurrency(totalIncome)}
-            </span>
+            <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-success" />
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block">Receitas</span>
+              <span className="text-sm font-semibold text-foreground">
+                {formatCurrency(totalIncome)}
+              </span>
+            </div>
           </div>
+
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-sm text-muted-foreground">Despesas</span>
-            <span className="text-sm font-semibold text-foreground">
-              {formatCurrency(totalExpenses)}
-            </span>
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <TrendingDown className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block">Despesas</span>
+              <span className="text-sm font-semibold text-foreground">
+                {formatCurrency(totalExpenses)}
+              </span>
+            </div>
           </div>
+
           {savedInGoals > 0 && (
             <Link
               to="/metas"
               className="flex items-center gap-2 group hover:opacity-80 transition-opacity"
             >
-              <span className="text-lg">🎯</span>
-              <span className="text-sm text-muted-foreground">Guardado</span>
-              <span className="text-sm font-semibold text-foreground">
-                {formatCurrency(savedInGoals)}
-              </span>
-              <ArrowUpRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center">
+                <Target className="w-4 h-4 text-warning" />
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground block">Guardado</span>
+                <span className="text-sm font-semibold text-foreground flex items-center gap-1">
+                  {formatCurrency(savedInGoals)}
+                  <ArrowUpRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </span>
+              </div>
             </Link>
           )}
         </div>
