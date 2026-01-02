@@ -1033,21 +1033,23 @@ export function TransactionFormModal({
                 {isAlreadyStarted && (
                   <div className="space-y-1.5 sm:space-y-2 pl-3 sm:pl-4 border-l-2 border-primary/30">
                     <Label className="text-xs sm:text-sm">Iniciar da parcela</Label>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      max={totalInstallments - 1}
-                      value={startFromInstallment}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value) || 1;
-                        setStartFromInstallment(Math.min(totalInstallments - 1, Math.max(1, val)));
-                      }}
-                      placeholder="Ex: 3"
-                      className="w-24 sm:w-32 h-9 sm:h-10 text-sm"
-                    />
+                    <Select
+                      value={String(startFromInstallment)}
+                      onValueChange={(v) => setStartFromInstallment(parseInt(v))}
+                    >
+                      <SelectTrigger className="w-24 sm:w-32 h-9 sm:h-10 text-sm">
+                        <SelectValue placeholder="Parcela" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: totalInstallments }, (_, i) => i + 1).map((num) => (
+                          <SelectItem key={num} value={String(num)}>
+                            {num}/{totalInstallments}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      {totalInstallments - startFromInstallment + 1} parcelas ({startFromInstallment} até {totalInstallments})
+                      {totalInstallments - startFromInstallment + 1} parcela{totalInstallments - startFromInstallment + 1 > 1 ? 's' : ''} a lançar ({startFromInstallment} até {totalInstallments})
                     </p>
                   </div>
                 )}
