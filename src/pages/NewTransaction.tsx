@@ -888,9 +888,9 @@ export default function NewTransaction() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              {Array.from({ length: totalInstallments - 1 }, (_, i) => i + 1).map((n) => (
+                              {Array.from({ length: totalInstallments }, (_, i) => i + 1).map((n) => (
                                 <SelectItem key={n} value={n.toString()}>
-                                  Parcela {n}/{totalInstallments}
+                                  {n}/{totalInstallments}
                                 </SelectItem>
                               ))}
                             </SelectContent>
