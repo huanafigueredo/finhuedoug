@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sparkles, ArrowUpRight, FileText } from "lucide-react";
+import { Sparkles, ArrowUpRight, FileText, TrendingDown, TrendingUp, Users, Target } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
@@ -81,11 +81,11 @@ const getMonthValue = (t: any): number => {
   return Number(t.total_value);
 };
 
-function getGreeting(): { text: string; emoji: string } {
+function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return { text: "Bom dia", emoji: "☀️" };
-  if (hour < 18) return { text: "Boa tarde", emoji: "🌤️" };
-  return { text: "Boa noite", emoji: "🌙" };
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
 export default function Dashboard() {
@@ -206,10 +206,10 @@ export default function Dashboard() {
     <AppLayout>
       <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 animate-fade-up">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-up">
           <div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-foreground">
-              {greeting.text}! {greeting.emoji}
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              {greeting}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Resumo financeiro do casal
@@ -218,8 +218,8 @@ export default function Dashboard() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/chat-ia">
-              <Button variant="outline" size="sm" className="gap-2 text-xs group">
-                <Sparkles className="w-4 h-4 group-hover:animate-pulse-soft" />
+              <Button variant="outline" size="sm" className="gap-2 text-xs">
+                <Sparkles className="w-4 h-4" />
                 Chat IA
               </Button>
             </Link>
@@ -274,28 +274,28 @@ export default function Dashboard() {
         {/* Compact Metric Cards Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           <CompactMetricCard
-            emoji="💸"
+            icon={TrendingDown}
             label="Total Despesas"
             value={formatCurrency(metrics.totalExpenses)}
             variant="primary"
             delay={100}
           />
           <CompactMetricCard
-            emoji="💰"
+            icon={TrendingUp}
             label="Total Receitas"
             value={formatCurrency(metrics.totalIncome)}
             variant="success"
             delay={150}
           />
           <CompactMetricCard
-            emoji="💕"
+            icon={Users}
             label="Gastos do Casal"
             value={formatCurrency(metrics.coupleExpenses)}
             variant="primary"
             delay={200}
           />
           <CompactMetricCard
-            emoji="🎯"
+            icon={Target}
             label="Guardado em Metas"
             value={formatCurrency(totalSavedInGoals)}
             variant="warning"
@@ -336,11 +336,11 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="p-8 sm:p-12 rounded-2xl bg-card border border-border/50 shadow-card mb-6 text-center animate-fade-up" style={{ animationDelay: "300ms" }}>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-muted mb-4">
-              <FileText className="w-8 h-8 text-muted-foreground" />
+          <div className="p-8 sm:p-12 rounded-xl bg-card border border-border/50 mb-6 text-center animate-fade-up" style={{ animationDelay: "300ms" }}>
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-muted mb-4">
+              <FileText className="w-6 h-6 text-muted-foreground" />
             </div>
-            <h3 className="font-display text-base sm:text-lg font-semibold text-foreground mb-2">
+            <h3 className="text-base font-semibold text-foreground mb-2">
               Nenhum lançamento encontrado
             </h3>
             <p className="text-muted-foreground text-sm mb-4">

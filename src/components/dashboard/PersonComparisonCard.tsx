@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PersonData {
@@ -31,14 +31,14 @@ function PersonColumn({
       
       <div className="space-y-2">
         <div className={cn("flex items-center gap-2", isRight && "flex-row-reverse")}>
-          <span className="text-lg">💸</span>
+          <TrendingDown className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {formatCurrency(person.expenses)}
           </span>
         </div>
         
         <div className={cn("flex items-center gap-2", isRight && "flex-row-reverse")}>
-          <span className="text-lg">💰</span>
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
             {formatCurrency(person.income)}
           </span>
@@ -46,10 +46,13 @@ function PersonColumn({
         
         <div className="pt-2 border-t border-border/50">
           <div className={cn("flex items-center gap-2", isRight && "flex-row-reverse")}>
-            <span className="text-lg">{person.balance >= 0 ? "✨" : "😅"}</span>
+            <Wallet className={cn(
+              "w-4 h-4",
+              person.balance >= 0 ? "text-success" : "text-destructive"
+            )} />
             <span
               className={cn(
-                "text-base font-bold",
+                "text-base font-semibold",
                 person.balance >= 0 ? "text-success" : "text-destructive"
               )}
             >
@@ -70,12 +73,11 @@ export function PersonComparisonCard({
 }: PersonComparisonCardProps) {
   return (
     <div
-      className="p-5 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card animate-fade-up opacity-0 transition-all duration-300 hover:shadow-card-hover"
+      className="p-5 sm:p-6 rounded-xl bg-card border border-border/50 animate-fade-up opacity-0 transition-all duration-200 hover:border-border"
       style={{ animationDelay: `${delay}ms`, animationFillMode: "forwards" }}
     >
       <div className="flex items-center justify-between mb-5">
-        <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-          <span className="text-xl">👫</span>
+        <h3 className="text-base font-semibold text-foreground">
           Resumo Individual
         </h3>
         <Link
@@ -91,7 +93,7 @@ export function PersonComparisonCard({
         <PersonColumn person={person1} formatCurrency={formatCurrency} />
         
         {/* Divider */}
-        <div className="w-px bg-border/50 self-stretch" />
+        <div className="w-px bg-border self-stretch" />
         
         <PersonColumn person={person2} formatCurrency={formatCurrency} isRight />
       </div>
