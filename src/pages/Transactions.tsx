@@ -558,6 +558,19 @@ export default function Transactions() {
                 </p>
               </div>
               
+              {/* Mobile button for import */}
+              <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setImportarFaturaOpen(true)}
+                  className="gap-1.5"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Importar
+                </Button>
+              </div>
+
               {/* Desktop buttons */}
               <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
                 <Button 
