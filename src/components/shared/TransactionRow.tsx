@@ -129,22 +129,24 @@ export function TransactionRow({
       <td className="px-2 py-4 text-sm font-medium text-foreground whitespace-nowrap text-right">
         {formatCurrency(transaction.totalValue)}
       </td>
-      {/* Per Person Column */}
+      {/* Per Person Column - hide details when 50/50 split */}
       <td className="px-2 py-4 text-xs text-muted-foreground whitespace-nowrap text-right">
-        {transaction.isCouple && transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
-          <div className="flex flex-col gap-0.5">
-            <span className="flex items-center justify-end gap-1">
-              {transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 && (
+        {transaction.isCouple ? (
+          transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 ? (
+            // Non-50/50 split: show individual amounts with percentage badge
+            <div className="flex flex-col gap-0.5">
+              <span className="flex items-center justify-end gap-1">
                 <span className="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium bg-primary/10 text-primary">
                   {transaction.splitPercentages.person1}/{transaction.splitPercentages.person2}
                 </span>
-              )}
-              {transaction.person1Name}: {formatCurrency(transaction.person1Share)}
-            </span>
-            <span>{transaction.person2Name}: {formatCurrency(transaction.person2Share)}</span>
-          </div>
-        ) : transaction.isCouple ? (
-          formatCurrency(transaction.valuePerPerson)
+                {transaction.person1Name}: {formatCurrency(transaction.person1Share ?? transaction.valuePerPerson)}
+              </span>
+              <span>{transaction.person2Name}: {formatCurrency(transaction.person2Share ?? transaction.valuePerPerson)}</span>
+            </div>
+          ) : (
+            // 50/50 split: just show single value (same for both)
+            "-"
+          )
         ) : "-"}
       </td>
       <td className="px-2 py-4">
