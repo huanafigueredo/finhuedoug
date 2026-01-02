@@ -25,6 +25,7 @@ interface TransacaoExtraida {
   categoria_sugerida?: string;
   parcela_atual?: number;
   parcela_total?: number;
+  tipo: "despesa" | "receita";
 }
 
 interface FaturaExtraidaResponse {
@@ -65,18 +66,31 @@ serve(async (req) => {
     console.log('Iniciando extração de fatura de cartão...');
     console.log('Múltiplas imagens:', isMultipleImages ? `${images.length} imagens` : 'Não');
 
-    const systemPrompt = `Você é um assistente especializado em extrair transações de faturas de cartão de crédito brasileiras.
+    const systemPrompt = `Você é um assistente especializado em extrair transações de faturas de cartão de crédito e extratos bancários brasileiros.
 
-Sua tarefa é analisar a(s) imagem(ns)/PDF da fatura e extrair:
+Sua tarefa é analisar a(s) imagem(ns)/PDF e extrair:
 1. Nome do banco/cartão (ex: Nubank, Itaú, Bradesco, Inter, C6, etc.)
-2. Período da fatura (ex: "15/11/2024 a 15/12/2024")
-3. Valor total da fatura
+2. Período da fatura/extrato (ex: "15/11/2024 a 15/12/2024")
+3. Valor total (pode ser positivo ou negativo)
 4. Lista de todas as transações com:
    - Data da transação (formato dd/mm/yyyy)
-   - Descrição (nome do estabelecimento/serviço)
+   - Descrição (nome do estabelecimento/serviço/pessoa)
    - Valor (em reais, número positivo)
-   - Categoria sugerida (alimentação, transporte, lazer, saúde, educação, compras, serviços, assinaturas, etc.)
+   - Tipo: "receita" para ENTRADAS de dinheiro, "despesa" para SAÍDAS
+   - Categoria sugerida
    - Se for parcelada, extrair parcela atual e total (ex: "AMAZON 3/10" = parcela_atual: 3, parcela_total: 10)
+
+IDENTIFICAÇÃO DE ENTRADAS (tipo: "receita"):
+- Valores com "+" na frente (ex: "+ R$ 1.300,00")
+- Textos como "Recebido", "Transferência recebida", "Pix recebido", "Depósito"
+- Cores verdes na interface do banco
+- Créditos, reembolsos, estornos
+- Categorias de receita: Pix, Salário, Freelancer, Reembolso, Cashback, Presentes, Juros, Investimentos, Outros Rendimentos
+
+IDENTIFICAÇÃO DE SAÍDAS (tipo: "despesa"):
+- Valores sem sinal ou com "-" na frente
+- Compras, pagamentos, transferências enviadas
+- Categorias de despesa: Alimentação, Transporte, Lazer, Saúde, Educação, Compras, Serviços, Assinaturas, etc.
 
 IMPORTANTE:
 - Se houver múltiplas imagens, elas são partes da MESMA fatura - combine todas as transações
@@ -158,11 +172,12 @@ IMPORTANTE:
                         data: { type: "string", description: "Data da transação (dd/mm/yyyy)" },
                         descricao: { type: "string", description: "Descrição/estabelecimento" },
                         valor: { type: "number", description: "Valor em reais (positivo)" },
+                        tipo: { type: "string", enum: ["despesa", "receita"], description: "despesa para saídas, receita para entradas (valores com + na frente, Pix recebido, etc)" },
                         categoria_sugerida: { type: "string", description: "Categoria sugerida" },
                         parcela_atual: { type: "number", description: "Número da parcela atual" },
                         parcela_total: { type: "number", description: "Total de parcelas" }
                       },
-                      required: ["data", "descricao", "valor"]
+                      required: ["data", "descricao", "valor", "tipo"]
                     }
                   }
                 },

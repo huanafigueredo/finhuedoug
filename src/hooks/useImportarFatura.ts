@@ -10,6 +10,7 @@ export interface TransacaoExtraida {
   categoria_sugerida?: string;
   parcela_atual?: number;
   parcela_total?: number;
+  tipo?: "despesa" | "receita";
   selected?: boolean;
   for_who?: "couple" | "person1" | "person2";
 }
@@ -178,7 +179,7 @@ export function useImportarFatura() {
         const transactionData: TransactionInsert = {
           date: dateISO,
           description: transacao.descricao,
-          type: "expense",
+          type: transacao.tipo === "receita" ? "income" : "expense",
           total_value: valorTotal, // Valor total da compra (parcela × qtd parcelas para parcelados)
           is_couple,
           paid_by: opcoes.paidBy,
