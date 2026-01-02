@@ -178,8 +178,14 @@ export default function People() {
       let value = getTransactionMonthValue(t);
       
       if (t.is_couple) {
-        // Use split calculation for couple expenses
-        const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+        // Use split calculation for couple expenses (with custom percentages)
+        const split = calculateSplitForTransaction(
+          value, 
+          t.category, 
+          t.subcategory,
+          t.custom_person1_percentage,
+          t.custom_person2_percentage
+        );
         value = isPerson1 ? split.person1 : split.person2;
       }
       
@@ -209,8 +215,14 @@ export default function People() {
       let value = getTransactionMonthValue(t);
       
       if (t.is_couple) {
-        // Use split calculation for couple expenses
-        const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+        // Use split calculation for couple expenses (with custom percentages)
+        const split = calculateSplitForTransaction(
+          value, 
+          t.category, 
+          t.subcategory,
+          t.custom_person1_percentage,
+          t.custom_person2_percentage
+        );
         value = isPerson1 ? split.person1 : split.person2;
       }
       
@@ -256,12 +268,18 @@ export default function People() {
         .filter((t) => t.type === "expense" && t.for_who === personName && !t.is_couple && !t.savings_deposit_id)
         .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
-      // Calculate couple expenses using split rules
+      // Calculate couple expenses using split rules (with custom percentages)
       const coupleExpenses = monthTransactions
         .filter((t) => t.type === "expense" && t.is_couple === true && !t.savings_deposit_id)
         .reduce((sum, t) => {
           const value = getTransactionMonthValue(t);
-          const split = calculateSplitForTransaction(value, t.category, t.subcategory);
+          const split = calculateSplitForTransaction(
+            value, 
+            t.category, 
+            t.subcategory,
+            t.custom_person1_percentage,
+            t.custom_person2_percentage
+          );
           return sum + (isPerson1 ? split.person1 : split.person2);
         }, 0);
 
@@ -436,7 +454,13 @@ export default function People() {
                     const baseValue = getTransactionMonthValue(t);
                     let value = baseValue;
                     if (t.is_couple) {
-                      const split = calculateSplitForTransaction(baseValue, t.category, t.subcategory);
+                      const split = calculateSplitForTransaction(
+                        baseValue, 
+                        t.category, 
+                        t.subcategory,
+                        t.custom_person1_percentage,
+                        t.custom_person2_percentage
+                      );
                       value = personName === metrics.person1Name ? split.person1 : split.person2;
                     }
                     return (

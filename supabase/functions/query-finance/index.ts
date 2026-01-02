@@ -224,7 +224,19 @@ serve(async (req) => {
     const paymentMethodNames = paymentMethods?.map(p => p.name).join(", ") || "";
 
     // Helper function to calculate split percentages
-    function getSplitPercentages(category?: string | null, subcategory?: string | null): { p1Pct: number; p2Pct: number } {
+    // Hierarchy: 1) Custom transaction split, 2) Category rule, 3) Global settings
+    function getSplitPercentages(
+      category?: string | null, 
+      subcategory?: string | null,
+      customP1?: number | null,
+      customP2?: number | null
+    ): { p1Pct: number; p2Pct: number } {
+      // 0. Check for transaction-level custom split (highest priority)
+      if (customP1 !== undefined && customP1 !== null && 
+          customP2 !== undefined && customP2 !== null) {
+        return { p1Pct: customP1, p2Pct: customP2 };
+      }
+
       // 1. Check for subcategory-specific rule
       if (subcategory && categorySplits) {
         const subRule = categorySplits.find(r => 
@@ -275,6 +287,7 @@ serve(async (req) => {
     }
 
     // Get transaction value adjusted for person filter
+    // Now considers custom transaction-level splits
     function getPersonValue(t: any, personFilter?: string): number {
       const baseValue = getTransactionValue(t);
       
@@ -282,7 +295,13 @@ serve(async (req) => {
         return baseValue;
       }
 
-      const { p1Pct, p2Pct } = getSplitPercentages(t.category, t.subcategory);
+      // Pass custom split percentages from the transaction
+      const { p1Pct, p2Pct } = getSplitPercentages(
+        t.category, 
+        t.subcategory,
+        t.custom_person1_percentage,
+        t.custom_person2_percentage
+      );
       
       if (personFilter === person1Name) {
         return baseValue * (p1Pct / 100);
@@ -441,16 +460,18 @@ Se for pergunta de conversa geral:
     lookbackDate.setMonth(lookbackDate.getMonth() - 36);
     const lookbackDateStr = lookbackDate.toISOString().split("T")[0];
     
-    // Build base query with all needed fields
+    // Build base query with all needed fields (including custom split percentages)
     let baseQuery = supabase
       .from("transactions")
       .select(`
         id, date, description, type, total_value, category, subcategory,
         for_who, paid_by, is_couple, bank_id, payment_method_id,
         is_installment, installment_number, total_installments, installment_value,
-        is_generated_installment, observacao, 
+        is_generated_installment, observacao, savings_deposit_id,
+        custom_person1_percentage, custom_person2_percentage,
         banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
       `)
+      .is("savings_deposit_id", null) // Exclude savings goal deposits (internal transfers)
       .order("date", { ascending: false });
 
     // Apply type filter
@@ -524,11 +545,13 @@ Se for pergunta de conversa geral:
         id, date, description, type, total_value, category, subcategory,
         for_who, paid_by, is_couple, bank_id, payment_method_id,
         is_installment, installment_number, total_installments, installment_value,
-        is_generated_installment, observacao, 
+        is_generated_installment, observacao, savings_deposit_id,
+        custom_person1_percentage, custom_person2_percentage,
         banks!transactions_bank_id_fkey(name), payment_methods!transactions_payment_method_id_fkey(name)
       `)
       .eq("is_installment", true)
       .eq("is_generated_installment", false)
+      .is("savings_deposit_id", null) // Exclude savings goal deposits
       .gte("date", lookbackDateStr)
       .order("date", { ascending: false });
 
