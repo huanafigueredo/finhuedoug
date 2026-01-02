@@ -154,7 +154,13 @@ export function MonthlySavingsReport({ month, year, ownerFilter, className }: Mo
       
       // For individual: if it's a couple expense, use split calculation
       if (t.is_couple === true) {
-        const split = calculateSplitForTransaction(baseValue, t.category, t.subcategory);
+        const split = calculateSplitForTransaction(
+          baseValue, 
+          t.category, 
+          t.subcategory,
+          t.custom_person1_percentage,
+          t.custom_person2_percentage
+        );
         return ownerFilter === "person1" ? split.person1 : split.person2;
       }
       
