@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+// Navigation handled via window.location for guaranteed redirect
 import {
   Dialog,
   DialogContent,
@@ -181,12 +181,24 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
     }
   };
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [, setSearchParams] = useSearchParams();
 
   const handleImport = async () => {
     if (faturaData) {
+      // Capture data before any state changes
+      const firstSelected = faturaData.transacoes.find(t => t.selected);
+      let targetMonth: number;
+      let targetYear: string;
+      
+      if (firstSelected) {
+        const [, month, year] = firstSelected.data.split('/');
+        targetMonth = parseInt(month, 10);
+        targetYear = year;
+      } else {
+        const now = new Date();
+        targetMonth = now.getMonth() + 1;
+        targetYear = now.getFullYear().toString();
+      }
+      
       const count = await importarTransacoes(faturaData.transacoes, {
         paidBy,
         isCouple,
@@ -195,39 +207,21 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
         person1Name: person1,
         person2Name: person2,
       });
+      
       if (count > 0) {
-        // Get the first selected transaction's date to navigate to the correct period
-        const firstSelected = faturaData.transacoes.find(t => t.selected);
-        
-        // Determine target period
-        let targetMonth: number;
-        let targetYear: string;
-        
-        if (firstSelected) {
-          const [, month, year] = firstSelected.data.split('/');
-          targetMonth = parseInt(month, 10);
-          targetYear = year;
-        } else {
-          const now = new Date();
-          targetMonth = now.getMonth() + 1;
-          targetYear = now.getFullYear().toString();
-        }
-        
-        // Close modal and reset state first
+        // Reset state
         setSelectedFiles([]);
         resetFatura();
+        
+        // Build URL
+        const targetUrl = `/lancamentos?month=${targetMonth}&year=${targetYear}`;
+        
+        // Close modal - use callback to navigate after close
         onOpenChange(false);
         
-        // Use setTimeout to ensure modal closes before navigation
-        setTimeout(() => {
-          if (location.pathname === '/lancamentos') {
-            // Already on /lancamentos, just update URL params
-            setSearchParams({ month: String(targetMonth), year: targetYear });
-          } else {
-            // Navigate to /lancamentos with params
-            navigate(`/lancamentos?month=${targetMonth}&year=${targetYear}`);
-          }
-        }, 100);
+        // Navigate immediately using window.location for guaranteed navigation
+        // This bypasses any React Router issues with Drawer/Dialog state
+        window.location.href = targetUrl;
       }
     }
   };
