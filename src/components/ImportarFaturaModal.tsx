@@ -123,7 +123,8 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
   const { data: banks = [] } = useBanks();
   const { data: paymentMethods = [] } = usePaymentMethods();
-  const { data: categories = [] } = useCategories();
+  const { data: expenseCategories = [] } = useCategories("expense");
+  const { data: incomeCategories = [] } = useCategories("income");
   const { person1, person2 } = usePersonNames();
 
   const isImageFile = (file: File) => {
@@ -458,84 +459,96 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {faturaData.transacoes.map((transacao, index) => (
-                            <TableRow 
-                              key={index}
-                              className={cn(!transacao.selected && "opacity-50")}
-                            >
-                              <TableCell className="sticky left-0 bg-background z-10">
-                                <Checkbox
-                                  checked={transacao.selected}
-                                  onCheckedChange={() => toggleTransacao(index)}
-                                />
-                              </TableCell>
-                              <TableCell className="font-mono text-xs whitespace-nowrap">
-                                {transacao.data}
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={transacao.descricao}
-                                  onChange={(e) => updateTransacao(index, { descricao: e.target.value })}
-                                  className="h-7 text-sm min-w-[120px]"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Select
-                                  value={transacao.categoria_sugerida || ""}
-                                  onValueChange={(value) => updateTransacao(index, { categoria_sugerida: value })}
-                                >
-                                  <SelectTrigger className="h-7 text-xs min-w-[100px]">
-                                    <SelectValue placeholder="-" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {categories.map((cat) => (
-                                      <SelectItem key={cat.id} value={cat.name}>
-                                        {cat.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell>
-                                <Select
-                                  value={transacao.for_who || "couple"}
-                                  onValueChange={(value) => updateTransacao(index, { for_who: value as "couple" | "person1" | "person2" })}
-                                >
-                                  <SelectTrigger className="h-7 text-xs min-w-[85px]">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="couple">Casal</SelectItem>
-                                    <SelectItem value="person1">{person1}</SelectItem>
-                                    <SelectItem value="person2">{person2}</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell className="text-right whitespace-nowrap">
-                                {transacao.parcela_atual && transacao.parcela_total ? (
-                                  <div className="flex flex-col items-end gap-0.5">
-                                    <span className="font-mono text-sm">
-                                      {formatCentsToDisplay(transacao.valor * 100)}
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground">
-                                      × {transacao.parcela_total} = {formatCentsToDisplay(transacao.valor * transacao.parcela_total * 100)}
-                                    </span>
+                          {faturaData.transacoes.map((transacao, index) => {
+                            const isIncome = transacao.tipo === "receita";
+                            const categoriesToShow = isIncome ? incomeCategories : expenseCategories;
+                            
+                            return (
+                              <TableRow 
+                                key={index}
+                                className={cn(!transacao.selected && "opacity-50")}
+                              >
+                                <TableCell className="sticky left-0 bg-background z-10">
+                                  <Checkbox
+                                    checked={transacao.selected}
+                                    onCheckedChange={() => toggleTransacao(index)}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-mono text-xs whitespace-nowrap">
+                                  {transacao.data}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      value={transacao.descricao}
+                                      onChange={(e) => updateTransacao(index, { descricao: e.target.value })}
+                                      className="h-7 text-sm min-w-[120px]"
+                                    />
+                                    {isIncome && (
+                                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20 shrink-0">
+                                        Receita
+                                      </Badge>
+                                    )}
                                   </div>
-                                ) : (
-                                  <span className="font-mono text-sm">
-                                    {formatCentsToDisplay(transacao.valor * 100)}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {transacao.parcela_atual && transacao.parcela_total && (
-                                  <Badge variant="outline" className="text-xs whitespace-nowrap">
-                                    {transacao.parcela_atual}/{transacao.parcela_total}
-                                  </Badge>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                </TableCell>
+                                <TableCell>
+                                  <Select
+                                    value={transacao.categoria_sugerida || ""}
+                                    onValueChange={(value) => updateTransacao(index, { categoria_sugerida: value })}
+                                  >
+                                    <SelectTrigger className="h-7 text-xs min-w-[100px]">
+                                      <SelectValue placeholder="-" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {categoriesToShow.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.name}>
+                                          {cat.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell>
+                                  <Select
+                                    value={transacao.for_who || "couple"}
+                                    onValueChange={(value) => updateTransacao(index, { for_who: value as "couple" | "person1" | "person2" })}
+                                  >
+                                    <SelectTrigger className="h-7 text-xs min-w-[85px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="couple">Casal</SelectItem>
+                                      <SelectItem value="person1">{person1}</SelectItem>
+                                      <SelectItem value="person2">{person2}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell className="text-right whitespace-nowrap">
+                                  {transacao.parcela_atual && transacao.parcela_total ? (
+                                    <div className="flex flex-col items-end gap-0.5">
+                                      <span className={cn("font-mono text-sm", isIncome && "text-green-600")}>
+                                        {isIncome && "+ "}{formatCentsToDisplay(transacao.valor * 100)}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        × {transacao.parcela_total} = {formatCentsToDisplay(transacao.valor * transacao.parcela_total * 100)}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className={cn("font-mono text-sm", isIncome && "text-green-600")}>
+                                      {isIncome && "+ "}{formatCentsToDisplay(transacao.valor * 100)}
+                                    </span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  {transacao.parcela_atual && transacao.parcela_total && (
+                                    <Badge variant="outline" className="text-xs whitespace-nowrap">
+                                      {transacao.parcela_atual}/{transacao.parcela_total}
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
