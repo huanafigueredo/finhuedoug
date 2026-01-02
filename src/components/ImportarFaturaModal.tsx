@@ -511,8 +511,21 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                                   </SelectContent>
                                 </Select>
                               </TableCell>
-                              <TableCell className="text-right font-mono text-sm whitespace-nowrap">
-                                {formatCentsToDisplay(transacao.valor * 100)}
+                              <TableCell className="text-right whitespace-nowrap">
+                                {transacao.parcela_atual && transacao.parcela_total ? (
+                                  <div className="flex flex-col items-end gap-0.5">
+                                    <span className="font-mono text-sm">
+                                      {formatCentsToDisplay(transacao.valor * 100)}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground">
+                                      × {transacao.parcela_total} = {formatCentsToDisplay(transacao.valor * transacao.parcela_total * 100)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="font-mono text-sm">
+                                    {formatCentsToDisplay(transacao.valor * 100)}
+                                  </span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {transacao.parcela_atual && transacao.parcela_total && (
