@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -182,6 +182,8 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
   };
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const [, setSearchParams] = useSearchParams();
 
   const handleImport = async () => {
     if (faturaData) {
@@ -196,19 +198,36 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
       if (count > 0) {
         // Get the first selected transaction's date to navigate to the correct period
         const firstSelected = faturaData.transacoes.find(t => t.selected);
-        onOpenChange(false);
-        setSelectedFiles([]);
-        resetFatura();
+        
+        // Determine target period
+        let targetMonth: number;
+        let targetYear: string;
         
         if (firstSelected) {
           const [, month, year] = firstSelected.data.split('/');
-          // Navigate to /lancamentos with the correct month/year filters
-          navigate(`/lancamentos?month=${parseInt(month, 10)}&year=${year}`);
+          targetMonth = parseInt(month, 10);
+          targetYear = year;
         } else {
-          // Navigate to /lancamentos with current date
           const now = new Date();
-          navigate(`/lancamentos?month=${now.getMonth() + 1}&year=${now.getFullYear()}`);
+          targetMonth = now.getMonth() + 1;
+          targetYear = now.getFullYear().toString();
         }
+        
+        // Close modal and reset state first
+        setSelectedFiles([]);
+        resetFatura();
+        onOpenChange(false);
+        
+        // Use setTimeout to ensure modal closes before navigation
+        setTimeout(() => {
+          if (location.pathname === '/lancamentos') {
+            // Already on /lancamentos, just update URL params
+            setSearchParams({ month: String(targetMonth), year: targetYear });
+          } else {
+            // Navigate to /lancamentos with params
+            navigate(`/lancamentos?month=${targetMonth}&year=${targetYear}`);
+          }
+        }, 100);
       }
     }
   };
