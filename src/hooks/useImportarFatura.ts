@@ -198,7 +198,10 @@ export function useImportarFatura() {
       for (const transacao of transacoesParaImportar) {
         try {
           // Parse date from dd/mm/yyyy to yyyy-mm-dd
-          const [day, month, year] = transacao.data.split('/');
+          const [day, month, yearRaw] = transacao.data.split('/');
+          // Treat invalid years (like "XXXX", "xxxx") as current year
+          const currentYear = new Date().getFullYear().toString();
+          const year = /^\d{4}$/.test(yearRaw) ? yearRaw : currentYear;
           const dateISO = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
           // Determine split based on for_who
