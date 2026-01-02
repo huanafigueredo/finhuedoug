@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.query-finance]
 verify_jwt = true
+
+[functions.extrair-fatura-cartao]
+verify_jwt = false
