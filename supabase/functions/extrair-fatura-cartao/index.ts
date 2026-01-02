@@ -66,7 +66,7 @@ serve(async (req) => {
     console.log('Iniciando extração de fatura de cartão...');
     console.log('Múltiplas imagens:', isMultipleImages ? `${images.length} imagens` : 'Não');
 
-    const systemPrompt = `Você é um assistente especializado em extrair transações de faturas de cartão de crédito e extratos bancários brasileiros.
+const systemPrompt = `Você é um assistente especializado em extrair transações de faturas de cartão de crédito e extratos bancários brasileiros.
 
 Sua tarefa é analisar a(s) imagem(ns)/PDF e extrair:
 1. Nome do banco/cartão (ex: Nubank, Itaú, Bradesco, Inter, C6, etc.)
@@ -75,10 +75,17 @@ Sua tarefa é analisar a(s) imagem(ns)/PDF e extrair:
 4. Lista de todas as transações com:
    - Data da transação (formato dd/mm/yyyy)
    - Descrição (nome do estabelecimento/serviço/pessoa)
-   - Valor (em reais, número positivo)
+   - Valor: O VALOR EXATO que aparece na fatura/extrato para aquela linha
    - Tipo: "receita" para ENTRADAS de dinheiro, "despesa" para SAÍDAS
    - Categoria sugerida
    - Se for parcelada, extrair parcela atual e total (ex: "AMAZON 3/10" = parcela_atual: 3, parcela_total: 10)
+
+REGRA CRÍTICA PARA VALORES DE COMPRAS PARCELADAS:
+- O campo "valor" DEVE conter o valor da PARCELA MENSAL, NÃO o valor total da compra
+- Extraia EXATAMENTE o valor que está escrito na linha da fatura
+- Exemplo: Se aparece "RENNER 1/3 R$ 193,20", o valor é 193.20 (a parcela)
+- NÃO multiplique ou calcule o valor total - o sistema fará isso automaticamente
+- Se a fatura mostra "LOJA X 2/5 R$ 100,00", retorne valor: 100.00, parcela_atual: 2, parcela_total: 5
 
 IDENTIFICAÇÃO DE ENTRADAS (tipo: "receita"):
 - Valores com "+" na frente (ex: "+ R$ 1.300,00")
@@ -171,7 +178,7 @@ IMPORTANTE:
                       properties: {
                         data: { type: "string", description: "Data da transação (dd/mm/yyyy)" },
                         descricao: { type: "string", description: "Descrição/estabelecimento" },
-                        valor: { type: "number", description: "Valor em reais (positivo)" },
+                        valor: { type: "number", description: "Valor EXATO exibido na fatura. Para compras parceladas, é o valor da PARCELA MENSAL (não o valor total da compra)" },
                         tipo: { type: "string", enum: ["despesa", "receita"], description: "despesa para saídas, receita para entradas (valores com + na frente, Pix recebido, etc)" },
                         categoria_sugerida: { type: "string", description: "Categoria sugerida" },
                         parcela_atual: { type: "number", description: "Número da parcela atual" },
