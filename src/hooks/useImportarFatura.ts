@@ -145,7 +145,7 @@ export function useImportarFatura() {
           date: dateISO,
           description: transacao.descricao,
           type: "expense",
-          total_value: Math.round(transacao.valor * 100), // Convert to cents
+          total_value: transacao.valor, // Value already in REAIS from extraction
           is_couple: opcoes.isCouple,
           paid_by: opcoes.paidBy,
           bank_id: opcoes.bankId,
@@ -155,7 +155,7 @@ export function useImportarFatura() {
           installment_number: transacao.parcela_atual,
           total_installments: transacao.parcela_total,
           installment_value: transacao.parcela_atual && transacao.parcela_total 
-            ? Math.round(transacao.valor * 100) 
+            ? transacao.valor 
             : undefined,
         };
 
