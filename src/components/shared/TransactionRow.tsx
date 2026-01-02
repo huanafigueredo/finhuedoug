@@ -129,7 +129,7 @@ export function TransactionRow({
       <td className="px-2 py-4 text-sm font-medium text-foreground whitespace-nowrap text-right">
         {formatCurrency(transaction.totalValue)}
       </td>
-      {/* Per Person Column - hide details when 50/50 split */}
+      {/* Per Person Column - shows value per person for couple transactions */}
       <td className="px-2 py-4 text-xs text-muted-foreground whitespace-nowrap text-right">
         {transaction.isCouple ? (
           transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 ? (
@@ -144,8 +144,8 @@ export function TransactionRow({
               <span>{transaction.person2Name}: {formatCurrency(transaction.person2Share ?? transaction.valuePerPerson)}</span>
             </div>
           ) : (
-            // 50/50 split: just show single value (same for both)
-            "-"
+            // 50/50 split: show half the value
+            formatCurrency(transaction.valuePerPerson)
           )
         ) : "-"}
       </td>
