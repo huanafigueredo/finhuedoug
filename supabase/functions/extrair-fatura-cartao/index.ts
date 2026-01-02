@@ -35,6 +35,19 @@ interface FaturaExtraidaResponse {
   transacoes: TransacaoExtraida[];
 }
 
+// Helper function to extract year from periodo_fatura string
+function extractYearFromPeriodo(periodo: string): string | null {
+  if (!periodo) return null;
+  
+  // Try to find a 4-digit year in the periodo string (e.g., "15/11/2024 a 15/12/2024")
+  const yearMatch = periodo.match(/\b(20\d{2})\b/g);
+  if (yearMatch && yearMatch.length > 0) {
+    // Return the last year found (usually the end of the period)
+    return yearMatch[yearMatch.length - 1];
+  }
+  return null;
+}
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   
@@ -73,12 +86,20 @@ Sua tarefa é analisar a(s) imagem(ns)/PDF e extrair:
 2. Período da fatura/extrato (ex: "15/11/2024 a 15/12/2024")
 3. Valor total (pode ser positivo ou negativo)
 4. Lista de todas as transações com:
-   - Data da transação (formato dd/mm/yyyy)
+   - Data da transação (formato dd/mm/yyyy - ANO COMPLETO COM 4 DÍGITOS)
    - Descrição (nome do estabelecimento/serviço/pessoa)
    - Valor: O VALOR EXATO que aparece na fatura/extrato para aquela linha
    - Tipo: "receita" para ENTRADAS de dinheiro, "despesa" para SAÍDAS
    - Categoria sugerida
    - Se for parcelada, extrair parcela atual e total (ex: "AMAZON 3/10" = parcela_atual: 3, parcela_total: 10)
+
+REGRA CRÍTICA PARA DATAS - ANO OBRIGATÓRIO:
+- SEMPRE extraia o ano completo com 4 dígitos (ex: 2024, 2025, 2026)
+- Procure o ano no cabeçalho da fatura, no período da fatura, ou no rodapé
+- Se o período da fatura é "15/11/2024 a 15/12/2024", as transações são de 2024
+- Se o período é "15/12/2024 a 15/01/2025", transações de dezembro são de 2024 e janeiro de 2025
+- NUNCA retorne "XXXX" no lugar do ano - deduza o ano pelo contexto
+- Se a fatura mostra apenas mês e dia, use o ano do período da fatura
 
 REGRA CRÍTICA PARA VALORES DE COMPRAS PARCELADAS:
 - O campo "valor" DEVE conter o valor da PARCELA MENSAL, NÃO o valor total da compra
@@ -104,7 +125,7 @@ IMPORTANTE:
 - Identifique padrões de parcelas (ex: "LOJA X 2/5", "COMPRA Y PARC 3/12")
 - Normalize descrições (remover códigos internos, manter nome legível)
 - Valores devem ser números positivos (sem R$)
-- Datas no formato dd/mm/yyyy
+- Datas no formato dd/mm/yyyy com ano de 4 dígitos (ex: 25/12/2024)
 - Ignore taxas, juros, IOF - foque nas compras/transações
 - Se não conseguir ler algo, pule o item
 - EVITE transações duplicadas - cada transação deve aparecer apenas uma vez`;
@@ -233,6 +254,23 @@ IMPORTANTE:
     }
 
     const result: FaturaExtraidaResponse = JSON.parse(toolCall.function.arguments);
+    
+    // Post-process: Try to fix invalid years using periodo_fatura
+    const yearFromPeriodo = extractYearFromPeriodo(result.periodo_fatura);
+    console.log(`Ano extraído do período: ${yearFromPeriodo || 'não encontrado'}`);
+    
+    result.transacoes = result.transacoes.map(t => {
+      const [day, month, year] = t.data.split('/');
+      // Check if year is invalid (not 4 digits)
+      if (!/^\d{4}$/.test(year)) {
+        // Try to use year from periodo_fatura, or current year as last resort
+        const fixedYear = yearFromPeriodo || new Date().getFullYear().toString();
+        const fixedDate = `${day}/${month}/${fixedYear}`;
+        console.log(`Data corrigida: ${t.data} -> ${fixedDate}`);
+        return { ...t, data: fixedDate };
+      }
+      return t;
+    });
     
     console.log(`Extração concluída: ${result.transacoes.length} transações do ${result.banco_cartao}`);
 
