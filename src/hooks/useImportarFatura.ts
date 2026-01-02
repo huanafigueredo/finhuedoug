@@ -167,22 +167,29 @@ export function useImportarFatura() {
           for_who_value = "Casal";
         }
 
+        // Para compras parceladas, o valor extraído da fatura é o valor da PARCELA
+        // Precisamos calcular o valor total multiplicando pelo número de parcelas
+        const isInstallment = !!(transacao.parcela_atual && transacao.parcela_total);
+        const valorParcela = transacao.valor;
+        const valorTotal = isInstallment 
+          ? valorParcela * transacao.parcela_total! 
+          : valorParcela;
+
         const transactionData: TransactionInsert = {
           date: dateISO,
           description: transacao.descricao,
           type: "expense",
-          total_value: transacao.valor, // Value already in REAIS from extraction
+          total_value: valorTotal, // Valor total da compra (parcela × qtd parcelas para parcelados)
           is_couple,
           paid_by: opcoes.paidBy,
           bank_id: opcoes.bankId,
           payment_method_id: opcoes.paymentMethodId,
           category: transacao.categoria_sugerida,
-          is_installment: !!(transacao.parcela_atual && transacao.parcela_total),
+          is_installment: isInstallment,
           installment_number: transacao.parcela_atual,
           total_installments: transacao.parcela_total,
-          installment_value: transacao.parcela_atual && transacao.parcela_total 
-            ? transacao.valor 
-            : undefined,
+          installment_value: isInstallment ? valorParcela : undefined, // Valor da parcela mensal
+          modo_valor_informado: isInstallment ? 'installment' : 'total',
           custom_person1_percentage,
           custom_person2_percentage,
           for_who: for_who_value,
