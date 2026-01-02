@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -181,7 +181,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
     }
   };
 
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const handleImport = async () => {
     if (faturaData) {
@@ -194,19 +194,21 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
         person2Name: person2,
       });
       if (count > 0) {
-        // Get the first selected transaction's date to update filters
+        // Get the first selected transaction's date to navigate to the correct period
         const firstSelected = faturaData.transacoes.find(t => t.selected);
-        if (firstSelected) {
-          const [day, month, year] = firstSelected.data.split('/');
-          // Update URL params to show the imported transactions' period
-          setSearchParams({
-            month: String(parseInt(month, 10)),
-            year: year
-          });
-        }
         onOpenChange(false);
         setSelectedFiles([]);
         resetFatura();
+        
+        if (firstSelected) {
+          const [, month, year] = firstSelected.data.split('/');
+          // Navigate to /lancamentos with the correct month/year filters
+          navigate(`/lancamentos?month=${parseInt(month, 10)}&year=${year}`);
+        } else {
+          // Navigate to /lancamentos with current date
+          const now = new Date();
+          navigate(`/lancamentos?month=${now.getMonth() + 1}&year=${now.getFullYear()}`);
+        }
       }
     }
   };
