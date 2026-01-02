@@ -314,8 +314,8 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
   // Content for both dialog and drawer
   const ModalContent = () => (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+    <div className="flex flex-col h-full">
+      <div className="flex-1">
         <div className="flex flex-col gap-4 px-1 pb-4">
           {/* Upload Section */}
           {!faturaData && (
@@ -655,7 +655,7 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
 
       {/* Actions - Fixed at bottom */}
       {faturaData && (
-        <div className="flex gap-2 sm:gap-3 pt-3 border-t mt-auto shrink-0">
+        <div className="flex gap-2 sm:gap-3 pt-3 border-t mt-auto shrink-0 sticky bottom-0 bg-background">
           <Button variant="outline" onClick={handleClose} className="flex-1 h-10">
             Cancelar
           </Button>
@@ -684,14 +684,14 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={handleClose}>
-        <DrawerContent className="max-h-[95vh] flex flex-col overflow-hidden">
+        <DrawerContent className="max-h-[95vh] flex flex-col">
           <DrawerHeader className="pb-2 shrink-0">
             <DrawerTitle className="flex items-center gap-2 text-base">
               <CreditCard className="h-4 w-4" />
               Importar Fatura
             </DrawerTitle>
           </DrawerHeader>
-          <div className="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
+          <div className="flex-1 min-h-0 px-4 pb-4 overflow-y-auto overscroll-contain">
             <ModalContent />
           </div>
         </DrawerContent>
