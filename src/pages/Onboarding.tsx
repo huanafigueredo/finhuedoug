@@ -122,6 +122,51 @@ export default function Onboarding() {
     }
   };
 
+  const handleSkipOnboarding = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Por favor, faça login novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Marcar onboarding como completo sem configurar nada
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ onboarding_completed_at: new Date().toISOString() })
+        .eq("id", user.id);
+
+      if (profileError) {
+        throw new Error(`Erro ao pular configuração: ${profileError.message}`);
+      }
+
+      // Invalidar cache do onboarding status
+      await queryClient.invalidateQueries({ queryKey: ["profile-onboarding", user.id] });
+
+      toast({
+        title: "Configuração pulada",
+        description: "Você pode configurar seu perfil nas configurações.",
+      });
+
+      navigate("/dashboard", { replace: true });
+    } catch (error) {
+      console.error("ONBOARDING - Erro ao pular:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido.";
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleFinish = async () => {
     // Validação de autenticação
     if (!user?.id) {
@@ -302,6 +347,15 @@ export default function Onboarding() {
           <p className="text-muted-foreground">
             Vamos configurar suas finanças em casal
           </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSkipOnboarding}
+            disabled={isSubmitting}
+            className="mt-4 text-muted-foreground hover:text-foreground"
+          >
+            Pular configuração →
+          </Button>
         </div>
 
         {/* Progress */}
