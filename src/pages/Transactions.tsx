@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { TransactionRow, Transaction } from "@/components/shared/TransactionRow";
 import { TransactionCard } from "@/components/shared/TransactionCard";
@@ -88,6 +89,7 @@ function calculateInstallmentForMonth(
 export default function Transactions() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
   const { data: transactionsData = [], isLoading: transactionsLoading } = useTransactions();
   const { data: banksData = [] } = useBanks();
   const { data: paymentMethodsData = [] } = usePaymentMethods();
@@ -122,9 +124,26 @@ export default function Transactions() {
   const [splitFilter, setSplitFilter] = useState("Todos");
   const currentDate = new Date();
   const [dayFilter, setDayFilter] = useState("Todos");
-  const [monthFilter, setMonthFilter] = useState((currentDate.getMonth() + 1).toString());
-  const [yearFilter, setYearFilter] = useState(currentDate.getFullYear().toString());
+  const [monthFilter, setMonthFilter] = useState(
+    searchParams.get('month') || (currentDate.getMonth() + 1).toString()
+  );
+  const [yearFilter, setYearFilter] = useState(
+    searchParams.get('year') || currentDate.getFullYear().toString()
+  );
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync filters with URL params
+  useEffect(() => {
+    const monthParam = searchParams.get('month');
+    const yearParam = searchParams.get('year');
+    
+    if (monthParam && monthParam !== monthFilter) {
+      setMonthFilter(monthParam);
+    }
+    if (yearParam && yearParam !== yearFilter) {
+      setYearFilter(yearParam);
+    }
+  }, [searchParams]);
   
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
