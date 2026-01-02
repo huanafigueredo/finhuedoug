@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -51,10 +51,30 @@ interface ImportarFaturaModalProps {
 export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [paidBy, setPaidBy] = useState<string>("person1");
   const [isCouple, setIsCouple] = useState(true);
   const [bankId, setBankId] = useState<string>("");
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
+
+  // Generate image previews
+  useEffect(() => {
+    const urls: string[] = [];
+    selectedFiles.forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        urls.push(URL.createObjectURL(file));
+      } else {
+        urls.push(''); // Empty for non-image files like PDF
+      }
+    });
+    setPreviews(urls);
+
+    return () => {
+      urls.forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, [selectedFiles]);
 
   const { 
     isAnalyzing, 
@@ -183,24 +203,29 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                 />
                 {selectedFiles.length > 0 ? (
                   <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2 justify-center">
+                    <div className="flex flex-wrap gap-3 justify-center">
                       {selectedFiles.map((file, index) => (
                         <div 
                           key={index}
-                          className="flex items-center gap-2 bg-background border rounded-lg px-3 py-2"
+                          className="relative group"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                          <div className="text-left min-w-0">
-                            <p className="font-medium text-sm truncate max-w-[150px]">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
+                          {previews[index] ? (
+                            <img 
+                              src={previews[index]} 
+                              alt={file.name}
+                              className="h-24 w-24 object-cover rounded-lg border bg-background"
+                            />
+                          ) : (
+                            <div className="h-24 w-24 flex flex-col items-center justify-center rounded-lg border bg-background">
+                              <FileText className="h-8 w-8 text-primary" />
+                              <span className="text-xs text-muted-foreground mt-1">PDF</span>
+                            </div>
+                          )}
                           <Button
-                            variant="ghost"
+                            variant="destructive"
                             size="icon"
-                            className="h-6 w-6 flex-shrink-0"
+                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={(e) => {
                               e.stopPropagation();
                               removeFile(index);
@@ -208,6 +233,9 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                           >
                             <X className="h-3 w-3" />
                           </Button>
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[96px] mt-1 text-center">
+                            {file.name}
+                          </p>
                         </div>
                       ))}
                     </div>
