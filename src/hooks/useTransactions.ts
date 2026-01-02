@@ -333,3 +333,23 @@ export function useDeleteTransaction() {
     },
   });
 }
+
+export function useDeleteMultipleTransactions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      // Delete all transactions by their IDs
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .in("id", ids);
+
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+  });
+}

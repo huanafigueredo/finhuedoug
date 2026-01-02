@@ -52,6 +52,7 @@ interface TransactionRowProps {
   onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
   onClick?: (id: string) => void;
+  asFragment?: boolean;
 }
 
 export function TransactionRow({
@@ -61,6 +62,7 @@ export function TransactionRow({
   onDelete,
   onDuplicate,
   onClick,
+  asFragment = false,
 }: TransactionRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -78,14 +80,8 @@ export function TransactionRow({
     onClick?.(transaction.id);
   };
 
-  return (
-    <tr 
-      className={cn(
-        "border-b border-border hover:bg-secondary/30 transition-colors cursor-pointer", 
-        className
-      )}
-      onClick={handleRowClick}
-    >
+  const cells = (
+    <>
       <td className="px-3 py-4 text-sm text-muted-foreground whitespace-nowrap">
         {transaction.date}
       </td>
@@ -183,6 +179,22 @@ export function TransactionRow({
           </DropdownMenuContent>
         </DropdownMenu>
       </td>
+    </>
+  );
+
+  if (asFragment) {
+    return cells;
+  }
+
+  return (
+    <tr 
+      className={cn(
+        "border-b border-border hover:bg-secondary/30 transition-colors cursor-pointer", 
+        className
+      )}
+      onClick={handleRowClick}
+    >
+      {cells}
     </tr>
   );
 }
