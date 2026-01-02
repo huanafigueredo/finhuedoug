@@ -362,25 +362,7 @@ export default function Transactions() {
       });
   }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
 
-  const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const allYears = transactionsData.flatMap((t) => {
-      const date = parseISO(t.date);
-      if (t.is_installment && t.total_installments && !t.is_generated_installment) {
-        const startYear = date.getFullYear();
-        const endDate = addMonths(date, (t.total_installments - (t.installment_number || 1)));
-        const endYear = endDate.getFullYear();
-        const years = [];
-        for (let y = startYear; y <= endYear; y++) {
-          years.push(y);
-        }
-        return years;
-      }
-      return [date.getFullYear()];
-    });
-    const uniqueYears = [...new Set([currentYear, ...allYears])];
-    return ["Todos", ...uniqueYears.sort((a, b) => b - a).map(String)];
-  }, [transactionsData]);
+  const years = ["Todos", "2030", "2029", "2028", "2027", "2026", "2025"];
 
   // Calculate summary (separate savings goal deposits from regular expenses)
   const summary = useMemo(() => {
