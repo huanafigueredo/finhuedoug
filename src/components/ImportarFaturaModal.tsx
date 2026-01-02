@@ -51,12 +51,24 @@ interface ImportarFaturaModalProps {
 
 export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [paidBy, setPaidBy] = useState<string>("person1");
   const [isCouple, setIsCouple] = useState(true);
   const [bankId, setBankId] = useState<string>("");
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Check scroll position for fade indicators
+  const updateScrollIndicators = () => {
+    if (tableScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = tableScrollRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  };
 
   // Generate image previews
   useEffect(() => {
@@ -90,6 +102,24 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
     updateTransacao,
     isImporting 
   } = useImportarFatura();
+
+  // Effect for scroll indicators - after faturaData is defined
+  useEffect(() => {
+    const scrollEl = tableScrollRef.current;
+    if (scrollEl && faturaData) {
+      // Small delay to ensure table is rendered
+      const timer = setTimeout(() => {
+        updateScrollIndicators();
+      }, 100);
+      scrollEl.addEventListener('scroll', updateScrollIndicators);
+      window.addEventListener('resize', updateScrollIndicators);
+      return () => {
+        clearTimeout(timer);
+        scrollEl.removeEventListener('scroll', updateScrollIndicators);
+        window.removeEventListener('resize', updateScrollIndicators);
+      };
+    }
+  }, [faturaData]);
 
   const { data: banks = [] } = useBanks();
   const { data: paymentMethods = [] } = usePaymentMethods();
@@ -389,10 +419,29 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
                 </span>
               </div>
 
-              {/* Scrollable Table Container */}
-              <div className="flex-1 border rounded-lg overflow-hidden">
+              {/* Scrollable Table Container with Fade Indicators */}
+              <div className="flex-1 border rounded-lg overflow-hidden relative">
+                {/* Left fade indicator */}
+                <div 
+                  className={cn(
+                    "absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-20 pointer-events-none transition-opacity duration-200",
+                    canScrollLeft ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {/* Right fade indicator */}
+                <div 
+                  className={cn(
+                    "absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-20 pointer-events-none transition-opacity duration-200",
+                    canScrollRight ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                
                 <ScrollArea className="h-full">
-                  <div className="overflow-x-auto">
+                  <div 
+                    ref={tableScrollRef}
+                    className="overflow-x-auto"
+                    onScroll={updateScrollIndicators}
+                  >
                     <Table className="min-w-[600px]">
                       <TableHeader>
                         <TableRow>
