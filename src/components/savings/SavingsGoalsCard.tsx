@@ -52,7 +52,6 @@ import { Link } from "react-router-dom";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeActions } from "@/hooks/useSwipeActions";
-import { useGamificationEvents } from "@/hooks/useGamificationEvents";
 import { GoalFormContent } from "./GoalFormContent";
 import {
   Select,
@@ -589,31 +588,15 @@ export function SavingsGoalsCard({
   const updateGoal = useUpdateSavingsGoal();
   const deleteGoal = useDeleteSavingsGoal();
   const { toast } = useToast();
-  const { triggerGamificationEvent } = useGamificationEvents();
 
-  // Handler for deposit success - triggers gamification events
+  // Handler for deposit success (gamification removed)
   const handleDepositSuccess = async (depositor: "person1" | "person2", goalCompleted: boolean) => {
-    // Trigger deposit event
-    await triggerGamificationEvent({
-      actionType: "deposit_made",
-      personName: depositor,
-    });
-
-    // If goal was completed, trigger goal_completed event
-    if (goalCompleted) {
-      await triggerGamificationEvent({
-        actionType: "goal_completed",
-        personName: depositor,
-      });
-    }
+    // Gamification removed - keeping handler structure for potential future use
   };
 
-  // Handler for goal creation - triggers gamification event
+  // Handler for goal creation (gamification removed)
   const handleGoalCreated = async () => {
-    await triggerGamificationEvent({
-      actionType: "goal_created",
-      personName: "person1", // Default to person1 for goal creation
-    });
+    // Gamification removed - keeping handler structure for potential future use
   };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);

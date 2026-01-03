@@ -47,7 +47,6 @@ import { useCategories } from "@/hooks/useCategories";
 import { useSubcategories } from "@/hooks/useSubcategories";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useBudgetAlert } from "@/hooks/useBudgetAlert";
-import { useGamificationEvents } from "@/hooks/useGamificationEvents";
 import { useSplitCalculation } from "@/hooks/useSplitCalculation";
 import {
   parseCurrencyToCents,
@@ -116,7 +115,6 @@ export function TransactionFormModal({
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const { checkBudgetAlert } = useBudgetAlert();
-  const { triggerGamificationEvent } = useGamificationEvents();
   const { calculateSplitForTransaction } = useSplitCalculation();
 
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -460,13 +458,6 @@ export function TransactionFormModal({
       } else {
         await createTransaction.mutateAsync(transactionData);
         
-        // Trigger gamification event for transaction creation
-        const personName = paidBy === person2 ? "person2" : "person1";
-        await triggerGamificationEvent({
-          actionType: "transaction_created",
-          personName,
-          metadata: { type, category },
-        });
         
         setShowSuccess(true);
         setTimeout(() => {

@@ -19,7 +19,6 @@ import Contas from "./pages/Contas";
 import ChatIA from "./pages/ChatIA";
 import Orcamentos from "./pages/Orcamentos";
 import Metas from "./pages/Metas";
-import Gamification from "./pages/Gamification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,9 +64,6 @@ const App = () => (
               } />
               <Route path="/metas" element={
                 <ProtectedRoute><Metas /></ProtectedRoute>
-              } />
-              <Route path="/gamificacao" element={
-                <ProtectedRoute><Gamification /></ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>
