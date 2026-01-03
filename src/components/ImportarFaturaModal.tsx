@@ -494,57 +494,60 @@ export function ImportarFaturaModal({ open, onOpenChange }: ImportarFaturaModalP
               )}
 
               {/* Options */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Pago por</Label>
-                  <Select value={paidBy} onValueChange={setPaidBy}>
-                    <SelectTrigger className="h-8 text-xs sm:text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="person1">{person1}</SelectItem>
-                      <SelectItem value="person2">{person2}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Banco</Label>
-                  <Select value={bankId} onValueChange={setBankId}>
-                    <SelectTrigger className="h-8 text-xs sm:text-sm">
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {banks.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.id}>
-                          {bank.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Forma pagamento</Label>
-                  <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
-                    <SelectTrigger className="h-8 text-xs sm:text-sm">
-                      <SelectValue placeholder="Selecionar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((pm) => (
-                        <SelectItem key={pm.id} value={pm.id}>
-                          {pm.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end pb-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox
-                      checked={isCouple}
-                      onCheckedChange={(checked) => setIsCouple(checked as boolean)}
-                    />
-                    <span className="text-xs sm:text-sm">Do casal</span>
-                  </label>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Pago por</Label>
+                    <Select value={paidBy} onValueChange={setPaidBy}>
+                      <SelectTrigger className="h-8 text-xs sm:text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="person1">{person1}</SelectItem>
+                        <SelectItem value="person2">{person2}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Banco</Label>
+                    <Select value={bankId} onValueChange={setBankId}>
+                      <SelectTrigger className="h-8 text-xs sm:text-sm">
+                        <SelectValue placeholder="Selecionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {banks.map((bank) => (
+                          <SelectItem key={bank.id} value={bank.id}>
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Forma pagamento</Label>
+                    <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
+                      <SelectTrigger className="h-8 text-xs sm:text-sm">
+                        <SelectValue placeholder="Selecionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentMethods.map((pm) => (
+                          <SelectItem key={pm.id} value={pm.id}>
+                            {pm.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">&nbsp;</Label>
+                    <label className="flex items-center gap-2 cursor-pointer h-8 px-2 rounded-md border border-input bg-background">
+                      <Checkbox
+                        checked={isCouple}
+                        onCheckedChange={(checked) => setIsCouple(checked as boolean)}
+                      />
+                      <span className="text-xs sm:text-sm">Do casal</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
