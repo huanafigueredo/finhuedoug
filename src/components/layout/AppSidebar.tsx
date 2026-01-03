@@ -10,7 +10,6 @@ import {
   Plus,
   Wallet,
   Target,
-  Trophy,
 } from "lucide-react";
 import { TogetherLogo } from "@/components/shared/TogetherLogo";
 import { cn } from "@/lib/utils";
@@ -41,7 +40,6 @@ const mainNavItems = [
 const financeNavItems = [
   { label: "Orçamentos", path: "/orcamentos", icon: Wallet },
   { label: "Metas de Economia", path: "/metas", icon: Target },
-  { label: "Gamificação", path: "/gamificacao", icon: Trophy },
 ];
 
 const configNavItems = [

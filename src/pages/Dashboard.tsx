@@ -7,7 +7,6 @@ import { CompactMetricCard } from "@/components/dashboard/CompactMetricCard";
 import { PersonComparisonCard } from "@/components/dashboard/PersonComparisonCard";
 import { RecentTransactionsList } from "@/components/dashboard/RecentTransactionsList";
 import { UpcomingBillsList } from "@/components/dashboard/UpcomingBillsList";
-import { GamificationWidget } from "@/components/gamification/GamificationWidget";
 import { DashboardAvatars } from "@/components/dashboard/DashboardAvatars";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
@@ -23,7 +22,6 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
-import { useGamification } from "@/hooks/useGamification";
 import { useCoupleMembers } from "@/hooks/useCoupleMembers";
 import { format, parseISO, differenceInMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -97,18 +95,12 @@ export default function Dashboard() {
   const { data: banks = [] } = useBanks();
   const { data: contasAVencer = [] } = useContasAVencer();
   const { data: coupleMembers = [] } = useCoupleMembers();
-  const { updateStreak } = useGamification();
-
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
 
   const metrics = useFinancialMetrics(transactions, monthIndex, year);
   const greeting = getGreeting();
 
-  // Update streak when dashboard loads (user is active)
-  useEffect(() => {
-    updateStreak();
-  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -367,9 +359,6 @@ export default function Dashboard() {
             formatCurrency={formatCurrency}
             delay={700}
           />
-          <div className="md:col-span-2 lg:col-span-1">
-            <GamificationWidget />
-          </div>
         </div>
       </div>
     </AppLayout>
