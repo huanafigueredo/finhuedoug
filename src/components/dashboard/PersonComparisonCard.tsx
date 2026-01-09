@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ArrowUpRight, TrendingDown, TrendingUp, Wallet, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 interface PersonData {
   name: string;
   expenses: number;
   income: number;
   balance: number;
+  coupleShare?: number;
 }
 
 interface PersonComparisonCardProps {
@@ -36,6 +36,15 @@ function PersonColumn({
             {formatCurrency(person.expenses)}
           </span>
         </div>
+        
+        {person.coupleShare !== undefined && person.coupleShare > 0 && (
+          <div className={cn("flex items-center gap-2", isRight && "flex-row-reverse")}>
+            <Heart className="w-4 h-4 text-primary/70" />
+            <span className="text-xs text-primary/70">
+              P/ casal: {formatCurrency(person.coupleShare)}
+            </span>
+          </div>
+        )}
         
         <div className={cn("flex items-center gap-2", isRight && "flex-row-reverse")}>
           <TrendingUp className="w-4 h-4 text-muted-foreground" />

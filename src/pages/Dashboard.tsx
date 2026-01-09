@@ -304,12 +304,14 @@ export default function Dashboard() {
                 expenses: metrics.person1TotalExpenses,
                 income: metrics.person1Income,
                 balance: metrics.person1Balance,
+                coupleShare: metrics.person1CoupleShare,
               }}
               person2={{
                 name: metrics.person2Name,
                 expenses: metrics.person2TotalExpenses,
                 income: metrics.person2Income,
                 balance: metrics.person2Balance,
+                coupleShare: metrics.person2CoupleShare,
               }}
               formatCurrency={formatCurrency}
               delay={300}
