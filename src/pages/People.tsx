@@ -609,7 +609,9 @@ export default function People() {
             <p className="text-muted-foreground text-sm mb-6">
               Totais em {selectedMonth}/{selectedYear}
             </p>
-            <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto">
+            
+            {/* First row: Overall totals */}
+            <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto mb-6">
               <div className="p-3 sm:p-4 rounded-xl bg-card/50">
                 <p className="text-xs sm:text-sm text-muted-foreground mb-1">Despesas</p>
                 <p className="text-lg sm:text-2xl font-display font-bold text-destructive">
@@ -629,6 +631,46 @@ export default function People() {
                 </p>
               </div>
             </div>
+            
+            {/* Second row: Per-person breakdown */}
+            {metrics.coupleExpenses > 0 && (
+              <div className="pt-4 border-t border-border/50">
+                <p className="text-xs text-muted-foreground mb-4 flex items-center justify-center gap-1.5">
+                  <Heart className="w-3 h-3 text-primary" />
+                  Divisão por pessoa
+                </p>
+                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                  {/* Person 1 */}
+                  <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
+                    <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person1Name}</p>
+                    <div className="space-y-1 text-left">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">P/ Casal:</span>
+                        <span className="font-medium">{formatCurrency(metrics.person1CoupleShare)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs pt-1 border-t border-border/50">
+                        <span className="text-muted-foreground">Total Real:</span>
+                        <span className="font-bold text-primary">{formatCurrency(metrics.person1TotalExpenses)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Person 2 */}
+                  <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
+                    <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person2Name}</p>
+                    <div className="space-y-1 text-left">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">P/ Casal:</span>
+                        <span className="font-medium">{formatCurrency(metrics.person2CoupleShare)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs pt-1 border-t border-border/50">
+                        <span className="text-muted-foreground">Total Real:</span>
+                        <span className="font-bold text-primary">{formatCurrency(metrics.person2TotalExpenses)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
         </div>
       </div>
     </AppLayout>

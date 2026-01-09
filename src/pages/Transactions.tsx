@@ -397,15 +397,42 @@ export default function Transactions() {
       .filter(t => t.type === "expense" && !!t.savingsDepositId)
       .reduce((sum, t) => sum + t.totalValue, 0);
     const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
+    
+    // NEW: Calculate individual expenses (not couple)
+    const individualExpenses = filteredTransactions
+      .filter(t => t.type === "expense" && !t.isCouple && !t.savingsDepositId)
+      .reduce((sum, t) => sum + t.totalValue, 0);
+    
+    // NEW: Calculate couple expense shares per person
+    const coupleExpenses = filteredTransactions.filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId);
+    const person1CoupleTotal = coupleExpenses.reduce((sum, t) => sum + (t.person1Share ?? 0), 0);
+    const person2CoupleTotal = coupleExpenses.reduce((sum, t) => sum + (t.person2Share ?? 0), 0);
+    
+    // NEW: Combined totals (individual + couple share)
+    const person1Combined = individualExpenses + person1CoupleTotal;
+    const person2Combined = individualExpenses + person2CoupleTotal;
+    
+    // Get names from first couple expense or fallback
+    const person1Name = coupleExpenses[0]?.person1Name || person1;
+    const person2Name = coupleExpenses[0]?.person2Name || person2;
+    
     return {
       expenses: regularExpenses,
       savingsDeposits,
       totalExpenses: regularExpenses + savingsDeposits,
       income,
       balance: income - regularExpenses,
-      count: filteredTransactions.length
+      count: filteredTransactions.length,
+      // NEW fields
+      individualExpenses,
+      person1CoupleTotal,
+      person2CoupleTotal,
+      person1Combined,
+      person2Combined,
+      person1Name,
+      person2Name,
     };
-  }, [filteredTransactions]);
+  }, [filteredTransactions, person1, person2]);
 
   const handleDeleteClick = (id: string) => {
     const tx = transactionsData.find((t) => t.id === id);
@@ -1118,31 +1145,40 @@ export default function Transactions() {
                       <td colSpan={3}></td>
                     </tr>
                     {filteredTransactions.some(t => t.isCouple) && (
-                      <tr className="border-t border-border bg-primary/5">
-                        <td></td>
-                        <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
-                          <span className="flex items-center justify-end gap-1.5">
-                            <Heart className="w-4 h-4 text-primary fill-primary" />
-                            Divisão Individual:
-                          </span>
-                        </td>
-                        <td className="px-2 py-3 text-xs text-right">
-                          {(() => {
-                            const coupleExpenses = filteredTransactions.filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId);
-                            const person1Total = coupleExpenses.reduce((sum, t) => sum + (t.person1Share ?? t.valuePerPerson), 0);
-                            const person2Total = coupleExpenses.reduce((sum, t) => sum + (t.person2Share ?? t.valuePerPerson), 0);
-                            const person1Name = coupleExpenses[0]?.person1Name || "Pessoa 1";
-                            const person2Name = coupleExpenses[0]?.person2Name || "Pessoa 2";
-                            return (
-                              <div className="flex flex-col gap-0.5">
-                                <span className="text-foreground font-medium">{person1Name}: {formatCurrency(person1Total)}</span>
-                                <span className="text-foreground font-medium">{person2Name}: {formatCurrency(person2Total)}</span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                        <td colSpan={2}></td>
-                      </tr>
+                      <>
+                        <tr className="border-t border-border bg-primary/5">
+                          <td></td>
+                          <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
+                            <span className="flex items-center justify-end gap-1.5">
+                              <Heart className="w-4 h-4 text-primary fill-primary" />
+                              P/ Pessoa (casal):
+                            </span>
+                          </td>
+                          <td className="px-2 py-3 text-xs text-right">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-foreground font-medium">{summary.person1Name}: {formatCurrency(summary.person1CoupleTotal)}</span>
+                              <span className="text-foreground font-medium">{summary.person2Name}: {formatCurrency(summary.person2CoupleTotal)}</span>
+                            </div>
+                          </td>
+                          <td colSpan={2}></td>
+                        </tr>
+                        <tr className="bg-primary/10">
+                          <td></td>
+                          <td colSpan={8} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
+                            <span className="flex items-center justify-end gap-1.5">
+                              <Heart className="w-4 h-4 text-primary fill-primary" />
+                              Total Combinado:
+                            </span>
+                          </td>
+                          <td className="px-2 py-3 text-xs text-right">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-foreground font-bold">{summary.person1Name}: {formatCurrency(summary.person1Combined)}</span>
+                              <span className="text-foreground font-bold">{summary.person2Name}: {formatCurrency(summary.person2Combined)}</span>
+                            </div>
+                          </td>
+                          <td colSpan={2}></td>
+                        </tr>
+                      </>
                     )}
                   </tfoot>
                 </table>
@@ -1153,23 +1189,33 @@ export default function Transactions() {
 
         {/* Mobile Fixed Footer with Summary */}
         <div className="fixed bottom-0 left-0 right-0 md:hidden bg-card/95 backdrop-blur-sm border-t border-border z-40">
-          <div className="flex items-center justify-between px-3 py-2.5">
+          <div className="flex items-center justify-between px-2 py-2">
             <div className="flex-1 text-center">
-              <p className="text-[10px] text-muted-foreground leading-tight">Despesas</p>
-              <p className="text-sm font-semibold text-destructive">{formatCurrency(summary.expenses)}</p>
+              <p className="text-[9px] text-muted-foreground leading-tight">Despesas</p>
+              <p className="text-xs font-semibold text-destructive">{formatCurrency(summary.expenses)}</p>
             </div>
-            <div className="w-px h-8 bg-border" />
+            <div className="w-px h-7 bg-border" />
             <div className="flex-1 text-center">
-              <p className="text-[10px] text-muted-foreground leading-tight">Receitas</p>
-              <p className="text-sm font-semibold text-success">{formatCurrency(summary.income)}</p>
+              <p className="text-[9px] text-muted-foreground leading-tight">Receitas</p>
+              <p className="text-xs font-semibold text-success">{formatCurrency(summary.income)}</p>
             </div>
-            <div className="w-px h-8 bg-border" />
+            <div className="w-px h-7 bg-border" />
             <div className="flex-1 text-center">
-              <p className="text-[10px] text-muted-foreground leading-tight">Saldo</p>
-              <p className={cn("text-sm font-semibold", summary.balance >= 0 ? "text-primary" : "text-destructive")}>
+              <p className="text-[9px] text-muted-foreground leading-tight">Saldo</p>
+              <p className={cn("text-xs font-semibold", summary.balance >= 0 ? "text-primary" : "text-destructive")}>
                 {formatCurrency(summary.balance)}
               </p>
             </div>
+            {summary.person1CoupleTotal > 0 && (
+              <>
+                <div className="w-px h-7 bg-border" />
+                <div className="flex-1 text-center">
+                  <p className="text-[9px] text-muted-foreground leading-tight">Combinado</p>
+                  <p className="text-[10px] font-medium text-primary leading-tight">{summary.person1Name}: {formatCurrency(summary.person1Combined)}</p>
+                  <p className="text-[10px] font-medium text-primary leading-tight">{summary.person2Name}: {formatCurrency(summary.person2Combined)}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
