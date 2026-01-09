@@ -328,7 +328,12 @@ export default function Transactions() {
           return false;
         }
         if (personFilter !== "Todos" && t.person !== personFilter) return false;
-        if (forWhoFilter !== "Todos" && t.forWho !== forWhoFilter) return false;
+        // For "para quem" filter: include if forWho matches OR if it's a couple transaction
+        if (forWhoFilter !== "Todos") {
+          const matchesPerson = t.forWho === forWhoFilter;
+          const isCoupleTransaction = t.isCouple === true;
+          if (!matchesPerson && !isCoupleTransaction) return false;
+        }
         if (categoryFilter !== "Todas" && t.category !== categoryFilter) return false;
         if (bankFilter !== "Todos" && t.bank !== bankFilter) return false;
         if (paymentFilter !== "Todos" && t.paymentMethod !== paymentFilter) return false;
