@@ -1094,137 +1094,168 @@ export default function Transactions() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-secondary/50 border-t border-border">
-                    <tr className="bg-primary/10 border-b border-border">
-                      <td></td>
-                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
-                        Total do Mês:
-                      </td>
-                      <td className="px-2 py-3 text-sm font-bold text-primary text-right">
-                        {formatCurrency(summary.totalExpenses + summary.income)}
-                      </td>
-                      <td colSpan={3}></td>
-                    </tr>
-                    <tr>
-                      <td></td>
-                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                        Despesas:
-                      </td>
-                      <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
-                        {formatCurrency(summary.expenses)}
-                      </td>
-                      <td colSpan={3}></td>
-                    </tr>
-                    {summary.savingsDeposits > 0 && (
-                      <tr>
-                        <td></td>
-                        <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                          🎯 Guardado em Metas:
-                        </td>
-                        <td className="px-2 py-3 text-sm font-medium text-foreground text-right">
-                          {formatCurrency(summary.savingsDeposits)}
-                        </td>
-                        <td colSpan={3}></td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td></td>
-                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                        Receitas:
-                      </td>
-                      <td className="px-2 py-3 text-sm font-medium text-success text-right">
-                        {formatCurrency(summary.income)}
-                      </td>
-                      <td colSpan={3}></td>
-                    </tr>
-                    <tr className="border-t border-border">
-                      <td></td>
-                      <td colSpan={7} className="px-3 py-3 text-right text-sm font-medium text-muted-foreground">
-                        Saldo:
-                      </td>
-                      <td className="px-2 py-3 text-sm font-medium text-right">
-                        <span className={summary.balance >= 0 ? "text-success" : "text-destructive"}>
+                </table>
+
+                {/* Desktop Summary Section - Two Cards */}
+                <div className="grid grid-cols-12 gap-4 mt-6">
+                  {/* Card 1: Resumo do Mês (5 colunas) */}
+                  <div className="col-span-5 bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm">
+                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">
+                      Resumo do Mês
+                    </h3>
+                    <div className="space-y-2.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600 dark:text-slate-300">Movimentação</span>
+                        <span className="text-sm font-medium text-primary tabular-nums">
+                          {formatCurrency(summary.totalExpenses + summary.income)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600 dark:text-slate-300">Despesas</span>
+                        <span className="text-sm font-medium text-primary tabular-nums">
+                          {formatCurrency(summary.expenses)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-slate-600 dark:text-slate-300">Receitas</span>
+                        <span className="text-sm font-medium text-emerald-600 dark:text-emerald-500 tabular-nums">
+                          {formatCurrency(summary.income)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 dark:border-slate-700">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Saldo</span>
+                        <span className={cn(
+                          "text-lg font-bold tabular-nums",
+                          summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-500" : "text-primary"
+                        )}>
                           {formatCurrency(summary.balance)}
                         </span>
-                      </td>
-                      <td colSpan={3}></td>
-                    </tr>
-                    {filteredTransactions.some(t => t.isCouple) && (
-                      <>
-                        <tr className="border-t border-border bg-primary/5">
-                          <td></td>
-                          <td colSpan={8} className="px-3 py-3 text-right text-sm font-medium text-foreground">
-                            <span className="flex items-center justify-end gap-1.5">
-                              <Heart className="w-4 h-4 text-primary fill-primary" />
-                              P/ Pessoa (casal):
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-xs text-right">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-foreground font-medium">{summary.person1Name}: {formatCurrency(summary.person1CoupleTotal)}</span>
-                              <span className="text-foreground font-medium">{summary.person2Name}: {formatCurrency(summary.person2CoupleTotal)}</span>
-                            </div>
-                          </td>
-                          <td colSpan={2}></td>
-                        </tr>
-                        <tr className="bg-primary/10">
-                          <td></td>
-                          <td colSpan={8} className="px-3 py-3 text-right text-sm font-semibold text-foreground">
-                            <span className="flex items-center justify-end gap-1.5">
-                              <Heart className="w-4 h-4 text-primary fill-primary" />
-                              Total Combinado:
-                            </span>
-                          </td>
-                          <td className="px-2 py-3 text-xs text-right">
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-foreground font-bold">{summary.person1Name}: {formatCurrency(summary.person1Combined)}</span>
-                              <span className="text-foreground font-bold">{summary.person2Name}: {formatCurrency(summary.person2Combined)}</span>
-                            </div>
-                          </td>
-                          <td colSpan={2}></td>
-                        </tr>
-                      </>
-                    )}
-                  </tfoot>
-                </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Divisão do Casal (7 colunas) */}
+                  {filteredTransactions.some(t => t.isCouple) && (
+                    <div className="col-span-7 bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-sm">
+                      <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">
+                        Divisão do Casal
+                      </h3>
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-xs text-slate-500 dark:text-slate-400 uppercase">
+                            <th className="text-left font-medium pb-3">Pessoa</th>
+                            <th className="text-right font-medium pb-3">
+                              <span className="inline-flex items-center gap-1">
+                                P/ Pessoa <Heart className="w-3 h-3 text-primary/70" />
+                              </span>
+                            </th>
+                            <th className="text-right font-medium pb-3 bg-slate-50 dark:bg-slate-800/50 px-3 rounded-t-lg">
+                              Total Combinado
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          <tr className="border-t border-slate-100 dark:border-slate-700">
+                            <td className="py-3 text-slate-700 dark:text-slate-200">{summary.person1Name}</td>
+                            <td className="py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                              {formatCurrency(summary.person1CoupleTotal)}
+                            </td>
+                            <td className="py-3 text-right tabular-nums font-semibold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-800/50 px-3">
+                              {formatCurrency(summary.person1Combined)}
+                            </td>
+                          </tr>
+                          <tr className="border-t border-slate-100 dark:border-slate-700">
+                            <td className="py-3 text-slate-700 dark:text-slate-200">{summary.person2Name}</td>
+                            <td className="py-3 text-right tabular-nums text-slate-600 dark:text-slate-300">
+                              {formatCurrency(summary.person2CoupleTotal)}
+                            </td>
+                            <td className="py-3 text-right tabular-nums font-semibold text-slate-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-800/50 px-3 rounded-b-lg">
+                              {formatCurrency(summary.person2Combined)}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Mobile Fixed Footer with Summary */}
-        <div className="fixed bottom-0 left-0 right-0 md:hidden bg-card/95 backdrop-blur-sm border-t border-border z-40">
-          <div className="flex items-center justify-between px-2 py-2">
-            <div className="flex-1 text-center">
-              <p className="text-[9px] text-muted-foreground leading-tight">Despesas</p>
-              <p className="text-xs font-semibold text-destructive">{formatCurrency(summary.expenses)}</p>
-            </div>
-            <div className="w-px h-7 bg-border" />
-            <div className="flex-1 text-center">
-              <p className="text-[9px] text-muted-foreground leading-tight">Receitas</p>
-              <p className="text-xs font-semibold text-success">{formatCurrency(summary.income)}</p>
-            </div>
-            <div className="w-px h-7 bg-border" />
-            <div className="flex-1 text-center">
-              <p className="text-[9px] text-muted-foreground leading-tight">Saldo</p>
-              <p className={cn("text-xs font-semibold", summary.balance >= 0 ? "text-primary" : "text-destructive")}>
+        {/* Mobile Summary Section - Two Cards Stacked */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-40 p-3 space-y-3 max-h-[45vh] overflow-y-auto">
+          {/* Card 1: Resumo do Mês */}
+          <div className="bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+            <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+              Resumo do Mês
+            </h3>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
+              <span className="text-slate-600 dark:text-slate-300">Movimentação</span>
+              <span className="text-right font-medium text-primary tabular-nums">
+                {formatCurrency(summary.totalExpenses + summary.income)}
+              </span>
+              <span className="text-slate-600 dark:text-slate-300">Despesas</span>
+              <span className="text-right font-medium text-primary tabular-nums">
+                {formatCurrency(summary.expenses)}
+              </span>
+              <span className="text-slate-600 dark:text-slate-300">Receitas</span>
+              <span className="text-right font-medium text-emerald-600 dark:text-emerald-500 tabular-nums">
+                {formatCurrency(summary.income)}
+              </span>
+              <span className="text-slate-700 dark:text-slate-200 font-medium border-t border-slate-100 dark:border-slate-700 pt-2">Saldo</span>
+              <span className={cn(
+                "text-right font-bold tabular-nums border-t border-slate-100 dark:border-slate-700 pt-2",
+                summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-500" : "text-primary"
+              )}>
                 {formatCurrency(summary.balance)}
-              </p>
+              </span>
             </div>
-            {summary.person1CoupleTotal > 0 && (
-              <>
-                <div className="w-px h-7 bg-border" />
-                <div className="flex-1 text-center">
-                  <p className="text-[9px] text-muted-foreground leading-tight">Combinado</p>
-                  <p className="text-[10px] font-medium text-primary leading-tight">{summary.person1Name}: {formatCurrency(summary.person1Combined)}</p>
-                  <p className="text-[10px] font-medium text-primary leading-tight">{summary.person2Name}: {formatCurrency(summary.person2Combined)}</p>
-                </div>
-              </>
-            )}
           </div>
+
+          {/* Card 2: Divisão do Casal */}
+          {filteredTransactions.some(t => t.isCouple) && (
+            <div className="bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
+              <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
+                Divisão do Casal
+              </h3>
+              <div className="space-y-2">
+                {/* Header */}
+                <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 uppercase pb-1">
+                  <span>Pessoa</span>
+                  <div className="flex gap-4">
+                    <span className="inline-flex items-center gap-1">
+                      P/ Pessoa <Heart className="w-2.5 h-2.5 text-primary/70" />
+                    </span>
+                    <span className="bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded text-[10px]">Combinado</span>
+                  </div>
+                </div>
+                {/* Pessoa 1 */}
+                <div className="flex justify-between items-center text-sm border-t border-slate-100 dark:border-slate-700 pt-2">
+                  <span className="text-slate-700 dark:text-slate-200">{summary.person1Name}</span>
+                  <div className="flex gap-4 items-center">
+                    <span className="text-slate-600 dark:text-slate-300 tabular-nums">{formatCurrency(summary.person1CoupleTotal)}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded min-w-[90px] text-right">
+                      {formatCurrency(summary.person1Combined)}
+                    </span>
+                  </div>
+                </div>
+                {/* Pessoa 2 */}
+                <div className="flex justify-between items-center text-sm border-t border-slate-100 dark:border-slate-700 pt-2">
+                  <span className="text-slate-700 dark:text-slate-200">{summary.person2Name}</span>
+                  <div className="flex gap-4 items-center">
+                    <span className="text-slate-600 dark:text-slate-300 tabular-nums">{formatCurrency(summary.person2CoupleTotal)}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded min-w-[90px] text-right">
+                      {formatCurrency(summary.person2Combined)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Mobile FAB */}
+        {/* Mobile FAB - positioned above the summary cards */}
         <Button
           onClick={() => {
             setEditTransactionId(null);
@@ -1232,7 +1263,7 @@ export default function Transactions() {
             setNewTransactionModalOpen(true);
           }}
           size="lg"
-          className="fixed bottom-16 right-4 md:hidden h-14 w-14 rounded-full shadow-lg z-50"
+          className="fixed bottom-[220px] right-4 md:hidden h-14 w-14 rounded-full shadow-lg z-50"
         >
           <Plus className="h-6 w-6" />
         </Button>
