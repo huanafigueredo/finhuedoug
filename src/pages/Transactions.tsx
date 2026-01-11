@@ -398,19 +398,23 @@ export default function Transactions() {
       .reduce((sum, t) => sum + t.totalValue, 0);
     const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
     
-    // NEW: Calculate individual expenses (not couple)
-    const individualExpenses = filteredTransactions
-      .filter(t => t.type === "expense" && !t.isCouple && !t.savingsDepositId)
+    // FIXED: Calculate individual expenses PER PERSON (not couple, expense type only)
+    const person1Individual = filteredTransactions
+      .filter(t => t.type === "expense" && !t.isCouple && !t.savingsDepositId && t.forWho === person1)
       .reduce((sum, t) => sum + t.totalValue, 0);
     
-    // NEW: Calculate couple expense shares per person
+    const person2Individual = filteredTransactions
+      .filter(t => t.type === "expense" && !t.isCouple && !t.savingsDepositId && t.forWho === person2)
+      .reduce((sum, t) => sum + t.totalValue, 0);
+    
+    // Calculate couple expense shares per person (expense type only)
     const coupleExpenses = filteredTransactions.filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId);
     const person1CoupleTotal = coupleExpenses.reduce((sum, t) => sum + (t.person1Share ?? 0), 0);
     const person2CoupleTotal = coupleExpenses.reduce((sum, t) => sum + (t.person2Share ?? 0), 0);
     
-    // NEW: Combined totals (individual + couple share)
-    const person1Combined = individualExpenses + person1CoupleTotal;
-    const person2Combined = individualExpenses + person2CoupleTotal;
+    // FIXED: Combined totals = individual expenses (per person) + couple share (per person)
+    const person1Combined = person1Individual + person1CoupleTotal;
+    const person2Combined = person2Individual + person2CoupleTotal;
     
     // Get names from first couple expense or fallback
     const person1Name = coupleExpenses[0]?.person1Name || person1;
@@ -423,8 +427,9 @@ export default function Transactions() {
       income,
       balance: income - regularExpenses,
       count: filteredTransactions.length,
-      // NEW fields
-      individualExpenses,
+      // Per-person fields
+      person1Individual,
+      person2Individual,
       person1CoupleTotal,
       person2CoupleTotal,
       person1Combined,
