@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 import { useTransactions } from "@/hooks/useTransactions";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useSplitCalculation } from "@/hooks/useSplitCalculation";
-import { parseISO, differenceInMonths } from "date-fns";
 import { GoalOwnerFilter } from "@/hooks/useSavingsGoals";
+import { shouldShowInMonth, getTransactionMonthValue } from "@/lib/transactionUtils";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -13,55 +13,6 @@ const formatCurrency = (value: number) => {
     currency: "BRL",
   }).format(value);
 };
-
-// Helper to get month value from transaction
-const getMonthValue = (t: any): number => {
-  if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    return Number(t.installment_value);
-  }
-  return Number(t.total_value);
-};
-
-// Helper function for installment projection
-function calculateInstallmentForMonth(
-  firstInstallmentDate: Date,
-  startInstallment: number,
-  totalInstallments: number,
-  filterMonth: number,
-  filterYear: number
-): { currentInstallment: number; isInRange: boolean } | null {
-  const firstMonth = firstInstallmentDate.getMonth() + 1;
-  const firstYear = firstInstallmentDate.getFullYear();
-  
-  const filterDate = new Date(filterYear, filterMonth - 1, 1);
-  const firstDate = new Date(firstYear, firstMonth - 1, 1);
-  const monthsDiff = differenceInMonths(filterDate, firstDate);
-  
-  const currentInstallment = startInstallment + monthsDiff;
-  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
-  
-  return { currentInstallment, isInRange };
-}
-
-// Check if transaction should appear in the filtered month
-function shouldShowInMonth(t: any, filterMonth: number, filterYear: number): boolean {
-  const rawDate = parseISO(t.date);
-  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
-  
-  if (isNewStyleInstallment) {
-    const startInstallment = t.installment_number || 1;
-    const result = calculateInstallmentForMonth(
-      rawDate,
-      startInstallment,
-      t.total_installments,
-      filterMonth + 1,
-      filterYear
-    );
-    return result?.isInRange ?? false;
-  }
-  
-  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
-}
 
 interface MonthlySavingsReportProps {
   month: number; // 0-indexed
@@ -172,7 +123,7 @@ export function MonthlySavingsReport({ month, year, ownerFilter, className }: Mo
     monthTransactions
       .filter((t) => isSavingsTransfer(t) && filterByOwner(t, "expense"))
       .forEach((t) => {
-        savedInGoals += getValueForOwner(t, getMonthValue(t));
+        savedInGoals += getValueForOwner(t, getTransactionMonthValue(t));
       });
 
     // Real expenses (excluding savings deposits)
@@ -180,7 +131,7 @@ export function MonthlySavingsReport({ month, year, ownerFilter, className }: Mo
     monthTransactions
       .filter((t) => t.type === "expense" && !isSavingsTransfer(t) && filterByOwner(t, "expense"))
       .forEach((t) => {
-        realExpenses += getValueForOwner(t, getMonthValue(t));
+        realExpenses += getValueForOwner(t, getTransactionMonthValue(t));
       });
 
     // Total income
@@ -188,7 +139,7 @@ export function MonthlySavingsReport({ month, year, ownerFilter, className }: Mo
     monthTransactions
       .filter((t) => t.type === "income" && filterByOwner(t, "income"))
       .forEach((t) => {
-        totalIncome += getValueForOwner(t, getMonthValue(t));
+        totalIncome += getValueForOwner(t, getTransactionMonthValue(t));
       });
 
     // Savings rate (percentage of income saved)

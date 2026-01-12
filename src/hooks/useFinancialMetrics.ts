@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { parseISO, differenceInMonths } from "date-fns";
 import { usePersonNames } from "./useUserSettings";
 import { useSplitCalculation } from "./useSplitCalculation";
+import { shouldShowInMonth, getTransactionMonthValue } from "@/lib/transactionUtils";
 
 export interface FinancialMetrics {
   // Total geral
@@ -60,60 +60,6 @@ interface Transaction {
   custom_person1_percentage?: number | null;
   custom_person2_percentage?: number | null;
   [key: string]: any;
-}
-
-// Helper: get the value to use for a transaction in a specific month
-// For installment transactions (single-record style), use installment_value
-// For regular transactions, use total_value
-function getTransactionMonthValue(t: Transaction): number {
-  // New-style installment: single record with installment_value
-  if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    return Number(t.installment_value);
-  }
-  // Regular transaction or old-style installment (already has correct value per record)
-  return Number(t.total_value);
-}
-
-// Helper function to calculate installment info for a given filter month/year
-function calculateInstallmentForMonth(
-  firstInstallmentDate: Date,
-  startInstallment: number,
-  totalInstallments: number,
-  filterMonth: number,
-  filterYear: number
-): { currentInstallment: number; isInRange: boolean } | null {
-  const firstMonth = firstInstallmentDate.getMonth() + 1;
-  const firstYear = firstInstallmentDate.getFullYear();
-  
-  const filterDate = new Date(filterYear, filterMonth - 1, 1);
-  const firstDate = new Date(firstYear, firstMonth - 1, 1);
-  const monthsDiff = differenceInMonths(filterDate, firstDate);
-  
-  const currentInstallment = startInstallment + monthsDiff;
-  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
-  
-  return { currentInstallment, isInRange };
-}
-
-// Check if transaction should appear in the filtered month
-function shouldShowInMonth(t: Transaction, filterMonth: number, filterYear: number): boolean {
-  const rawDate = parseISO(t.date);
-  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
-  
-  if (isNewStyleInstallment) {
-    const startInstallment = t.installment_number || 1;
-    const result = calculateInstallmentForMonth(
-      rawDate,
-      startInstallment,
-      t.total_installments!,
-      filterMonth + 1, // filterMonth is 0-indexed, function expects 1-indexed
-      filterYear
-    );
-    return result?.isInRange ?? false;
-  }
-  
-  // Regular transaction - match by date
-  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
 }
 
 export function useFinancialMetrics(

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -23,8 +23,9 @@ import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useContasAVencer } from "@/hooks/useContasAgendadas";
 import { useCoupleMembers } from "@/hooks/useCoupleMembers";
-import { format, parseISO, differenceInMonths } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { shouldShowInMonth, getTransactionMonthValue } from "@/lib/transactionUtils";
 
 const months = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -32,52 +33,6 @@ const months = [
 ];
 
 const years = ["2025", "2026", "2027", "2028", "2029", "2030"];
-
-function calculateInstallmentForMonth(
-  firstInstallmentDate: Date,
-  startInstallment: number,
-  totalInstallments: number,
-  filterMonth: number,
-  filterYear: number
-): { currentInstallment: number; isInRange: boolean } | null {
-  const firstMonth = firstInstallmentDate.getMonth() + 1;
-  const firstYear = firstInstallmentDate.getFullYear();
-  
-  const filterDate = new Date(filterYear, filterMonth - 1, 1);
-  const firstDate = new Date(firstYear, firstMonth - 1, 1);
-  const monthsDiff = differenceInMonths(filterDate, firstDate);
-  
-  const currentInstallment = startInstallment + monthsDiff;
-  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
-  
-  return { currentInstallment, isInRange };
-}
-
-function shouldShowInMonth(t: any, filterMonth: number, filterYear: number): boolean {
-  const rawDate = parseISO(t.date);
-  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
-  
-  if (isNewStyleInstallment) {
-    const startInstallment = t.installment_number || 1;
-    const result = calculateInstallmentForMonth(
-      rawDate,
-      startInstallment,
-      t.total_installments,
-      filterMonth + 1,
-      filterYear
-    );
-    return result?.isInRange ?? false;
-  }
-  
-  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
-}
-
-const getMonthValue = (t: any): number => {
-  if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    return Number(t.installment_value);
-  }
-  return Number(t.total_value);
-};
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -116,7 +71,7 @@ export default function Dashboard() {
   const totalSavedInGoals = useMemo(() => {
     return filteredTransactions
       .filter((t) => t.savings_deposit_id)
-      .reduce((sum, t) => sum + getMonthValue(t), 0);
+      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
   }, [filteredTransactions]);
 
   const categoryData = useMemo(() => {
@@ -126,7 +81,7 @@ export default function Dashboard() {
       .filter((t) => t.type === "expense" && t.category && !t.savings_deposit_id)
       .forEach((t) => {
         const cat = t.category || "Outros";
-        categoryMap[cat] = (categoryMap[cat] || 0) + getMonthValue(t);
+        categoryMap[cat] = (categoryMap[cat] || 0) + getTransactionMonthValue(t);
       });
 
     const colors = [
@@ -150,7 +105,7 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 5)
       .map((t) => {
-        const monthValue = getMonthValue(t);
+        const monthValue = getTransactionMonthValue(t);
         return {
           id: t.id,
           description: t.description,
@@ -181,7 +136,7 @@ export default function Dashboard() {
 
       const expenses = monthTransactions
         .filter((t) => t.type === "expense" && !t.savings_deposit_id)
-        .reduce((sum, t) => sum + getMonthValue(t), 0);
+        .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
 
       result.push({
         name: months[monthIdx].substring(0, 3),
