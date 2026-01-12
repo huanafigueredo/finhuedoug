@@ -5,7 +5,7 @@ import { useSplitSettings } from "./useSplitSettings";
 import { useCoupleMembers } from "./useCoupleMembers";
 import { useCategorySplits, getCategorySplit } from "./useCategorySplits";
 import { Transaction } from "./useTransactions";
-import { parseISO } from "date-fns";
+import { parseISO, differenceInMonths } from "date-fns";
 
 export type BudgetStatus = "ok" | "warning" | "exceeded";
 
@@ -28,6 +28,48 @@ export interface BudgetSummary {
   budgetProgress: BudgetProgress[];
   hasWarnings: boolean;
   hasExceeded: boolean;
+}
+
+// Helper function to calculate installment info for a given filter month/year
+function calculateInstallmentForMonth(
+  firstInstallmentDate: Date,
+  startInstallment: number,
+  totalInstallments: number,
+  filterMonth: number,
+  filterYear: number
+): { currentInstallment: number; isInRange: boolean } | null {
+  const firstMonth = firstInstallmentDate.getMonth() + 1;
+  const firstYear = firstInstallmentDate.getFullYear();
+  
+  const filterDate = new Date(filterYear, filterMonth - 1, 1);
+  const firstDate = new Date(firstYear, firstMonth - 1, 1);
+  const monthsDiff = differenceInMonths(filterDate, firstDate);
+  
+  const currentInstallment = startInstallment + monthsDiff;
+  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
+  
+  return { currentInstallment, isInRange };
+}
+
+// Check if transaction should appear in the filtered month (including dynamic installments)
+function shouldShowInMonth(t: Transaction, filterMonth: number, filterYear: number): boolean {
+  const rawDate = parseISO(t.date);
+  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
+  
+  if (isNewStyleInstallment) {
+    const startInstallment = t.installment_number || 1;
+    const result = calculateInstallmentForMonth(
+      rawDate,
+      startInstallment,
+      t.total_installments!,
+      filterMonth + 1, // filterMonth is 0-indexed, function expects 1-indexed
+      filterYear
+    );
+    return result?.isInRange ?? false;
+  }
+  
+  // Regular transaction - match by date
+  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
 }
 
 function getBaseMonthValueInCents(t: Transaction): number {
@@ -122,14 +164,13 @@ export function useBudgetProgress(
   );
 
   return useMemo(() => {
-    // Filtrar transações do mês/ano selecionado e por pessoa
+    // Filtrar transações do mês/ano selecionado usando shouldShowInMonth (inclui parcelamentos dinâmicos)
     const monthTransactions = transactions.filter((t) => {
-      const date = parseISO(t.date);
-      const isInMonth = date.getMonth() === monthIndex &&
-        date.getFullYear() === year &&
-        t.type === "expense";
+      // First check if transaction should appear in this month (handles installments)
+      if (!shouldShowInMonth(t, monthIndex, year)) return false;
       
-      if (!isInMonth) return false;
+      // Must be expense type
+      if (t.type !== "expense") return false;
       
       // Excluir transações de poupança (transferências internas)
       if (t.savings_deposit_id) return false;
