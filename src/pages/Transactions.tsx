@@ -200,13 +200,22 @@ export default function Transactions() {
   };
 
   // Transform and filter transactions with dynamic installment calculation
-  const filteredTransactions = useMemo(() => {
+const filteredTransactions = useMemo(() => {
     const filterMonthNum = monthFilter !== "Todos" ? parseInt(monthFilter) : null;
     const filterYearNum = yearFilter !== "Todos" ? parseInt(yearFilter) : null;
 
-    return transactionsData
+    const result = transactionsData
       .map((t) => {
-        const rawDate = parseISO(t.date);
+        // --- CORREÇÃO DE DATA AQUI ---
+        // Em vez de parseISO, criamos a data manualmente para ignorar fuso horário
+        // Forçamos o horário para 12:00 (meio-dia) para evitar viradas de dia
+        let rawDate;
+        if (t.date && t.date.length >= 10) {
+           const [y, m, d] = t.date.substring(0, 10).split('-').map(Number);
+           rawDate = new Date(y, m - 1, d, 12, 0, 0);
+        } else {
+           rawDate = parseISO(t.date);
+        }
         
         const isNewStyleInstallment = t.is_installment && 
           !t.is_generated_installment && 
@@ -216,7 +225,7 @@ export default function Transactions() {
 
         if (isNewStyleInstallment && filterMonthNum && filterYearNum) {
           const startInstallment = t.installment_number || 1;
-          const result = calculateInstallmentForMonth(
+          const resultCalc = calculateInstallmentForMonth(
             rawDate,
             startInstallment,
             t.total_installments!,
@@ -224,11 +233,11 @@ export default function Transactions() {
             filterYearNum
           );
 
-          if (!result || !result.isInRange) {
+          if (!resultCalc || !resultCalc.isInRange) {
             return null;
           }
 
-          const monthsFromStart = result.currentInstallment - startInstallment;
+          const monthsFromStart = resultCalc.currentInstallment - startInstallment;
           const installmentDate = addMonths(rawDate, monthsFromStart);
           
           const installmentValue = t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!;
@@ -241,7 +250,7 @@ export default function Transactions() {
           return {
             id: t.id,
             date: format(installmentDate, "dd/MM/yyyy"),
-            rawDate: installmentDate,
+            rawDate: installmentDate, // Data correta para ordenação
             description: t.description,
             observacao: t.observacao,
             person: translatePerson(t.paid_by),
@@ -255,7 +264,7 @@ export default function Transactions() {
             isCouple: t.is_couple || false,
             type: t.type as "income" | "expense",
             isInstallment: true,
-            installmentNumber: result.currentInstallment,
+            installmentNumber: resultCalc.currentInstallment,
             totalInstallments: t.total_installments,
             realTotalValue: Number(t.total_value),
             installmentValue: installmentValue,
@@ -266,7 +275,6 @@ export default function Transactions() {
             firstInstallmentDate: rawDate,
             startInstallment: startInstallment,
             savingsDepositId: t.savings_deposit_id || null,
-            // Split fields for display
             person1Share: split?.person1,
             person2Share: split?.person2,
             person1Name: person1,
@@ -275,13 +283,13 @@ export default function Transactions() {
           };
         }
 
-        // For installment transactions, use installment_value as the display value
+        // --- Lógica Padrão (Não é parcela projetada) ---
+        
         const isLegacyInstallment = t.is_installment && t.total_installments && t.total_installments > 1;
         const displayValue = isLegacyInstallment && t.installment_value 
           ? Number(t.installment_value) 
           : Number(t.total_value);
         
-        // Calculate split for couple expenses
         const split = t.is_couple 
           ? calculateSplitForTransaction(displayValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
           : null;
@@ -289,7 +297,7 @@ export default function Transactions() {
         return {
           id: t.id,
           date: format(rawDate, "dd/MM/yyyy"),
-          rawDate,
+          rawDate, // Usando a rawDate corrigida
           description: t.description,
           observacao: t.observacao,
           person: translatePerson(t.paid_by),
@@ -314,7 +322,6 @@ export default function Transactions() {
           firstInstallmentDate: undefined,
           startInstallment: undefined,
           savingsDepositId: t.savings_deposit_id || null,
-          // Split fields for display
           person1Share: split?.person1,
           person2Share: split?.person2,
           person1Name: person1,
@@ -328,6 +335,7 @@ export default function Transactions() {
           return false;
         }
         if (personFilter !== "Todos" && t.person !== personFilter) return false;
+        
         // For "para quem" filter: include if forWho matches OR if it's a couple transaction
         if (forWhoFilter !== "Todos") {
           const matchesPerson = t.forWho === forWhoFilter;
@@ -384,6 +392,11 @@ export default function Transactions() {
 
         return true;
       });
+
+      // --- CORREÇÃO DE ORDENAÇÃO ---
+      // Ordena por data (mais recente primeiro)
+      return result.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+
   }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
 
   const years = ["Todos", "2030", "2029", "2028", "2027", "2026", "2025"];
