@@ -5,7 +5,10 @@ export interface CategoryBudget {
   id: string;
   user_id: string;
   category_id: string;
-  budget_amount: number; // em centavos
+  budget_amount: number; // Total (sum of segments or legacy)
+  person1_budget: number; // New field
+  person2_budget: number; // New field
+  couple_budget: number; // New field
   created_at: string;
   updated_at: string;
 }
@@ -25,15 +28,45 @@ export function useCategoryBudgets() {
   });
 }
 
+export function useDeleteCategoryBudget() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("category_budgets")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["category-budgets"] });
+    },
+  });
+}
+
 export function useUpsertCategoryBudget() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ category_id, budget_amount }: { category_id: string; budget_amount: number }) => {
+    mutationFn: async ({
+      category_id,
+      budget_amount,
+      person1_budget,
+      person2_budget,
+      couple_budget
+    }: {
+      category_id: string;
+      budget_amount: number;
+      person1_budget: number;
+      person2_budget: number;
+      couple_budget: number;
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Tentar atualizar primeiro
+      // Tentar atualizar primeiro se existir orçamento para essa categoria e usuário
       const { data: existing } = await supabase
         .from("category_budgets")
         .select("id")
@@ -41,11 +74,18 @@ export function useUpsertCategoryBudget() {
         .eq("category_id", category_id)
         .maybeSingle();
 
+      const payload = {
+        budget_amount,
+        person1_budget,
+        person2_budget,
+        couple_budget
+      };
+
       if (existing) {
         // Update
         const { data, error } = await supabase
           .from("category_budgets")
-          .update({ budget_amount })
+          .update(payload)
           .eq("id", existing.id)
           .select()
           .single();
@@ -59,7 +99,7 @@ export function useUpsertCategoryBudget() {
           .insert({
             user_id: user.id,
             category_id,
-            budget_amount,
+            ...payload
           })
           .select()
           .single();
@@ -67,24 +107,6 @@ export function useUpsertCategoryBudget() {
         if (error) throw error;
         return data;
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["category-budgets"] });
-    },
-  });
-}
-
-export function useDeleteCategoryBudget() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("category_budgets")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["category-budgets"] });

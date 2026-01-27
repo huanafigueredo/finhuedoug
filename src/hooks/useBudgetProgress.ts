@@ -31,15 +31,20 @@ export interface BudgetSummary {
 }
 
 function getBaseMonthValueInCents(t: Transaction): number {
-  // Para transações parceladas, usar o valor da parcela
-  // Converter de Reais para centavos (valores no banco estão em Reais)
-  let value: number;
-  if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    value = Number(t.installment_value);
-  } else {
-    value = Number(t.total_value);
+  // Para transações parceladas, usar o valor da parcela se disponível
+  if (t.is_installment) {
+    // Se tiver valor de parcela explícito, usa ele
+    if (t.installment_value) {
+      return Math.round(Number(t.installment_value) * 100);
+    }
+    // Se não tiver (fallback defensivo), tenta calcular do total
+    if (t.total_value && t.total_installments) {
+      return Math.round((Number(t.total_value) * 100) / Number(t.total_installments));
+    }
   }
-  return Math.round(value * 100);
+
+  // Caso padrão: total_value * 100 (para centavos)
+  return Math.round(Number(t.total_value) * 100);
 }
 
 export function useBudgetProgress(
@@ -59,15 +64,15 @@ export function useBudgetProgress(
   // Calculate split for a given category - memoized callback
   const calculateSplitForCategory = useCallback(
     (
-      valueInCents: number, 
-      category?: string | null, 
+      valueInCents: number,
+      category?: string | null,
       subcategory?: string | null,
       customP1?: number | null,
       customP2?: number | null
     ): { person1: number; person2: number } => {
       // Priority 1: Check for transaction-level custom split first
       if (customP1 !== undefined && customP1 !== null &&
-          customP2 !== undefined && customP2 !== null) {
+        customP2 !== undefined && customP2 !== null) {
         return {
           person1: Math.round(valueInCents * (customP1 / 100)),
           person2: Math.round(valueInCents * (customP2 / 100)),
@@ -76,7 +81,7 @@ export function useBudgetProgress(
 
       // Priority 2: Check for category-specific rule
       const categoryRule = getCategorySplit(categorySplits, category, subcategory);
-      
+
       if (categoryRule) {
         const p1Pct = categoryRule.person1_percentage;
         const p2Pct = categoryRule.person2_percentage;
@@ -126,27 +131,27 @@ export function useBudgetProgress(
     const monthTransactions = transactions.filter((t) => {
       // First check if transaction should appear in this month (handles installments)
       if (!shouldShowInMonth(t, monthIndex, year)) return false;
-      
+
       // Must be expense type
       if (t.type !== "expense") return false;
-      
+
       // Excluir transações de poupança (transferências internas)
       if (t.savings_deposit_id) return false;
-      
+
       // Aplicar filtro de pessoa baseado em paid_by (quem pagou) e for_who (para quem)
       switch (personFilter) {
         case "person1":
           // Transações pagas pela pessoa 1, para a pessoa 1, ou do casal (metade)
-          return t.paid_by === person1Name || 
-                 t.for_who === person1Name || 
-                 t.for_who === "Casal" ||
-                 t.is_couple === true;
+          return t.paid_by === person1Name ||
+            t.for_who === person1Name ||
+            t.for_who === "Casal" ||
+            t.is_couple === true;
         case "person2":
           // Transações pagas pela pessoa 2, para a pessoa 2, ou do casal (metade)
-          return t.paid_by === person2Name || 
-                 t.for_who === person2Name || 
-                 t.for_who === "Casal" ||
-                 t.is_couple === true;
+          return t.paid_by === person2Name ||
+            t.for_who === person2Name ||
+            t.for_who === "Casal" ||
+            t.is_couple === true;
         case "couple":
           // Apenas transações do casal (for_who = "Casal" ou is_couple = true)
           return t.for_who === "Casal" || t.is_couple === true;
@@ -161,20 +166,20 @@ export function useBudgetProgress(
     monthTransactions.forEach((t) => {
       const cat = t.category || "Outros";
       const baseValue = getBaseMonthValueInCents(t);
-      
+
       let valueToAdd = baseValue;
       // Apply split rules for individual filters with couple expenses
       if (personFilter !== "all" && personFilter !== "couple" && t.is_couple) {
         const split = calculateSplitForCategory(
-          baseValue, 
-          t.category, 
+          baseValue,
+          t.category,
           t.subcategory,
           t.custom_person1_percentage,
           t.custom_person2_percentage
         );
         valueToAdd = personFilter === "person1" ? split.person1 : split.person2;
       }
-      
+
       spentByCategory[cat] = (spentByCategory[cat] || 0) + valueToAdd;
     });
 
@@ -182,16 +187,38 @@ export function useBudgetProgress(
     const budgetProgress: BudgetProgress[] = budgets.map((budget) => {
       const category = categories.find((c) => c.id === budget.category_id);
       const categoryName = category?.name || "Categoria";
-      const budgeted = budget.budget_amount;
+
+      let budgeted = budget.budget_amount;
+
+      switch (personFilter) {
+        case "person1":
+          budgeted = budget.person1_budget || 0; // Se não definido, assume 0 (requer configuração)
+          break;
+        case "person2":
+          budgeted = budget.person2_budget || 0;
+          break;
+        case "couple":
+          budgeted = budget.couple_budget || 0;
+          break;
+        default:
+          budgeted = budget.budget_amount;
+      }
+
       const spent = spentByCategory[categoryName] || 0;
       const percentage = budgeted > 0 ? Math.round((spent / budgeted) * 100) : 0;
       const remaining = budgeted - spent;
 
       let status: BudgetStatus = "ok";
-      if (percentage >= 100) {
+      if (budgeted > 0 && percentage >= 100) {
         status = "exceeded";
-      } else if (percentage >= 80) {
+      } else if (budgeted > 0 && percentage >= 80) {
         status = "warning";
+      }
+
+      // Se não tem orçamento definido mas gastou, e o filtro é específico, marcar como exceeded?
+      // Se budgeted == 0 e spent > 0 -> Exceeded tecnicamente.
+      if (budgeted === 0 && spent > 0) {
+        status = "exceeded";
       }
 
       return {

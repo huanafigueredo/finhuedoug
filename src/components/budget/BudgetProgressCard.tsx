@@ -1,23 +1,28 @@
 import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Target, 
-  AlertTriangle, 
-  XCircle, 
-  CheckCircle,
+import {
+  Target,
+  AlertTriangle,
+  XCircle,
+  CheckCircle2,
   TrendingUp,
   TrendingDown,
-  Sparkles
+  Sparkles,
+  ShoppingBag,
+  ArrowRight,
+  MoreHorizontal
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BudgetProgress, BudgetSummary } from "@/hooks/useBudgetProgress";
 import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 interface BudgetProgressCardProps {
   summary: BudgetSummary;
   className?: string;
-  showConfigLink?: boolean;
+  onCategorySelect?: (categoryId: string) => void;
+  onEditBudget?: () => void;
 }
 
 const formatCurrency = (valueInCents: number) => {
@@ -27,32 +32,41 @@ const formatCurrency = (valueInCents: number) => {
   }).format(valueInCents / 100);
 };
 
-function BudgetItem({ item }: { item: BudgetProgress }) {
+function BudgetItem({
+  item,
+  onClick
+}: {
+  item: BudgetProgress;
+  onClick?: () => void;
+}) {
   const getStatusConfig = () => {
     switch (item.status) {
       case "exceeded":
         return {
-          color: "bg-destructive",
-          textColor: "text-destructive",
+          color: "bg-red-500",
+          textColor: "text-red-500",
+          itemBg: "bg-red-500/5 hover:bg-red-500/10 border-red-500/20",
           icon: XCircle,
-          label: "Ultrapassado",
+          label: "Estourou",
           badgeVariant: "destructive" as const,
         };
       case "warning":
         return {
-          color: "bg-warning",
-          textColor: "text-warning",
+          color: "bg-amber-500",
+          textColor: "text-amber-500",
+          itemBg: "bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/20",
           icon: AlertTriangle,
           label: "Atenção",
-          badgeVariant: "warning" as const,
+          badgeVariant: "warning" as const, // We'll map this to outline or secondary since "warning" isn't standard
         };
       default:
         return {
-          color: "bg-success",
-          textColor: "text-success",
-          icon: CheckCircle,
+          color: "bg-emerald-500",
+          textColor: "text-emerald-500",
+          itemBg: "bg-card/40 hover:bg-card/60 border-border/50",
+          icon: CheckCircle2,
           label: "OK",
-          badgeVariant: "success" as const,
+          badgeVariant: "outline" as const,
         };
     }
   };
@@ -62,149 +76,127 @@ function BudgetItem({ item }: { item: BudgetProgress }) {
   const progressValue = Math.min(item.percentage, 100);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">
-            {item.categoryName}
-          </span>
-          {item.status !== "ok" && (
-            <Badge variant={config.badgeVariant} className="text-xs py-0 h-5">
-              <StatusIcon className="w-3 h-3 mr-1" />
-              {item.status === "exceeded" ? `+${item.percentage - 100}%` : `${item.percentage}%`}
-            </Badge>
-          )}
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-xl border p-4 transition-all duration-300 cursor-pointer hover:shadow-md hover:-translate-y-0.5",
+        config.itemBg
+      )}
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-lg bg-background/80 shadow-sm", config.textColor)}>
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-semibold text-foreground leading-tight">
+              {item.categoryName}
+            </h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {formatCurrency(item.spent)} de {formatCurrency(item.budgeted)}
+            </p>
+          </div>
         </div>
-        <span className={cn("text-xs font-medium", config.textColor)}>
-          {item.percentage}%
-        </span>
+
+        <div className="text-right">
+          <span className={cn("text-lg font-bold block", config.textColor)}>
+            {item.percentage}%
+          </span>
+        </div>
       </div>
-      
-      <div className="relative">
-        <Progress 
-          value={progressValue} 
-          className={cn(
-            "h-2",
-            item.status === "exceeded" && "[&>div]:bg-destructive",
-            item.status === "warning" && "[&>div]:bg-warning",
-            item.status === "ok" && "[&>div]:bg-success"
-          )}
+
+      <div className="relative h-2 w-full bg-secondary/50 rounded-full overflow-hidden mb-3">
+        <div
+          className={cn("h-full transition-all duration-500 ease-out rounded-full", config.color)}
+          style={{ width: `${progressValue}%` }}
         />
       </div>
-      
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>
-          {formatCurrency(item.spent)} / {formatCurrency(item.budgeted)}
-        </span>
+
+      <div className="flex items-center justify-between text-xs">
         <span className={cn(
-          item.remaining >= 0 ? "text-success" : "text-destructive"
+          "flex items-center gap-1 font-medium",
+          item.remaining < 0 ? "text-red-500" : "text-emerald-500"
         )}>
-          {item.remaining >= 0 ? "Sobra: " : "Excesso: "}
-          {formatCurrency(Math.abs(item.remaining))}
+          {item.remaining < 0 ? (
+            <>
+              <TrendingDown className="w-3 h-3" />
+              Excedido: {formatCurrency(Math.abs(item.remaining))}
+            </>
+          ) : (
+            <>
+              <TrendingUp className="w-3 h-3" />
+              Resta: {formatCurrency(item.remaining)}
+            </>
+          )}
+        </span>
+
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary flex items-center gap-1">
+          Ver detalhes <ArrowRight className="w-3 h-3" />
         </span>
       </div>
     </div>
   );
 }
 
-export function BudgetProgressCard({ summary, className, showConfigLink = true }: BudgetProgressCardProps) {
+export function BudgetProgressCard({
+  summary,
+  className,
+  onCategorySelect,
+  onEditBudget
+}: BudgetProgressCardProps) {
   const { budgetProgress, totalBudgeted, totalSpent, totalRemaining } = summary;
 
+  // Empty State
   if (budgetProgress.length === 0) {
     return (
-      <Card className={cn("", className)}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-              <Target className="w-4 h-4 text-primary" />
-            </div>
-            Orçamento do Mês
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-muted mb-3">
-              <Sparkles className="w-6 h-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Nenhum orçamento definido
-            </p>
-            {showConfigLink && (
-              <Link 
-                to="/orcamentos" 
-                className="text-sm text-primary hover:underline"
-              >
-                Configurar orçamentos →
-              </Link>
-            )}
+      <Card className={cn("border-dashed bg-background/50 backdrop-blur-sm", className)}>
+        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse">
+            <Sparkles className="w-8 h-8 text-primary" />
           </div>
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            Comece a Planejar
+          </h3>
+          <p className="text-muted-foreground max-w-xs mb-6">
+            Defina limites para suas categorias e assuma o controle total das suas finanças.
+          </p>
+          <Button onClick={onEditBudget} className="gap-2 shadow-lg hover:shadow-primary/25 transition-all">
+            <Target className="w-4 h-4" />
+            Configurar Primeiro Orçamento
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
-  return (
-    <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-              <Target className="w-4 h-4 text-primary" />
-            </div>
-            Orçamento do Mês
-          </CardTitle>
-          {showConfigLink && (
-            <Link 
-              to="/orcamentos" 
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
-            >
-              Editar
-            </Link>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Summary Header */}
-        <div className="pb-4 border-b border-border/50">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Orçado</p>
-              <p className="text-sm font-semibold text-foreground">
-                {formatCurrency(totalBudgeted)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Gasto</p>
-              <p className="text-sm font-semibold text-foreground">
-                {formatCurrency(totalSpent)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">
-                {totalRemaining >= 0 ? "Disponível" : "Excedido"}
-              </p>
-              <p className={cn(
-                "text-sm font-semibold flex items-center justify-center gap-1",
-                totalRemaining >= 0 ? "text-success" : "text-destructive"
-              )}>
-                {totalRemaining >= 0 ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
-                {formatCurrency(Math.abs(totalRemaining))}
-              </p>
-            </div>
-          </div>
-        </div>
+  // Calculate overall health percentage
+  const overallPercentage = totalBudgeted > 0 ? (totalSpent / totalBudgeted) * 100 : 0;
 
-        {/* Budget Items */}
-        <div className="space-y-4">
-          {budgetProgress.map((item) => (
-            <BudgetItem key={item.categoryId} item={item} />
-          ))}
+  return (
+    <div className={cn("space-y-6", className)}>
+      {/* Cards Grid - Bento Box Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {budgetProgress.map((item) => (
+          <BudgetItem
+            key={item.categoryId}
+            item={item}
+            onClick={() => onCategorySelect?.(item.categoryId)}
+          />
+        ))}
+
+        {/* Add/Edit More Card */}
+        <div
+          onClick={onEditBudget}
+          className="group flex flex-col items-center justify-center p-6 border-2 border-dashed border-muted-foreground/25 rounded-xl hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer min-h-[140px]"
+        >
+          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+            <MoreHorizontal className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+          </div>
+          <span className="font-medium text-muted-foreground group-hover:text-primary transition-colors">
+            Gerenciar Orçamentos
+          </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

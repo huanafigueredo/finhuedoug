@@ -13,6 +13,8 @@ export interface CoupleMember {
   monthly_income_cents: number;
   created_at: string;
   updated_at: string;
+  color: string | null;
+  type: 'person' | 'business';
 }
 
 export function useCoupleMembers() {
@@ -41,7 +43,7 @@ export function useAddCoupleMember() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ name, avatar_url }: { name: string; avatar_url?: string | null }) => {
+    mutationFn: async ({ name, avatar_url, color, type }: { name: string; avatar_url?: string | null; color?: string; type?: 'person' | 'business' }) => {
       if (!user?.id) throw new Error("User not authenticated");
 
       // Get next position
@@ -61,6 +63,8 @@ export function useAddCoupleMember() {
           name,
           avatar_url: avatar_url || null,
           position: nextPosition,
+          color: color || '#3b82f6',
+          type: type || 'person'
         })
         .select()
         .single();
@@ -78,21 +82,27 @@ export function useUpdateCoupleMember() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      id, 
-      name, 
+    mutationFn: async ({
+      id,
+      name,
       avatar_url,
-      show_on_dashboard
-    }: { 
-      id: string; 
-      name?: string; 
+      show_on_dashboard,
+      color,
+      type
+    }: {
+      id: string;
+      name?: string;
       avatar_url?: string | null;
       show_on_dashboard?: boolean;
+      color?: string;
+      type?: 'person' | 'business';
     }) => {
-      const updates: Partial<Pick<CoupleMember, "name" | "avatar_url" | "show_on_dashboard">> = {};
+      const updates: Partial<Pick<CoupleMember, "name" | "avatar_url" | "show_on_dashboard" | "color" | "type">> = {};
       if (name !== undefined) updates.name = name;
       if (avatar_url !== undefined) updates.avatar_url = avatar_url;
       if (show_on_dashboard !== undefined) updates.show_on_dashboard = show_on_dashboard;
+      if (color !== undefined) updates.color = color;
+      if (type !== undefined) updates.type = type;
 
       const { data, error } = await supabase
         .from("couple_members")
@@ -135,7 +145,7 @@ export function useDeleteCoupleMember() {
 // Helper hook for backwards compatibility
 export function usePersonNames() {
   const { data: members = [], isLoading } = useCoupleMembers();
-  
+
   return useMemo(() => {
     const person1 = members.find(m => m.position === 1);
     const person2 = members.find(m => m.position === 2);

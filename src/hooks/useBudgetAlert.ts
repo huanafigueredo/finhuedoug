@@ -49,13 +49,13 @@ export function useBudgetAlert() {
       })
       .reduce((sum, t) => {
         if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-          return sum + Number(t.installment_value);
+          return sum + Math.round(Number(t.installment_value) * 100);
         }
-        return sum + Number(t.total_value);
+        return sum + Math.round(Number(t.total_value) * 100);
       }, 0);
 
     const newSpent = currentSpent + valueInCents;
-    const budgeted = budget.budget_amount;
+    const budgeted = budget.budget_amount; // Já está em centavos no banco agora
     const percentage = Math.round((newSpent / budgeted) * 100);
 
     let status: "ok" | "warning" | "exceeded" = "ok";

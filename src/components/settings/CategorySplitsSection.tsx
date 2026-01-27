@@ -91,15 +91,24 @@ export function CategorySplitsSection() {
             Defina divisões específicas que sobrescrevem a configuração global
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={handleAdd}>
+        <Button size="sm" onClick={handleAdd} className="bg-primary text-primary-foreground shadow-sm hover:bg-primary/90">
           <Plus className="h-4 w-4 mr-1" />
           Adicionar
         </Button>
       </div>
 
       {rules.length === 0 ? (
-        <div className="p-4 text-center text-muted-foreground text-sm border border-dashed rounded-lg">
-          Nenhuma regra configurada. Todas as despesas usam a divisão global.
+        <div className="flex flex-col items-center justify-center p-6 text-center border border-dashed rounded-xl bg-muted/20">
+          <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center mb-3">
+            <span className="text-lg">💡</span>
+          </div>
+          <p className="text-sm font-medium text-foreground mb-1">Nenhuma regra configurada</p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            Dica: Você pode definir que <strong>Aluguel</strong> é proporcional à renda, enquanto <strong>Lazer</strong> é dividido 50/50.
+          </p>
+          <Button variant="link" onClick={handleAdd} className="mt-2 text-primary h-auto p-0 text-xs">
+            Criar primeira regra
+          </Button>
         </div>
       ) : (
         <div className="space-y-2">
@@ -128,7 +137,7 @@ export function CategorySplitsSection() {
             <AlertDialogTitle>Remover regra?</AlertDialogTitle>
             <AlertDialogDescription>
               A regra para "{deleteRule?.category_name}
-              {deleteRule?.subcategory_name ? ` › ${deleteRule.subcategory_name}` : ""}" 
+              {deleteRule?.subcategory_name ? ` › ${deleteRule.subcategory_name}` : ""}"
               será removida e a divisão global será usada.
             </AlertDialogDescription>
           </AlertDialogHeader>

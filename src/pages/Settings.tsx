@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -44,16 +43,13 @@ import {
   Sparkles,
   LogOut,
   AlertTriangle,
+  Loader2,
+  Briefcase,
+  User,
+  Check
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useBanks, useAddBank, useUpdateBank, useDeleteBank } from "@/hooks/useBanks";
-import { usePaymentMethods, useAddPaymentMethod, useUpdatePaymentMethod, useDeletePaymentMethod } from "@/hooks/usePaymentMethods";
-import { useRecipients, useAddRecipient, useUpdateRecipient, useDeleteRecipient } from "@/hooks/useRecipients";
-import { useCategories } from "@/hooks/useCategories";
-import { useSubcategories } from "@/hooks/useSubcategories";
-import { useAddCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
-import { useAddSubcategory, useUpdateSubcategory, useDeleteSubcategory } from "@/hooks/useSubcategoriesMutations";
 import { useCoupleMembers, useAddCoupleMember, useUpdateCoupleMember, useDeleteCoupleMember } from "@/hooks/useCoupleMembers";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -61,14 +57,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AvatarUpload } from "@/components/shared/AvatarUpload";
 import { PersonalizationSection } from "@/components/settings/PersonalizationSection";
 import { SplitSettingsSection } from "@/components/settings/SplitSettingsSection";
-
-interface ConfigItem {
-  id: string;
-  name: string;
-  color?: string | null;
-  category_id?: string;
-  user_id?: string | null;
-}
+import { BanksSection } from "@/components/settings/BanksSection";
+import { PaymentMethodsSection } from "@/components/settings/PaymentMethodsSection";
+import { RecipientsSection } from "@/components/settings/RecipientsSection";
+import { CategoriesSection } from "@/components/settings/CategoriesSection";
+import { Input } from "@/components/ui/input";
+import { ColorPicker } from "@/components/settings/ColorPicker";
 
 // Sidebar navigation items
 const navSections = [
@@ -80,7 +74,6 @@ const navSections = [
   { id: "payment-methods", label: "Formas de Pagamento", icon: Wallet },
   { id: "recipients", label: "Para Quem", icon: Users },
   { id: "categories", label: "Categorias", icon: Folder },
-  { id: "subcategories", label: "Subcategorias", icon: Tag },
   { id: "account", label: "Conta", icon: LogOut },
 ];
 
@@ -88,79 +81,64 @@ export default function Settings() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeSection, setActiveSection] = useState("general");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<ConfigItem | null>(null);
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemColor, setNewItemColor] = useState("#D77A61");
-  const [newItemCategoryId, setNewItemCategoryId] = useState("");
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ section: string; id: string; name: string } | null>(null);
+
+  // Account Deletion State
   const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
   const [deleteAccountText, setDeleteAccountText] = useState("");
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const { user, signOut } = useAuth();
-
-  // Section refs for scrolling
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Couple members (dynamic people system)
+  // Couple members
   const { data: coupleMembers = [], isLoading: coupleMembersLoading } = useCoupleMembers();
   const addCoupleMember = useAddCoupleMember();
   const updateCoupleMember = useUpdateCoupleMember();
   const deleteCoupleMember = useDeleteCoupleMember();
-  
+
   // People modal state
   const [isPeopleDialogOpen, setIsPeopleDialogOpen] = useState(false);
-  const [editingPerson, setEditingPerson] = useState<{ id: string; name: string; avatar_url: string | null; position: number } | null>(null);
+  const [editingPerson, setEditingPerson] = useState<{ id: string; name: string; avatar_url: string | null; position: number; color: string | null; type: "person" | "business" } | null>(null);
   const [newPersonName, setNewPersonName] = useState("");
-
-  // Data from Supabase
-  const { data: banks = [], isLoading: banksLoading } = useBanks();
-  const { data: paymentMethods = [], isLoading: paymentMethodsLoading } = usePaymentMethods();
-  const { data: recipients = [], isLoading: recipientsLoading } = useRecipients();
-  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
-  const { data: subcategories = [], isLoading: subcategoriesLoading } = useSubcategories();
-
-  // Mutations
-  const addBank = useAddBank();
-  const updateBank = useUpdateBank();
-  const deleteBank = useDeleteBank();
-  const addPaymentMethod = useAddPaymentMethod();
-  const updatePaymentMethod = useUpdatePaymentMethod();
-  const deletePaymentMethod = useDeletePaymentMethod();
-  const addRecipient = useAddRecipient();
-  const updateRecipient = useUpdateRecipient();
-  const deleteRecipient = useDeleteRecipient();
-  const addCategory = useAddCategory();
-  const updateCategory = useUpdateCategory();
-  const deleteCategory = useDeleteCategory();
-  const addSubcategory = useAddSubcategory();
-  const updateSubcategory = useUpdateSubcategory();
-  const deleteSubcategory = useDeleteSubcategory();
+  const [newPersonColor, setNewPersonColor] = useState("#3b82f6");
+  const [newPersonType, setNewPersonType] = useState<"person" | "business">("person");
+  const [deletePersonConfirmOpen, setDeletePersonConfirmOpen] = useState(false);
+  const [personToDelete, setPersonToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const openAddPersonDialog = () => {
     setEditingPerson(null);
     setNewPersonName("");
+    setNewPersonColor("#3b82f6");
+    setNewPersonType("person");
     setIsPeopleDialogOpen(true);
   };
 
-  const openEditPersonDialog = (person: { id: string; name: string; avatar_url: string | null; position: number }) => {
+  const openEditPersonDialog = (person: any) => {
     setEditingPerson(person);
     setNewPersonName(person.name);
+    setNewPersonColor(person.color || "#3b82f6");
+    setNewPersonType(person.type || "person");
     setIsPeopleDialogOpen(true);
   };
 
   const handleSavePerson = async () => {
     if (!newPersonName.trim()) return;
-    
+
     try {
       if (editingPerson) {
-        await updateCoupleMember.mutateAsync({ id: editingPerson.id, name: newPersonName.trim() });
-        toast({ title: "Pessoa atualizada!", description: "Nome salvo com sucesso." });
+        await updateCoupleMember.mutateAsync({
+          id: editingPerson.id,
+          name: newPersonName.trim(),
+          color: newPersonColor,
+          type: newPersonType
+        });
+        toast({ title: "Pessoa atualizada!", description: "Dados salvos com sucesso." });
       } else {
-        await addCoupleMember.mutateAsync({ name: newPersonName.trim() });
+        await addCoupleMember.mutateAsync({
+          name: newPersonName.trim(),
+          color: newPersonColor,
+          type: newPersonType
+        });
         toast({ title: "Pessoa adicionada!", description: "Nova pessoa criada com sucesso." });
       }
       setIsPeopleDialogOpen(false);
@@ -169,13 +147,22 @@ export default function Settings() {
     }
   };
 
-  const handleDeletePerson = async (id: string, name: string) => {
-    setItemToDelete({ section: "people", id, name });
-    setDeleteConfirmOpen(true);
+  const confirmDeletePerson = (id: string, name: string) => {
+    setPersonToDelete({ id, name });
+    setDeletePersonConfirmOpen(true);
   };
 
-  const getCategoryName = (categoryId: string) => {
-    return categories.find(c => c.id === categoryId)?.name || "";
+  const handleDeletePerson = async () => {
+    if (!personToDelete) return;
+    try {
+      await deleteCoupleMember.mutateAsync(personToDelete.id);
+      toast({ title: "Pessoa removida!" });
+    } catch (error) {
+      toast({ title: "Erro ao remover pessoa", variant: "destructive" });
+    } finally {
+      setDeletePersonConfirmOpen(false);
+      setPersonToDelete(null);
+    }
   };
 
   const scrollToSection = (sectionId: string) => {
@@ -186,201 +173,19 @@ export default function Settings() {
     }
   };
 
-  const openAddDialog = (sectionKey: string) => {
-    setEditingSection(sectionKey);
-    setEditingItem(null);
-    setNewItemName("");
-    setNewItemColor("#D77A61");
-    setNewItemCategoryId("");
-    setIsDialogOpen(true);
-  };
-
-  const openEditDialog = (sectionKey: string, item: ConfigItem) => {
-    setEditingSection(sectionKey);
-    setEditingItem(item);
-    setNewItemName(item.name);
-    setNewItemColor(item.color || "#D77A61");
-    setNewItemCategoryId(item.category_id || "");
-    setIsDialogOpen(true);
-  };
-
-  const confirmDelete = (sectionKey: string, id: string, name: string) => {
-    setItemToDelete({ section: sectionKey, id, name });
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!editingSection || !newItemName.trim()) return;
-
-    try {
-      if (editingSection === "banks") {
-        if (editingItem) {
-          await updateBank.mutateAsync({ id: editingItem.id, name: newItemName, color: newItemColor });
-        } else {
-          await addBank.mutateAsync({ name: newItemName, color: newItemColor });
-        }
-      } else if (editingSection === "payment-methods") {
-        if (editingItem) {
-          await updatePaymentMethod.mutateAsync({ id: editingItem.id, name: newItemName });
-        } else {
-          await addPaymentMethod.mutateAsync({ name: newItemName });
-        }
-      } else if (editingSection === "recipients") {
-        if (editingItem) {
-          await updateRecipient.mutateAsync({ id: editingItem.id, name: newItemName });
-        } else {
-          await addRecipient.mutateAsync({ name: newItemName });
-        }
-      } else if (editingSection === "categories") {
-        if (editingItem) {
-          await updateCategory.mutateAsync({ id: editingItem.id, name: newItemName });
-        } else {
-          await addCategory.mutateAsync({ name: newItemName });
-        }
-      } else if (editingSection === "subcategories") {
-        if (!newItemCategoryId) {
-          toast({
-            title: "Erro",
-            description: "Selecione uma categoria para a subcategoria.",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (editingItem) {
-          await updateSubcategory.mutateAsync({ id: editingItem.id, name: newItemName, category_id: newItemCategoryId });
-        } else {
-          await addSubcategory.mutateAsync({ name: newItemName, category_id: newItemCategoryId });
-        }
-      }
-
-      toast({
-        title: editingItem ? "Item atualizado!" : "Item adicionado!",
-        description: "As alterações foram salvas com sucesso.",
-      });
-      setIsDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error?.message || "Não foi possível salvar as alterações.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!itemToDelete) return;
-    const { section, id } = itemToDelete;
-
-    try {
-      if (section === "people") {
-        await deleteCoupleMember.mutateAsync(id);
-      } else if (section === "banks") {
-        await deleteBank.mutateAsync(id);
-      } else if (section === "payment-methods") {
-        await deletePaymentMethod.mutateAsync(id);
-      } else if (section === "recipients") {
-        await deleteRecipient.mutateAsync(id);
-      } else if (section === "categories") {
-        await deleteCategory.mutateAsync(id);
-      } else if (section === "subcategories") {
-        await deleteSubcategory.mutateAsync(id);
-      }
-
-      toast({
-        title: "Item removido!",
-        description: "O item foi excluído com sucesso.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir",
-        description: error?.message || "Não foi possível remover o item.",
-        variant: "destructive",
-      });
-    } finally {
-      setDeleteConfirmOpen(false);
-      setItemToDelete(null);
-    }
-  };
-
-  const isSaving = addBank.isPending || updateBank.isPending || addPaymentMethod.isPending || 
-                   updatePaymentMethod.isPending || addRecipient.isPending || updateRecipient.isPending ||
-                   addCategory.isPending || updateCategory.isPending ||
-                   addSubcategory.isPending || updateSubcategory.isPending;
-
-  const getSectionLabel = (section: string) => {
-    switch (section) {
-      case "people": return "Pessoa";
-      case "banks": return "Bancos";
-      case "payment-methods": return "Formas de Pagamento";
-      case "recipients": return "Para Quem";
-      case "categories": return "Categorias";
-      case "subcategories": return "Subcategorias";
-      default: return "";
-    }
-  };
-
-  // Render a config list item
-  const renderConfigItem = (sectionKey: string, item: ConfigItem) => {
-    // Categories and subcategories are global - everyone can edit/delete
-    // For other items (banks, payment_methods, recipients), only user-owned items can be edited
-    const isGlobalEditableSection = sectionKey === "categories" || sectionKey === "subcategories";
-    const isSystemItem = !isGlobalEditableSection && (item.user_id === null || item.user_id === undefined);
-    
-    return (
-      <div
-        key={item.id}
-        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 group transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          {item.color && (
-            <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: item.color }}
-            />
-          )}
-          <div className="flex flex-col">
-            <span className="text-sm text-foreground">{item.name}</span>
-            {sectionKey === "subcategories" && item.category_id && (
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                <ChevronRight className="w-3 h-3" />
-                {getCategoryName(item.category_id)}
-              </span>
-            )}
-          </div>
-        </div>
-        {!isSystemItem && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => openEditDialog(sectionKey, item)}
-              className="p-1.5 rounded-md hover:bg-muted transition-colors"
-            >
-              <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-            <button
-              onClick={() => confirmDelete(sectionKey, item.id, item.name)}
-              className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-destructive" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   // Section component
-  const SectionWrapper = ({ 
-    id, 
-    title, 
-    description, 
-    children 
-  }: { 
-    id: string; 
-    title: string; 
-    description?: string; 
+  const SectionWrapper = ({
+    id,
+    title,
+    description,
+    children
+  }: {
+    id: string;
+    title: string;
+    description?: string;
     children: React.ReactNode;
   }) => (
-    <div 
+    <div
       ref={(el) => { sectionRefs.current[id] = el; }}
       className="scroll-mt-6"
     >
@@ -390,38 +195,6 @@ export default function Settings() {
       )}
       {children}
       <Separator className="my-6" />
-    </div>
-  );
-
-  // Config list section
-  const ConfigListSection = ({ 
-    sectionKey, 
-    items, 
-    isLoading,
-    allowColor = false,
-  }: { 
-    sectionKey: string;
-    items: ConfigItem[];
-    isLoading: boolean;
-    allowColor?: boolean;
-  }) => (
-    <div className="space-y-1">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => openAddDialog(sectionKey)}
-        className="mb-3"
-      >
-        <Plus className="w-4 h-4 mr-2" />
-        Adicionar
-      </Button>
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground py-2">Carregando...</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-2">Nenhum item cadastrado.</p>
-      ) : (
-        items.map((item) => renderConfigItem(sectionKey, item))
-      )}
     </div>
   );
 
@@ -464,24 +237,28 @@ export default function Settings() {
               </p>
             </div>
 
-            {/* Mobile: Section selector */}
+            {/* Mobile: Horizontal Tabs Navigation */}
             {isMobile && (
-              <div className="mb-6">
-                <Select value={activeSection} onValueChange={scrollToSection}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+              <div className="mb-6 -mx-4 px-4 sticky top-0 bg-background/95 backdrop-blur z-10 py-2 border-b">
+                <ScrollArea className="w-full whitespace-nowrap">
+                  <div className="flex w-max space-x-2 p-1">
                     {navSections.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        <div className="flex items-center gap-2">
-                          <section.icon className="w-4 h-4" />
-                          {section.label}
-                        </div>
-                      </SelectItem>
+                      <button
+                        key={section.id}
+                        onClick={() => scrollToSection(section.id)}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                          activeSection === section.id
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                        )}
+                      >
+                        <section.icon className="w-4 h-4" />
+                        {section.label}
+                      </button>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                </ScrollArea>
               </div>
             )}
 
@@ -498,7 +275,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Última atualização</p>
-                  <p className="text-sm font-medium text-foreground">Dezembro 2025</p>
+                  <p className="text-sm font-medium text-foreground">Janeiro 2026</p>
                 </div>
               </div>
             </SectionWrapper>
@@ -516,36 +293,54 @@ export default function Settings() {
             <SectionWrapper
               id="people"
               title="Pessoas"
-              description="Gerencie as pessoas do casal. Clique no avatar para alterar a foto."
+              description="Gerencie as pessoas do casal."
             >
               <div className="space-y-3">
                 {coupleMembersLoading ? (
-                  <p className="text-sm text-muted-foreground py-2">Carregando...</p>
+                  <div className="space-y-2">
+                    {[1, 2].map(i => <div key={i} className="h-16 w-full bg-muted/30 rounded-lg animate-pulse" />)}
+                  </div>
                 ) : coupleMembers.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-2">Nenhuma pessoa cadastrada. Adicione as pessoas do casal.</p>
+                  <p className="text-sm text-muted-foreground py-2">Nenhuma pessoa cadastrada.</p>
                 ) : (
                   coupleMembers.map((person) => (
                     <div
                       key={person.id}
-                      className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/30 hover:bg-muted/50 group transition-colors"
+                      onClick={() => openEditPersonDialog(person)}
+                      className="flex items-center justify-between py-3 px-4 rounded-lg bg-muted/30 hover:bg-muted/50 group transition-colors cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
-                        <AvatarUpload
-                          name={person.name}
-                          avatar={person.avatar_url}
-                          memberId={person.id}
-                          size="md"
-                          editable={true}
-                        />
-                        <div>
-                          <span className="text-sm font-medium text-foreground">{person.name}</span>
-                          <p className="text-xs text-muted-foreground">Pessoa {person.position}</p>
+                        <div
+                          className="relative p-0.5 rounded-full"
+                          style={{ background: person.color || 'transparent' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="bg-background rounded-full p-0.5">
+                            <AvatarUpload
+                              name={person.name}
+                              avatar={person.avatar_url}
+                              memberId={person.id}
+                              size="md"
+                              editable={true}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground">{person.name}</span>
+                            {person.type === 'business' && (
+                              <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         {/* Dashboard toggle */}
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor={`dashboard-${person.id}`} className="text-xs text-muted-foreground hidden sm:inline">
+                        <div
+                          className="flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Label htmlFor={`dashboard-${person.id}`} className="text-xs text-muted-foreground hidden sm:inline cursor-pointer">
                             Dashboard
                           </Label>
                           <Switch
@@ -564,18 +359,26 @@ export default function Settings() {
                           />
                         </div>
                         {/* Edit/Delete buttons */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => openEditPersonDialog(person)}
-                            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditPersonDialog(person);
+                            }}
+                            className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+                            title="Editar"
                           >
-                            <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDeletePerson(person.id, person.name)}
-                            className="p-1.5 rounded-md hover:bg-destructive/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirmDeletePerson(person.id, person.name);
+                            }}
+                            className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+                            title="Excluir"
                           >
-                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -609,12 +412,7 @@ export default function Settings() {
               title="Bancos"
               description="Gerencie as instituições financeiras."
             >
-              <ConfigListSection
-                sectionKey="banks"
-                items={banks.map((b) => ({ id: b.id, name: b.name, color: b.color, user_id: b.user_id }))}
-                isLoading={banksLoading}
-                allowColor
-              />
+              <BanksSection />
             </SectionWrapper>
 
             {/* Payment Methods Section */}
@@ -623,11 +421,7 @@ export default function Settings() {
               title="Formas de Pagamento"
               description="Configure as formas de pagamento disponíveis."
             >
-              <ConfigListSection
-                sectionKey="payment-methods"
-                items={paymentMethods.map((p) => ({ id: p.id, name: p.name, user_id: p.user_id }))}
-                isLoading={paymentMethodsLoading}
-              />
+              <PaymentMethodsSection />
             </SectionWrapper>
 
             {/* Recipients Section */}
@@ -636,37 +430,16 @@ export default function Settings() {
               title="Para Quem"
               description="Destinatários de transferências e pagamentos."
             >
-              <ConfigListSection
-                sectionKey="recipients"
-                items={recipients.map((r) => ({ id: r.id, name: r.name, user_id: r.user_id }))}
-                isLoading={recipientsLoading}
-              />
+              <RecipientsSection />
             </SectionWrapper>
 
             {/* Categories Section */}
             <SectionWrapper
               id="categories"
-              title="Categorias"
+              title="Categorias e Subcategorias"
               description="Organize suas transações por categorias."
             >
-              <ConfigListSection
-                sectionKey="categories"
-                items={categories.map((c) => ({ id: c.id, name: c.name }))}
-                isLoading={categoriesLoading}
-              />
-            </SectionWrapper>
-
-            {/* Subcategories Section */}
-            <SectionWrapper
-              id="subcategories"
-              title="Subcategorias"
-              description="Detalhamento adicional para cada categoria."
-            >
-              <ConfigListSection
-                sectionKey="subcategories"
-                items={subcategories.map((s) => ({ id: s.id, name: s.name, category_id: s.category_id }))}
-                isLoading={subcategoriesLoading}
-              />
+              <CategoriesSection />
             </SectionWrapper>
 
             {/* Account Section */}
@@ -680,21 +453,22 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground mb-1">E-mail</p>
                   <p className="text-sm font-medium text-foreground">{user?.email || "—"}</p>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="p-4 rounded-lg border border-destructive/30 bg-destructive/5">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
                     <div className="flex-1">
                       <h3 className="text-sm font-semibold text-destructive mb-1">Zona de Perigo</h3>
                       <p className="text-xs text-muted-foreground mb-3">
-                        Excluir sua conta é uma ação permanente. Todos os seus dados serão apagados e não poderão ser recuperados.
+                        Excluir sua conta é uma ação permanente. Todos os seus dados serão apagados.
                       </p>
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
                         onClick={() => setDeleteAccountConfirmOpen(true)}
+                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/50"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Excluir minha conta
@@ -709,75 +483,6 @@ export default function Settings() {
         </main>
       </div>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingItem ? "Editar" : "Adicionar"}{" "}
-              {editingSection && getSectionLabel(editingSection)}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Digite o nome..."
-              />
-            </div>
-
-            {editingSection === "banks" && (
-              <div className="space-y-2">
-                <Label>Cor</Label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={newItemColor}
-                    onChange={(e) => setNewItemColor(e.target.value)}
-                    className="w-10 h-10 rounded-lg border border-border cursor-pointer"
-                  />
-                  <Input
-                    value={newItemColor}
-                    onChange={(e) => setNewItemColor(e.target.value)}
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-            )}
-
-            {editingSection === "subcategories" && (
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Select value={newItemCategoryId} onValueChange={setNewItemCategoryId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSave} disabled={!newItemName.trim() || isSaving}>
-                {isSaving ? "Salvando..." : editingItem ? "Salvar" : "Adicionar"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* People Add/Edit Dialog */}
       <Dialog open={isPeopleDialogOpen} onOpenChange={setIsPeopleDialogOpen}>
         <DialogContent>
@@ -787,7 +492,40 @@ export default function Settings() {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-6 py-2">
+
+            {/* Type Selector */}
+            <div className="space-y-3">
+              <Label>Tipo</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  onClick={() => setNewPersonType("person")}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-muted/50",
+                    newPersonType === "person"
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-muted bg-card text-muted-foreground"
+                  )}
+                >
+                  <User className={cn("w-6 h-6", newPersonType === "person" ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-sm font-medium">Pessoa</span>
+                </div>
+
+                <div
+                  onClick={() => setNewPersonType("business")}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-muted/50",
+                    newPersonType === "business"
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-muted bg-card text-muted-foreground"
+                  )}
+                >
+                  <Briefcase className={cn("w-6 h-6", newPersonType === "business" ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-sm font-medium">Entidade / Projeto</span>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Nome</Label>
               <Input
@@ -798,33 +536,40 @@ export default function Settings() {
               />
             </div>
 
+            <ColorPicker color={newPersonColor} onChange={setNewPersonColor} label="Cor de Identificação" />
+
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setIsPeopleDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleSavePerson} 
+              <Button
+                onClick={handleSavePerson}
                 disabled={!newPersonName.trim() || addCoupleMember.isPending || updateCoupleMember.isPending}
               >
-                {addCoupleMember.isPending || updateCoupleMember.isPending ? "Salvando..." : editingPerson ? "Salvar" : "Adicionar"}
+                {addCoupleMember.isPending || updateCoupleMember.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : editingPerson ? "Salvar" : "Adicionar"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      {/* Person Delete Confirmation */}
+      <AlertDialog open={deletePersonConfirmOpen} onOpenChange={setDeletePersonConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir "{itemToDelete?.name}"? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir "{personToDelete?.name}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeletePerson}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -844,15 +589,8 @@ export default function Settings() {
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                Esta ação é <strong>irreversível</strong>. Todos os seus dados serão excluídos permanentemente, incluindo:
+                Esta ação é <strong>irreversível</strong>. Todos os seus dados serão excluídos permanentemente.
               </p>
-              <ul className="list-disc list-inside text-sm space-y-1">
-                <li>Todas as transações</li>
-                <li>Configurações de divisão</li>
-                <li>Metas de economia</li>
-                <li>Recorrências e contas agendadas</li>
-                <li>Perfis do casal</li>
-              </ul>
               <p className="pt-2">
                 Para confirmar, digite <strong className="text-destructive">EXCLUIR</strong> abaixo:
               </p>
@@ -872,71 +610,17 @@ export default function Settings() {
               onClick={async () => {
                 setIsDeletingAccount(true);
                 try {
-                  // Delete all user data via Supabase RPC or cascading deletes
-                  const userId = user?.id;
-                  if (!userId) throw new Error("Usuário não autenticado");
+                  const { error } = await supabase.rpc('delete_user_account');
 
-                  // Get account_id first for account-based tables
-                  const { data: profile } = await supabase
-                    .from("profiles")
-                    .select("account_id")
-                    .eq("id", userId)
-                    .single();
-
-                  // Delete all user data in order (due to foreign key constraints)
-                  // Children first, then parents
-                  
-                  // Transaction-related (children first)
-                  await supabase.from("itens_lancamento").delete().eq("user_id", userId);
-                  await supabase.from("comprovantes_lancamento").delete().eq("user_id", userId);
-                  
-                  // Savings-related (deposits before goals)
-                  await supabase.from("savings_deposits").delete().eq("user_id", userId);
-                  await supabase.from("savings_goals").delete().eq("user_id", userId);
-                  
-                  // Scheduled bills and recurring
-                  await supabase.from("contas_agendadas").delete().eq("user_id", userId);
-                  await supabase.from("recorrencias").delete().eq("user_id", userId);
-                  
-                  // Budgets and splits
-                  await supabase.from("category_splits").delete().eq("user_id", userId);
-                  await supabase.from("category_budgets").delete().eq("user_id", userId);
-                  await supabase.from("split_settings").delete().eq("user_id", userId);
-                  
-                  // Gamification data
-                  await supabase.from("user_rewards").delete().eq("user_id", userId);
-                  await supabase.from("user_challenges").delete().eq("user_id", userId);
-                  await supabase.from("user_achievements").delete().eq("user_id", userId);
-                  await supabase.from("user_gamification").delete().eq("user_id", userId);
-                  await supabase.from("monthly_xp").delete().eq("user_id", userId);
-                  await supabase.from("monthly_financial_rankings").delete().eq("user_id", userId);
-                  
-                  // User configuration
-                  await supabase.from("couple_members").delete().eq("user_id", userId);
-                  await supabase.from("banks").delete().eq("user_id", userId);
-                  await supabase.from("payment_methods").delete().eq("user_id", userId);
-                  await supabase.from("recipients").delete().eq("user_id", userId);
-                  await supabase.from("user_settings").delete().eq("user_id", userId);
-
-                  // Account-based data (transactions use account_id)
-                  if (profile?.account_id) {
-                    await supabase.from("transactions").delete().eq("account_id", profile.account_id);
-                    await supabase.from("account_members").delete().eq("account_id", profile.account_id);
-                    await supabase.from("accounts").delete().eq("id", profile.account_id);
-                  }
-
-                  // Finally delete profile
-                  await supabase.from("profiles").delete().eq("id", userId);
+                  if (error) throw error;
 
                   toast({
                     title: "Conta excluída",
                     description: "Sua conta foi excluída com sucesso. Você será redirecionado.",
                   });
 
-                  // Sign out and redirect
                   await signOut();
                 } catch (error: any) {
-                  console.error("Error deleting account:", error);
                   toast({
                     title: "Erro ao excluir conta",
                     description: error?.message || "Não foi possível excluir sua conta. Tente novamente.",
@@ -948,7 +632,12 @@ export default function Settings() {
                 }
               }}
             >
-              {isDeletingAccount ? "Excluindo..." : "Excluir minha conta"}
+              {isDeletingAccount ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : "Excluir minha conta"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
