@@ -94,17 +94,17 @@ export default function Onboarding() {
 
       // Sync with recipients ("Para quem" field)
       const recipientNames = existingRecipients.map(r => r.name.toLowerCase());
-      
+
       // Add person1 as recipient if not exists
       if (!recipientNames.includes(person1Name.trim().toLowerCase())) {
         await addRecipient.mutateAsync({ name: person1Name.trim() });
       }
-      
+
       // Add person2 as recipient if not exists
       if (!recipientNames.includes(person2Name.trim().toLowerCase())) {
         await addRecipient.mutateAsync({ name: person2Name.trim() });
       }
-      
+
       // Add "Casal" as recipient if not exists
       if (!recipientNames.includes("casal")) {
         await addRecipient.mutateAsync({ name: "Casal" });
@@ -135,18 +135,28 @@ export default function Onboarding() {
     setIsSubmitting(true);
 
     try {
-      // Marcar onboarding como completo sem configurar nada
+      // Marcar onboarding como completo (usando upsert para garantir que o perfil exista)
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ onboarding_completed_at: new Date().toISOString() })
-        .eq("id", user.id);
+        .upsert({
+          id: user.id,
+          onboarding_completed_at: new Date().toISOString()
+        });
 
       if (profileError) {
         throw new Error(`Erro ao pular configuração: ${profileError.message}`);
       }
 
-      // Invalidar cache do onboarding status
-      await queryClient.invalidateQueries({ queryKey: ["profile-onboarding", user.id] });
+      // Fallback: Salvar no localStorage caso o banco falhe por permissão
+      localStorage.setItem(`onboarding_complete_${user.id}`, 'true');
+
+      // Query Update: Force immediate cache update to prevent race conditions in ProtectedRoute
+      // This ensures that when we navigate to /dashboard, the isComplete check passes immediately
+      queryClient.setQueryData(["profile-onboarding", user.id], {
+        onboarding_completed_at: new Date().toISOString()
+      });
+
+      // Removed invalidateQueries to prevent fetching stale data
 
       toast({
         title: "Configuração pulada",
@@ -207,7 +217,7 @@ export default function Onboarding() {
 
       // ETAPA 1: Salvar split_settings
       console.log("ONBOARDING - Etapa 1: Salvando split_settings...");
-      
+
       const { data: existingSettings, error: fetchError } = await supabase
         .from("split_settings")
         .select("id")
@@ -296,7 +306,7 @@ export default function Onboarding() {
 
       // ETAPA 3: Marcar onboarding como completo
       console.log("ONBOARDING - Etapa 3: Marcando onboarding como completo...");
-      
+
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ onboarding_completed_at: new Date().toISOString() })
@@ -306,11 +316,17 @@ export default function Onboarding() {
         throw new Error(`Erro ao finalizar configuração: ${profileError.message}`);
       }
 
+      // Fallback: Salvar no localStorage caso o banco falhe por permissão
+      localStorage.setItem(`onboarding_complete_${user.id}`, 'true');
+
       console.log("ONBOARDING - Etapa 3 concluída com sucesso");
 
-      // IMPORTANTE: Invalidar cache do onboarding status ANTES de navegar
-      // Isso garante que o ProtectedRoute vai ler o valor atualizado
-      await queryClient.invalidateQueries({ queryKey: ["profile-onboarding", user.id] });
+      // Query Update: Force immediate cache update to prevent race conditions in ProtectedRoute
+      queryClient.setQueryData(["profile-onboarding", user.id], {
+        onboarding_completed_at: new Date().toISOString()
+      });
+
+      // Removed invalidateQueries to prevent fetching stale data
 
       // SUCESSO - Só mostra toast e navega se tudo deu certo
       toast({
@@ -542,8 +558,8 @@ export default function Onboarding() {
                       {splitMode === "50-50"
                         ? 50
                         : splitMode === "proporcional"
-                        ? proportionalPerson1
-                        : person1Percentage}
+                          ? proportionalPerson1
+                          : person1Percentage}
                       %
                     </p>
                   </div>
@@ -554,8 +570,8 @@ export default function Onboarding() {
                       {splitMode === "50-50"
                         ? 50
                         : splitMode === "proporcional"
-                        ? proportionalPerson2
-                        : person2Percentage}
+                          ? proportionalPerson2
+                          : person2Percentage}
                       %
                     </p>
                   </div>

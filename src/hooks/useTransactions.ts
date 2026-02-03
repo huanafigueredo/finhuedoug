@@ -35,6 +35,10 @@ export interface TransactionInsert {
   recurring_day?: number;
   recurring_duration?: string;
   recurring_end_date?: string;
+  // Comprovantes and Extraction
+  tags?: string[];
+  resumo_curto?: string;
+  status_extracao?: string;
 }
 
 export interface Transaction {
@@ -79,6 +83,8 @@ export interface Transaction {
   custom_person2_percentage: number | null;
   // Joined fields
   bank_name?: string;
+  bank_closing_day?: number | null;
+  bank_due_day?: number | null;
   payment_method_name?: string;
   recipient_name?: string;
 }
@@ -91,7 +97,7 @@ export function useTransactions() {
         .from("transactions")
         .select(`
           *,
-          banks!transactions_bank_id_fkey(name),
+          banks!transactions_bank_id_fkey(name, closing_day, due_day),
           payment_methods(name),
           recipients(name)
         `)
@@ -102,6 +108,8 @@ export function useTransactions() {
       return (data || []).map((t: any) => ({
         ...t,
         bank_name: t.banks?.name || null,
+        bank_closing_day: t.banks?.closing_day || null,
+        bank_due_day: t.banks?.due_day || null,
         payment_method_name: t.payment_methods?.name || null,
         recipient_name: t.recipients?.name || null,
       })) as Transaction[];
@@ -123,13 +131,13 @@ export function useCreateTransaction() {
       // If it's an installment transaction, create a SINGLE record (dynamic installment calculation)
       if (transactionData.is_installment && transactionData.total_installments && transactionData.total_installments > 1) {
         const startFrom = start_from_installment || 1;
-        
+
         // Use values already calculated by the form - do NOT recalculate here
         // The form sends total_value (total purchase amount) and installment_value (monthly payment)
         // Both values are in reais and already validated
         const totalValue = transactionData.total_value;
         const installmentValue = transactionData.installment_value || (totalValue / transactionData.total_installments);
-        
+
         // Create a SINGLE record for the entire installment purchase
         // The date is the first installment date
         // installment_number stores the starting installment (for purchases already in progress)
@@ -158,7 +166,7 @@ export function useCreateTransaction() {
       if (transactionData.is_recurring && transactionData.type === "income" && transactionData.recurring_day) {
         const recurringDay = transactionData.recurring_day;
         const duration = transactionData.recurring_duration;
-        
+
         // Determine number of months to generate
         let monthsToGenerate = 0;
         if (duration === "indefinite") {
@@ -169,11 +177,11 @@ export function useCreateTransaction() {
 
         if (monthsToGenerate > 0) {
           const baseDate = new Date(transactionData.date);
-          
+
           // Set the first transaction date to the recurring day of the base month
           const daysInBaseMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
           const firstDate = setDateFns(baseDate, Math.min(recurringDay, daysInBaseMonth));
-          
+
           // Create the first (parent) recurring transaction
           const { data: parentData, error: parentError } = await supabase
             .from("transactions")
@@ -198,7 +206,7 @@ export function useCreateTransaction() {
             // Set the specific day of month (handle months with fewer days)
             const daysInMonth = new Date(futureMonth.getFullYear(), futureMonth.getMonth() + 1, 0).getDate();
             const futureDate = setDateFns(futureMonth, Math.min(recurringDay, daysInMonth));
-            
+
             futureTransactions.push({
               ...transactionData,
               user_id: user.id,
@@ -260,6 +268,11 @@ export function useUpdateTransaction() {
       // Remove client-only fields before sending to the database
       const { start_from_installment, ...updatesWithoutClientOnly } = updates;
 
+      // Ensure installment_number is updated if start_from_installment is provided (Legacy/Form capability)
+      if (start_from_installment) {
+        (updatesWithoutClientOnly as any).installment_number = start_from_installment;
+      }
+
       // Update the main transaction
       const { data, error } = await supabase
         .from("transactions")
@@ -273,14 +286,14 @@ export function useUpdateTransaction() {
       // If updating future installments
       if (updateFutureInstallments && data.is_installment && data.installment_number) {
         const parentId = data.parent_transaction_id || id;
-        
+
         // Recalculate installment value if total_value changed
         let updateData: any = {};
-        
+
         if (updatesWithoutClientOnly.description) {
           // Update description pattern for future installments
           const baseDescription = updatesWithoutClientOnly.description.replace(/\s*\(Parcela \d+\/\d+\)$/, "");
-          
+
           // Get all future installments
           const { data: futureInstallments } = await supabase
             .from("transactions")

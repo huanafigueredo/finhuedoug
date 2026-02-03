@@ -43,6 +43,8 @@ export interface Transaction {
   person1Name?: string;
   person2Name?: string;
   splitPercentages?: { person1: number; person2: number };
+  invoiceMonth?: string; // e.g. "Fevereiro"
+  startInstallment?: number; // Debugging
 }
 
 interface TransactionRowProps {
@@ -90,6 +92,11 @@ export function TransactionRow({
           <span className="text-sm font-medium text-foreground truncate">
             {transaction.description}
           </span>
+          {transaction.invoiceMonth && (
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 whitespace-nowrap">
+              Fatura {transaction.invoiceMonth}
+            </span>
+          )}
           {transaction.isCouple && (
             <Heart className="w-4 h-4 text-primary fill-primary shrink-0" />
           )}
@@ -118,7 +125,10 @@ export function TransactionRow({
       {/* Installment Column */}
       <td className="px-2 py-4">
         {transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments ? (
-          <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+          <span
+            className="text-xs font-medium text-muted-foreground whitespace-nowrap cursor-help"
+            title={`Start: ${transaction.startInstallment || '?'}`}
+          >
             {transaction.installmentNumber}/{transaction.totalInstallments}
           </span>
         ) : (
@@ -189,9 +199,9 @@ export function TransactionRow({
   }
 
   return (
-    <tr 
+    <tr
       className={cn(
-        "border-b border-border hover:bg-secondary/30 transition-colors cursor-pointer", 
+        "border-b border-border hover:bg-secondary/30 transition-colors cursor-pointer",
         className
       )}
       onClick={handleRowClick}

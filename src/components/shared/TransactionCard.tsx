@@ -73,7 +73,7 @@ export function TransactionCard({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isSwiping) return;
-    
+
     const deltaX = e.touches[0].clientX - touchStartX.current;
     const deltaY = e.touches[0].clientY - touchStartY.current;
 
@@ -86,7 +86,7 @@ export function TransactionCard({
 
     // Only allow left swipe (negative deltaX)
     const newOffset = Math.min(0, Math.max(-MAX_SWIPE, deltaX + swipeOffset));
-    
+
     // Trigger haptic when crossing threshold
     if (newOffset < -SWIPE_THRESHOLD && !hasTriggeredHaptic.current) {
       hasTriggeredHaptic.current = true;
@@ -95,14 +95,14 @@ export function TransactionCard({
       hasTriggeredHaptic.current = false;
       triggerHaptic('light');
     }
-    
+
     setSwipeOffset(newOffset);
   };
 
   const handleTouchEnd = () => {
     setIsSwiping(false);
     hasTriggeredHaptic.current = false;
-    
+
     // Snap to open or closed position
     if (swipeOffset < -SWIPE_THRESHOLD) {
       setSwipeOffset(-MAX_SWIPE);
@@ -127,7 +127,7 @@ export function TransactionCard({
     <div className="relative overflow-hidden rounded-xl">
       {/* Swipe Actions Background - Only on mobile */}
       {isMobile && (
-        <div 
+        <div
           data-swipe-actions
           className="absolute inset-y-0 right-0 flex items-stretch"
           style={{ width: MAX_SWIPE }}
@@ -155,9 +155,9 @@ export function TransactionCard({
           isSwiping ? "" : "transition-transform duration-200",
           className
         )}
-        style={{ 
+        style={{
           ...style,
-          transform: isMobile ? `translateX(${swipeOffset}px)` : undefined 
+          transform: isMobile ? `translateX(${swipeOffset}px)` : undefined
         }}
         onClick={handleCardClick}
         onTouchStart={isMobile ? handleTouchStart : undefined}
@@ -171,6 +171,11 @@ export function TransactionCard({
               <span className="text-sm sm:text-base font-semibold text-foreground truncate">
                 {transaction.description}
               </span>
+              {transaction.invoiceMonth && (
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 whitespace-nowrap">
+                  Fatura {transaction.invoiceMonth}
+                </span>
+              )}
               {transaction.isCouple && (
                 <Heart className="w-4 h-4 text-primary fill-primary shrink-0" />
               )}
@@ -185,7 +190,7 @@ export function TransactionCard({
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
               <Badge variant={transaction.type} />
@@ -194,23 +199,23 @@ export function TransactionCard({
             <div data-actions-dropdown>
               <DropdownMenu onOpenChange={(open) => !open && resetSwipe()}>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-10 w-10 sm:h-8 sm:w-8 -mr-2"
                   >
                     <MoreVertical className="w-5 h-5 sm:w-4 sm:h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-popover min-w-[160px]">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={(e) => { e.stopPropagation(); onEdit?.(transaction.id); }}
                     className="py-3 sm:py-2"
                   >
                     <Pencil className="w-4 h-4 mr-3" />
                     Editar
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={(e) => { e.stopPropagation(); onDuplicate?.(transaction.id); }}
                     className="py-3 sm:py-2"
                   >

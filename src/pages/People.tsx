@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  TrendingDown, 
-  TrendingUp, 
+import {
+  TrendingDown,
+  TrendingUp,
   Heart,
   ArrowRight,
   Receipt,
@@ -52,54 +52,7 @@ const categoryColors: Record<string, string> = {
   "Outros": "#6B7280",
 };
 
-function getTransactionMonthValue(t: any): number {
-  if (t.is_installment && t.installment_value && !t.is_generated_installment) {
-    return Number(t.installment_value);
-  }
-  return Number(t.total_value);
-}
-
-// Helper function to calculate installment info for a given filter month/year
-function calculateInstallmentForMonth(
-  firstInstallmentDate: Date,
-  startInstallment: number,
-  totalInstallments: number,
-  filterMonth: number,
-  filterYear: number
-): { currentInstallment: number; isInRange: boolean } | null {
-  const firstMonth = firstInstallmentDate.getMonth() + 1;
-  const firstYear = firstInstallmentDate.getFullYear();
-  
-  const filterDate = new Date(filterYear, filterMonth - 1, 1);
-  const firstDate = new Date(firstYear, firstMonth - 1, 1);
-  const monthsDiff = differenceInMonths(filterDate, firstDate);
-  
-  const currentInstallment = startInstallment + monthsDiff;
-  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
-  
-  return { currentInstallment, isInRange };
-}
-
-// Check if transaction should appear in the filtered month
-function shouldShowInMonth(t: any, filterMonth: number, filterYear: number): boolean {
-  const rawDate = parseISO(t.date);
-  const isNewStyleInstallment = t.is_installment && t.total_installments && !t.is_generated_installment;
-  
-  if (isNewStyleInstallment) {
-    const startInstallment = t.installment_number || 1;
-    const result = calculateInstallmentForMonth(
-      rawDate,
-      startInstallment,
-      t.total_installments,
-      filterMonth + 1,
-      filterYear
-    );
-    return result?.isInRange ?? false;
-  }
-  
-  // Regular transaction - match by date
-  return rawDate.getMonth() === filterMonth && rawDate.getFullYear() === filterYear;
-}
+import { shouldShowInMonth, getTransactionMonthValue } from "@/lib/transactionUtils";
 
 // Simple avatar display component (non-editable)
 function PersonAvatar({ name, avatar, size = "lg" }: { name: string; avatar?: string | null; size?: "sm" | "md" | "lg" }) {
@@ -110,7 +63,7 @@ function PersonAvatar({ name, avatar, size = "lg" }: { name: string; avatar?: st
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center font-display font-bold text-primary overflow-hidden ring-4 ring-card shadow-lg",
         sizeClasses[size]
@@ -176,19 +129,19 @@ export default function People() {
     expenses.forEach((t) => {
       const category = t.category || "Outros";
       let value = getTransactionMonthValue(t);
-      
+
       if (t.is_couple) {
         // Use split calculation for couple expenses (with custom percentages)
         const split = calculateSplitForTransaction(
-          value, 
-          t.category, 
+          value,
+          t.category,
           t.subcategory,
           t.custom_person1_percentage,
           t.custom_person2_percentage
         );
         value = isPerson1 ? split.person1 : split.person2;
       }
-      
+
       categoryTotals[category] = (categoryTotals[category] || 0) + value;
     });
 
@@ -213,19 +166,19 @@ export default function People() {
       const bank = banks.find((b) => b.id === t.bank_id);
       const bankName = bank?.name || "Outro";
       let value = getTransactionMonthValue(t);
-      
+
       if (t.is_couple) {
         // Use split calculation for couple expenses (with custom percentages)
         const split = calculateSplitForTransaction(
-          value, 
-          t.category, 
+          value,
+          t.category,
           t.subcategory,
           t.custom_person1_percentage,
           t.custom_person2_percentage
         );
         value = isPerson1 ? split.person1 : split.person2;
       }
-      
+
       bankTotals[bankName] = (bankTotals[bankName] || 0) + value;
     });
 
@@ -274,8 +227,8 @@ export default function People() {
         .reduce((sum, t) => {
           const value = getTransactionMonthValue(t);
           const split = calculateSplitForTransaction(
-            value, 
-            t.category, 
+            value,
+            t.category,
             t.subcategory,
             t.custom_person1_percentage,
             t.custom_person2_percentage
@@ -299,7 +252,7 @@ export default function People() {
 
   // Get custom avatar URLs from settings
   const personSettings = usePersonNames();
-  
+
   // Get avatar based on person (custom or fallback)
   const getAvatar = (personName: string) => {
     if (personName === metrics.person1Name) {
@@ -310,7 +263,7 @@ export default function People() {
     }
     return undefined;
   };
-  
+
   // Get member ID for upload component
   const getMemberId = (personName: string): string | undefined => {
     if (personName === metrics.person1Name) {
@@ -339,9 +292,9 @@ export default function People() {
       <div className="space-y-6 sm:space-y-8">
         {/* Person Header with Avatar */}
         <div className="flex items-center gap-4 p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card animate-fade-up">
-          <AvatarUpload 
-            name={personName} 
-            avatar={getAvatar(personName)} 
+          <AvatarUpload
+            name={personName}
+            avatar={getAvatar(personName)}
             memberId={getMemberId(personName)}
             size="lg"
             editable={true}
@@ -455,8 +408,8 @@ export default function People() {
                     let value = baseValue;
                     if (t.is_couple) {
                       const split = calculateSplitForTransaction(
-                        baseValue, 
-                        t.category, 
+                        baseValue,
+                        t.category,
                         t.subcategory,
                         t.custom_person1_percentage,
                         t.custom_person2_percentage
@@ -464,7 +417,7 @@ export default function People() {
                       value = personName === metrics.person1Name ? split.person1 : split.person2;
                     }
                     return (
-                      <div 
+                      <div
                         key={t.id}
                         className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-all duration-200 hover:scale-[1.01]"
                         style={{ animationDelay: `${850 + index * 50}ms` }}
@@ -507,170 +460,170 @@ export default function People() {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {/* Header */}
-          <div className="text-center mb-6 sm:mb-8 animate-fade-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6 shadow-sm">
-              <Heart className="w-4 h-4 text-primary animate-pulse-soft" />
-              <span className="text-sm font-medium text-primary">Perfis Individuais</span>
+        {/* Header */}
+        <div className="text-center mb-6 sm:mb-8 animate-fade-up">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6 shadow-sm">
+            <Heart className="w-4 h-4 text-primary animate-pulse-soft" />
+            <span className="text-sm font-medium text-primary">Perfis Individuais</span>
+          </div>
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+            Dashboard por Pessoa 👫
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
+            Visualize as finanças individuais de cada pessoa
+          </p>
+        </div>
+
+        {/* Month/Year Filter */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 animate-fade-up" style={{ animationDelay: "100ms" }}>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-32 sm:w-40">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((month) => (
+                <SelectItem key={month} value={month}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-24 sm:w-28">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              {["2024", "2025", "2026"].map((year) => (
+                <SelectItem key={year} value={year}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Tabs for each person */}
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="grid w-full max-w-sm sm:max-w-md mx-auto grid-cols-2 mb-6 sm:mb-8 h-14 p-1.5 animate-fade-up" style={{ animationDelay: "150ms" }}>
+            <TabsTrigger value="person1" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
+              <PersonAvatar
+                name={metrics.person1Name}
+                avatar={personSettings.person1Avatar || avatarPerson1}
+                size="sm"
+              />
+              <span className="hidden sm:inline">{metrics.person1Name}</span>
+            </TabsTrigger>
+            <TabsTrigger value="person2" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
+              <PersonAvatar
+                name={metrics.person2Name}
+                avatar={personSettings.person2Avatar || avatarPerson2}
+                size="sm"
+              />
+              <span className="hidden sm:inline">{metrics.person2Name}</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent
+            value="person1"
+            className="transition-all duration-500 ease-out data-[state=active]:animate-slide-in-right data-[state=inactive]:animate-fade-out"
+          >
+            {renderPersonDashboard(
+              metrics.person1Name,
+              metrics.person1TotalExpenses,
+              metrics.person1Income,
+              metrics.person1Balance,
+              metrics.person1IndividualExpenses
+            )}
+          </TabsContent>
+
+          <TabsContent
+            value="person2"
+            className="transition-all duration-500 ease-out data-[state=active]:animate-slide-in-left data-[state=inactive]:animate-fade-out"
+          >
+            {renderPersonDashboard(
+              metrics.person2Name,
+              metrics.person2TotalExpenses,
+              metrics.person2Income,
+              metrics.person2Balance,
+              metrics.person2IndividualExpenses
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Summary Card */}
+        <div className="mt-8 sm:mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-card to-secondary/30 border border-border/50 shadow-card text-center animate-fade-up" style={{ animationDelay: "200ms" }}>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/15 mb-4">
+            <Heart className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-2">
+            Resumo do Casal 💕
+          </h2>
+          <p className="text-muted-foreground text-sm mb-6">
+            Totais em {selectedMonth}/{selectedYear}
+          </p>
+
+          {/* First row: Overall totals */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto mb-6">
+            <div className="p-3 sm:p-4 rounded-xl bg-card/50">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Despesas</p>
+              <p className="text-lg sm:text-2xl font-display font-bold text-destructive">
+                {formatCurrency(metrics.totalExpenses)}
+              </p>
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-3 sm:mb-4">
-              Dashboard por Pessoa 👫
-            </h1>
-            <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
-              Visualize as finanças individuais de cada pessoa
-            </p>
+            <div className="p-3 sm:p-4 rounded-xl bg-card/50">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Receitas</p>
+              <p className="text-lg sm:text-2xl font-display font-bold text-success">
+                {formatCurrency(metrics.totalIncome)}
+              </p>
+            </div>
+            <div className="p-3 sm:p-4 rounded-xl bg-card/50">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Saldo</p>
+              <p className={`text-lg sm:text-2xl font-display font-bold ${metrics.totalBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
+                {formatCurrency(metrics.totalBalance)}
+              </p>
+            </div>
           </div>
 
-          {/* Month/Year Filter */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8 animate-fade-up" style={{ animationDelay: "100ms" }}>
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-32 sm:w-40">
-                <SelectValue placeholder="Mês" />
-              </SelectTrigger>
-              <SelectContent>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {month}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-24 sm:w-28">
-                <SelectValue placeholder="Ano" />
-              </SelectTrigger>
-              <SelectContent>
-                {["2024", "2025", "2026"].map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Tabs for each person */}
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-            <TabsList className="grid w-full max-w-sm sm:max-w-md mx-auto grid-cols-2 mb-6 sm:mb-8 h-14 p-1.5 animate-fade-up" style={{ animationDelay: "150ms" }}>
-              <TabsTrigger value="person1" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
-                <PersonAvatar 
-                  name={metrics.person1Name} 
-                  avatar={personSettings.person1Avatar || avatarPerson1} 
-                  size="sm" 
-                />
-                <span className="hidden sm:inline">{metrics.person1Name}</span>
-              </TabsTrigger>
-              <TabsTrigger value="person2" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
-                <PersonAvatar 
-                  name={metrics.person2Name} 
-                  avatar={personSettings.person2Avatar || avatarPerson2} 
-                  size="sm" 
-                />
-                <span className="hidden sm:inline">{metrics.person2Name}</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent 
-              value="person1" 
-              className="transition-all duration-500 ease-out data-[state=active]:animate-slide-in-right data-[state=inactive]:animate-fade-out"
-            >
-              {renderPersonDashboard(
-                metrics.person1Name,
-                metrics.person1TotalExpenses,
-                metrics.person1Income,
-                metrics.person1Balance,
-                metrics.person1IndividualExpenses
-              )}
-            </TabsContent>
-
-            <TabsContent 
-              value="person2" 
-              className="transition-all duration-500 ease-out data-[state=active]:animate-slide-in-left data-[state=inactive]:animate-fade-out"
-            >
-              {renderPersonDashboard(
-                metrics.person2Name,
-                metrics.person2TotalExpenses,
-                metrics.person2Income,
-                metrics.person2Balance,
-                metrics.person2IndividualExpenses
-              )}
-            </TabsContent>
-          </Tabs>
-
-          {/* Summary Card */}
-          <div className="mt-8 sm:mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-card to-secondary/30 border border-border/50 shadow-card text-center animate-fade-up" style={{ animationDelay: "200ms" }}>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/15 mb-4">
-              <Heart className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-2">
-              Resumo do Casal 💕
-            </h2>
-            <p className="text-muted-foreground text-sm mb-6">
-              Totais em {selectedMonth}/{selectedYear}
-            </p>
-            
-            {/* First row: Overall totals */}
-            <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto mb-6">
-              <div className="p-3 sm:p-4 rounded-xl bg-card/50">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Despesas</p>
-                <p className="text-lg sm:text-2xl font-display font-bold text-destructive">
-                  {formatCurrency(metrics.totalExpenses)}
-                </p>
-              </div>
-              <div className="p-3 sm:p-4 rounded-xl bg-card/50">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Receitas</p>
-                <p className="text-lg sm:text-2xl font-display font-bold text-success">
-                  {formatCurrency(metrics.totalIncome)}
-                </p>
-              </div>
-              <div className="p-3 sm:p-4 rounded-xl bg-card/50">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-1">Saldo</p>
-                <p className={`text-lg sm:text-2xl font-display font-bold ${metrics.totalBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {formatCurrency(metrics.totalBalance)}
-                </p>
-              </div>
-            </div>
-            
-            {/* Second row: Per-person breakdown */}
-            {metrics.coupleExpenses > 0 && (
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-xs text-muted-foreground mb-4 flex items-center justify-center gap-1.5">
-                  <Heart className="w-3 h-3 text-primary" />
-                  Divisão por pessoa
-                </p>
-                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                  {/* Person 1 */}
-                  <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
-                    <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person1Name}</p>
-                    <div className="space-y-1 text-left">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">P/ Casal:</span>
-                        <span className="font-medium">{formatCurrency(metrics.person1CoupleShare)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs pt-1 border-t border-border/50">
-                        <span className="text-muted-foreground">Total Real:</span>
-                        <span className="font-bold text-primary">{formatCurrency(metrics.person1TotalExpenses)}</span>
-                      </div>
+          {/* Second row: Per-person breakdown */}
+          {metrics.coupleExpenses > 0 && (
+            <div className="pt-4 border-t border-border/50">
+              <p className="text-xs text-muted-foreground mb-4 flex items-center justify-center gap-1.5">
+                <Heart className="w-3 h-3 text-primary" />
+                Divisão por pessoa
+              </p>
+              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                {/* Person 1 */}
+                <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
+                  <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person1Name}</p>
+                  <div className="space-y-1 text-left">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">P/ Casal:</span>
+                      <span className="font-medium">{formatCurrency(metrics.person1CoupleShare)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground">Total Real:</span>
+                      <span className="font-bold text-primary">{formatCurrency(metrics.person1TotalExpenses)}</span>
                     </div>
                   </div>
-                  {/* Person 2 */}
-                  <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
-                    <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person2Name}</p>
-                    <div className="space-y-1 text-left">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">P/ Casal:</span>
-                        <span className="font-medium">{formatCurrency(metrics.person2CoupleShare)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs pt-1 border-t border-border/50">
-                        <span className="text-muted-foreground">Total Real:</span>
-                        <span className="font-bold text-primary">{formatCurrency(metrics.person2TotalExpenses)}</span>
-                      </div>
+                </div>
+                {/* Person 2 */}
+                <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
+                  <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person2Name}</p>
+                  <div className="space-y-1 text-left">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">P/ Casal:</span>
+                      <span className="font-medium">{formatCurrency(metrics.person2CoupleShare)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground">Total Real:</span>
+                      <span className="font-bold text-primary">{formatCurrency(metrics.person2TotalExpenses)}</span>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>

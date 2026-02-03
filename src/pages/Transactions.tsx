@@ -29,6 +29,7 @@ import { useTransactions, useDeleteTransaction, useDeleteMultipleTransactions } 
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
+import { shouldShowInMonth, getTransactionMonthValue, getInstallmentDetailsForMonth, calculateInstallmentForMonth } from "@/lib/transactionUtils";
 import { format, parseISO, differenceInMonths, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -65,26 +66,7 @@ const months = [
   { value: "12", label: "Dezembro" },
 ];
 
-// Helper function to calculate installment info for a given filter month/year
-function calculateInstallmentForMonth(
-  firstInstallmentDate: Date,
-  startInstallment: number,
-  totalInstallments: number,
-  filterMonth: number,
-  filterYear: number
-): { currentInstallment: number; isInRange: boolean } | null {
-  const firstMonth = firstInstallmentDate.getMonth() + 1;
-  const firstYear = firstInstallmentDate.getFullYear();
-  
-  const filterDate = new Date(filterYear, filterMonth - 1, 1);
-  const firstDate = new Date(firstYear, firstMonth - 1, 1);
-  const monthsDiff = differenceInMonths(filterDate, firstDate);
-  
-  const currentInstallment = startInstallment + monthsDiff;
-  const isInRange = currentInstallment >= startInstallment && currentInstallment <= totalInstallments;
-  
-  return { currentInstallment, isInRange };
-}
+
 
 export default function Transactions() {
   const { toast } = useToast();
@@ -112,6 +94,7 @@ export default function Transactions() {
   const forWhoOptions = ["Todos", ...members.map(m => m.name), "Casal", "Empresa"];
 
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"invoice" | "competence">("invoice");
   const [personFilter, setPersonFilter] = useState("Todos");
   const [forWhoFilter, setForWhoFilter] = useState("Todos");
   const [categoryFilter, setCategoryFilter] = useState("Todas");
@@ -136,7 +119,7 @@ export default function Transactions() {
   useEffect(() => {
     const monthParam = searchParams.get('month');
     const yearParam = searchParams.get('year');
-    
+
     if (monthParam && monthParam !== monthFilter) {
       setMonthFilter(monthParam);
     }
@@ -144,7 +127,7 @@ export default function Transactions() {
       setYearFilter(yearParam);
     }
   }, [searchParams]);
-  
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [transactionToDeleteInfo, setTransactionToDeleteInfo] = useState<{ isParent: boolean; description: string } | null>(null);
@@ -157,7 +140,7 @@ export default function Transactions() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedTransactionDetails, setSelectedTransactionDetails] = useState<TransactionDetails | null>(null);
   const [importarFaturaOpen, setImportarFaturaOpen] = useState(false);
-  
+
   // Multi-select state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
@@ -200,7 +183,7 @@ export default function Transactions() {
   };
 
   // Transform and filter transactions with dynamic installment calculation
-const filteredTransactions = useMemo(() => {
+  const filteredTransactions = useMemo(() => {
     const filterMonthNum = monthFilter !== "Todos" ? parseInt(monthFilter) : null;
     const filterYearNum = yearFilter !== "Todos" ? parseInt(yearFilter) : null;
 
@@ -211,39 +194,32 @@ const filteredTransactions = useMemo(() => {
         // Forçamos o horário para 12:00 (meio-dia) para evitar viradas de dia
         let rawDate;
         if (t.date && t.date.length >= 10) {
-           const [y, m, d] = t.date.substring(0, 10).split('-').map(Number);
-           rawDate = new Date(y, m - 1, d, 12, 0, 0);
+          const [y, m, d] = t.date.substring(0, 10).split('-').map(Number);
+          rawDate = new Date(y, m - 1, d, 12, 0, 0);
         } else {
-           rawDate = parseISO(t.date);
+          rawDate = parseISO(t.date);
         }
-        
-        const isNewStyleInstallment = t.is_installment && 
-          !t.is_generated_installment && 
+
+        const isNewStyleInstallment = t.is_installment &&
+          !t.is_generated_installment &&
           !t.parent_transaction_id &&
-          t.total_installments && 
+          t.total_installments &&
           t.total_installments > 1;
 
         if (isNewStyleInstallment && filterMonthNum && filterYearNum) {
-          const startInstallment = t.installment_number || 1;
-          const resultCalc = calculateInstallmentForMonth(
-            rawDate,
-            startInstallment,
-            t.total_installments!,
-            filterMonthNum,
+          // Use unified logic to get installment details for this invoice month
+          const match = getInstallmentDetailsForMonth(
+            t,
+            filterMonthNum - 1, // Convert back to 0-indexed for the utility
             filterYearNum
           );
 
-          if (!resultCalc || !resultCalc.isInRange) {
-            return null;
-          }
+          if (!match) return null;
 
-          const monthsFromStart = resultCalc.currentInstallment - startInstallment;
-          const installmentDate = addMonths(rawDate, monthsFromStart);
-          
-          const installmentValue = t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!;
-          
+          const { currentInstallment, installmentDate, installmentValue } = match;
+
           // Calculate split for couple expenses
-          const split = t.is_couple 
+          const split = t.is_couple
             ? calculateSplitForTransaction(installmentValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
             : null;
 
@@ -264,7 +240,7 @@ const filteredTransactions = useMemo(() => {
             isCouple: t.is_couple || false,
             type: t.type as "income" | "expense",
             isInstallment: true,
-            installmentNumber: resultCalc.currentInstallment,
+            installmentNumber: currentInstallment,
             totalInstallments: t.total_installments,
             realTotalValue: Number(t.total_value),
             installmentValue: installmentValue,
@@ -273,7 +249,7 @@ const filteredTransactions = useMemo(() => {
             status_extracao: t.status_extracao || undefined,
             isNewStyleInstallment: true,
             firstInstallmentDate: rawDate,
-            startInstallment: startInstallment,
+            startInstallment: t.installment_number || 1, // Store the configured start
             savingsDepositId: t.savings_deposit_id || null,
             person1Share: split?.person1,
             person2Share: split?.person2,
@@ -284,15 +260,28 @@ const filteredTransactions = useMemo(() => {
         }
 
         // --- Lógica Padrão (Não é parcela projetada) ---
-        
+
         const isLegacyInstallment = t.is_installment && t.total_installments && t.total_installments > 1;
-        const displayValue = isLegacyInstallment && t.installment_value 
-          ? Number(t.installment_value) 
+        const displayValue = isLegacyInstallment && t.installment_value
+          ? Number(t.installment_value)
           : Number(t.total_value);
-        
-        const split = t.is_couple 
+
+        const split = t.is_couple
           ? calculateSplitForTransaction(displayValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage)
           : null;
+
+
+        let invoiceMonthLabel = undefined;
+        // Show invoice label if banking closing day exists
+        if (t.bank_closing_day) {
+          const closingDay = t.bank_closing_day;
+          if (rawDate.getDate() >= closingDay) {
+            const targetDate = addMonths(rawDate, 1);
+            // Get month name in Portuguese
+            const monthName = targetDate.toLocaleDateString('pt-BR', { month: 'long' });
+            invoiceMonthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+          }
+        }
 
         return {
           id: t.id,
@@ -305,6 +294,7 @@ const filteredTransactions = useMemo(() => {
           category: t.category || "-",
           subcategory: t.subcategory || "-",
           bank: t.bank_name || "-",
+          bank_closing_day: t.bank_closing_day || null,
           paymentMethod: t.payment_method_name || "-",
           totalValue: displayValue,
           valuePerPerson: split?.person1 || displayValue,
@@ -327,6 +317,7 @@ const filteredTransactions = useMemo(() => {
           person1Name: person1,
           person2Name: person2,
           splitPercentages: split ? { person1: split.person1Percentage, person2: split.person2Percentage } : undefined,
+          invoiceMonth: invoiceMonthLabel,
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null)
@@ -335,7 +326,7 @@ const filteredTransactions = useMemo(() => {
           return false;
         }
         if (personFilter !== "Todos" && t.person !== personFilter) return false;
-        
+
         // For "para quem" filter: include if forWho matches OR if it's a couple transaction
         if (forWhoFilter !== "Todos") {
           const matchesPerson = t.forWho === forWhoFilter;
@@ -375,15 +366,45 @@ const filteredTransactions = useMemo(() => {
             const day = t.rawDate.getDate().toString().padStart(2, "0");
             if (day !== dayFilter) return false;
           }
-          if (monthFilter !== "Todos") {
-            const month = (t.rawDate.getMonth() + 1).toString();
-            if (month !== monthFilter) return false;
+
+          // Credit Card Logic for Month/Year Filtering
+          const transactionDateForFilter = t.rawDate;
+          const closingDay = t.bank_closing_day; // Assuming map added this to the object passed here
+
+          // Determine target Month/Year based on View Mode
+          let targetMonth = transactionDateForFilter.getMonth() + 1;
+          let targetYear = transactionDateForFilter.getFullYear();
+
+          if (viewMode === 'invoice' && closingDay && t.rawDate.getDate() >= closingDay) {
+            // Shift to next month if in Invoice Mode and after closing day
+            targetMonth = targetMonth + 1;
+            if (targetMonth > 12) {
+              targetMonth = 1;
+              targetYear = targetYear + 1;
+            }
           }
+
+          // If filtering by month
+          if (monthFilter !== "Todos") {
+            if (targetMonth.toString() !== monthFilter) return false;
+          }
+
+          // If filtering by year
           if (yearFilter !== "Todos") {
-            const year = t.rawDate.getFullYear().toString();
-            if (year !== yearFilter) return false;
+            if (targetYear.toString() !== yearFilter) return false;
           }
         } else {
+          // For installments (projected), logic is already handled in the mapping (it projects the correct date).
+          // We can check if we want to apply closing logic to installments too? 
+          // Usually installments are billed ON the due date of that month, so the projected date IS the billing date.
+          // But wait, the projected date is just +1 month. 
+          // If the ORIGINAL purchase was on a card, the installment dates might need shift?
+          // Simplification: Installment projection usually lands on the correct month. 
+          // If I buy on Jan 20 (closes Jan 15), 1st installment is Feb.
+          // The projection logic `addMonths` should take care of basic distribution.
+          // Let's assume projected installments align with the "invoice" month by definition of "installment 1, 2, 3".
+          // So checking dayFilter etc is fine.
+
           if (dayFilter !== "Todos") {
             const day = t.rawDate.getDate().toString().padStart(2, "0");
             if (day !== dayFilter) return false;
@@ -393,11 +414,11 @@ const filteredTransactions = useMemo(() => {
         return true;
       });
 
-      // --- CORREÇÃO DE ORDENAÇÃO ---
-      // Ordena por data (mais recente primeiro)
-      return result.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+    // --- CORREÇÃO DE ORDENAÇÃO ---
+    // Ordena por data (mais recente primeiro)
+    return result.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
-  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction, viewMode]);
 
   const years = ["Todos", "2030", "2029", "2028", "2027", "2026", "2025"];
 
@@ -410,29 +431,29 @@ const filteredTransactions = useMemo(() => {
       .filter(t => t.type === "expense" && !!t.savingsDepositId)
       .reduce((sum, t) => sum + t.totalValue, 0);
     const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
-    
+
     // FIXED: Calculate individual expenses PER PERSON (not couple, expense type only)
     const person1Individual = filteredTransactions
       .filter(t => t.type === "expense" && !t.isCouple && !t.savingsDepositId && t.forWho === person1)
       .reduce((sum, t) => sum + t.totalValue, 0);
-    
+
     const person2Individual = filteredTransactions
       .filter(t => t.type === "expense" && !t.isCouple && !t.savingsDepositId && t.forWho === person2)
       .reduce((sum, t) => sum + t.totalValue, 0);
-    
+
     // Calculate couple expense shares per person (expense type only)
     const coupleExpenses = filteredTransactions.filter(t => t.type === "expense" && t.isCouple && !t.savingsDepositId);
     const person1CoupleTotal = coupleExpenses.reduce((sum, t) => sum + (t.person1Share ?? 0), 0);
     const person2CoupleTotal = coupleExpenses.reduce((sum, t) => sum + (t.person2Share ?? 0), 0);
-    
+
     // FIXED: Combined totals = individual expenses (per person) + couple share (per person)
     const person1Combined = person1Individual + person1CoupleTotal;
     const person2Combined = person2Individual + person2CoupleTotal;
-    
+
     // Get names from first couple expense or fallback
     const person1Name = coupleExpenses[0]?.person1Name || person1;
     const person2Name = coupleExpenses[0]?.person2Name || person2;
-    
+
     return {
       expenses: regularExpenses,
       savingsDeposits,
@@ -467,7 +488,7 @@ const filteredTransactions = useMemo(() => {
 
   const confirmDelete = async () => {
     if (!transactionToDelete) return;
-    
+
     try {
       await deleteTransaction.mutateAsync(transactionToDelete);
       toast({
@@ -565,7 +586,7 @@ const filteredTransactions = useMemo(() => {
   const handleExportPdf = () => {
     const totalExpenses = summary.expenses;
     const totalIncome = summary.income;
-    
+
     exportTransactionsToPdf(
       filteredTransactions.map(t => ({
         date: t.date,
@@ -625,7 +646,7 @@ const filteredTransactions = useMemo(() => {
 
   const confirmBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    
+
     try {
       await deleteMultipleTransactions.mutateAsync(Array.from(selectedIds));
       toast({
@@ -659,11 +680,11 @@ const filteredTransactions = useMemo(() => {
                   {summary.count} {summary.count === 1 ? 'transação' : 'transações'}
                 </p>
               </div>
-              
+
               {/* Mobile button for import */}
               <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setImportarFaturaOpen(true)}
                   className="gap-1.5"
@@ -676,8 +697,8 @@ const filteredTransactions = useMemo(() => {
               {/* Desktop buttons */}
               <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
                 {selectedIds.size > 0 && (
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     size="sm"
                     onClick={() => setBulkDeleteDialogOpen(true)}
                     className="gap-2"
@@ -686,8 +707,8 @@ const filteredTransactions = useMemo(() => {
                     Excluir ({selectedIds.size})
                   </Button>
                 )}
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={handleExportPdf}
                   disabled={filteredTransactions.length === 0}
@@ -696,8 +717,8 @@ const filteredTransactions = useMemo(() => {
                   <FileDown className="w-4 h-4" />
                   Exportar PDF
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setImportarFaturaOpen(true)}
                   className="gap-2"
@@ -705,8 +726,8 @@ const filteredTransactions = useMemo(() => {
                   <CreditCard className="w-4 h-4" />
                   Importar Fatura
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   onClick={() => {
                     setEditTransactionId(null);
                     setDuplicateTransactionId(null);
@@ -717,6 +738,34 @@ const filteredTransactions = useMemo(() => {
                   <Plus className="w-4 h-4" />
                   Novo Lançamento
                 </Button>
+              </div>
+            </div>
+
+            {/* View Mode Toggle */}
+            <div className="flex justify-center sm:justify-start mb-4">
+              <div className="bg-muted p-1 rounded-lg inline-flex">
+                <button
+                  onClick={() => setViewMode("invoice")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                    viewMode === "invoice"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Por Fatura
+                </button>
+                <button
+                  onClick={() => setViewMode("competence")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
+                    viewMode === "competence"
+                      ? "bg-background shadow text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Por Competência
+                </button>
               </div>
             </div>
 
@@ -735,7 +784,7 @@ const filteredTransactions = useMemo(() => {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 <Select value={yearFilter} onValueChange={setYearFilter}>
                   <SelectTrigger className="w-[90px] h-10">
                     <SelectValue placeholder="Ano" />
@@ -1078,13 +1127,13 @@ const filteredTransactions = useMemo(() => {
                         Tipo
                       </th>
                       <th className="w-[48px] px-2 py-4">
-                        
+
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredTransactions.map((transaction) => (
-                      <tr 
+                      <tr
                         key={transaction.id}
                         className="border-b border-border hover:bg-muted/50 cursor-pointer transition-colors"
                         onClick={() => handleRowClick(transaction.id)}

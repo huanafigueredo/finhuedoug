@@ -122,6 +122,9 @@ export type Database = {
           id: string
           name: string
           user_id: string | null
+          type: "account" | "credit_card"
+          closing_day: number | null
+          due_day: number | null
         }
         Insert: {
           color?: string | null
@@ -129,6 +132,9 @@ export type Database = {
           id?: string
           name: string
           user_id?: string | null
+          type?: "account" | "credit_card"
+          closing_day?: number | null
+          due_day?: number | null
         }
         Update: {
           color?: string | null
@@ -136,6 +142,9 @@ export type Database = {
           id?: string
           name?: string
           user_id?: string | null
+          type?: "account" | "credit_card"
+          closing_day?: number | null
+          due_day?: number | null
         }
         Relationships: []
       }

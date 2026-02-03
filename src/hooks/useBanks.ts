@@ -7,6 +7,9 @@ export interface Bank {
   color: string | null;
   created_at: string;
   user_id: string | null;
+  type: "account" | "credit_card";
+  closing_day: number | null;
+  due_day: number | null;
 }
 
 export function useBanks() {
@@ -26,13 +29,26 @@ export function useBanks() {
 export function useAddBank() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ name, color }: { name: string; color?: string }) => {
+    mutationFn: async ({ name, color, type, closing_day, due_day }: {
+      name: string;
+      color?: string;
+      type?: "account" | "credit_card";
+      closing_day?: number | null;
+      due_day?: number | null;
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const { data, error } = await supabase
         .from("banks")
-        .insert({ name, color, user_id: user.id })
+        .insert({
+          name,
+          color,
+          user_id: user.id,
+          type: type || 'account',
+          closing_day,
+          due_day
+        })
         .select()
         .single();
       if (error) throw error;
@@ -45,10 +61,23 @@ export function useAddBank() {
 export function useUpdateBank() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, name, color }: { id: string; name: string; color?: string }) => {
+    mutationFn: async ({ id, name, color, type, closing_day, due_day }: {
+      id: string;
+      name: string;
+      color?: string;
+      type?: "account" | "credit_card";
+      closing_day?: number | null;
+      due_day?: number | null;
+    }) => {
       const { data, error } = await supabase
         .from("banks")
-        .update({ name, color })
+        .update({
+          name,
+          color,
+          type,
+          closing_day,
+          due_day
+        })
         .eq("id", id)
         .select()
         .single();

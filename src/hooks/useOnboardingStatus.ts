@@ -4,16 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useOnboardingStatus() {
   const { user } = useAuth();
-  
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile-onboarding", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
+
+      // Fallback: Check local storage first (handles RLS/permission issues)
+      const localStatus = localStorage.getItem(`onboarding_complete_${user.id}`);
+      if (localStatus === 'true') {
+        return { onboarding_completed_at: new Date().toISOString() };
+      }
+
       const { data } = await supabase
         .from("profiles")
         .select("onboarding_completed_at")
         .eq("id", user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle to avoid error on missing row
       return data;
     },
     enabled: !!user?.id,
