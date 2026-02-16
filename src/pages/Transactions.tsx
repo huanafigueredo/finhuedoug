@@ -424,13 +424,28 @@ export default function Transactions() {
 
   // Calculate summary (separate savings goal deposits from regular expenses)
   const summary = useMemo(() => {
+    // Helper: returns proportional value for couple transactions when a person filter is active
+    const getFilteredValue = (t: typeof filteredTransactions[0]): number => {
+      if (!t.isCouple) return t.totalValue;
+
+      // Determine which person filter is active (forWho takes priority)
+      const activePersonFilter = forWhoFilter !== "Todos" ? forWhoFilter : personFilter;
+      if (activePersonFilter === "Todos") return t.totalValue;
+
+      // Return the share for the filtered person
+      if (activePersonFilter === person1) return t.person1Share ?? t.totalValue;
+      if (activePersonFilter === person2) return t.person2Share ?? t.totalValue;
+
+      return t.totalValue;
+    };
+
     const regularExpenses = filteredTransactions
       .filter(t => t.type === "expense" && !t.savingsDepositId)
-      .reduce((sum, t) => sum + t.totalValue, 0);
+      .reduce((sum, t) => sum + getFilteredValue(t), 0);
     const savingsDeposits = filteredTransactions
       .filter(t => t.type === "expense" && !!t.savingsDepositId)
-      .reduce((sum, t) => sum + t.totalValue, 0);
-    const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.totalValue, 0);
+      .reduce((sum, t) => sum + getFilteredValue(t), 0);
+    const income = filteredTransactions.filter(t => t.type === "income").reduce((sum, t) => sum + getFilteredValue(t), 0);
 
     // FIXED: Calculate individual expenses PER PERSON (not couple, expense type only)
     const person1Individual = filteredTransactions
@@ -471,7 +486,7 @@ export default function Transactions() {
       person1Name,
       person2Name,
     };
-  }, [filteredTransactions, person1, person2]);
+  }, [filteredTransactions, person1, person2, personFilter, forWhoFilter]);
 
   const handleDeleteClick = (id: string) => {
     const tx = transactionsData.find((t) => t.id === id);
