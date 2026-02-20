@@ -29,6 +29,7 @@ import { useTransactions, useDeleteTransaction, useDeleteMultipleTransactions } 
 import { useBanks } from "@/hooks/useBanks";
 import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
+import { useRecipients } from "@/hooks/useRecipients";
 import { shouldShowInMonth, getTransactionMonthValue, getInstallmentDetailsForMonth, calculateInstallmentForMonth } from "@/lib/transactionUtils";
 import { format, parseISO, differenceInMonths, addMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +81,7 @@ export default function Transactions() {
   const deleteTransaction = useDeleteTransaction();
   const deleteMultipleTransactions = useDeleteMultipleTransactions();
   const { calculateSplitForTransaction } = useSplitCalculation();
+  const { data: recipientsData = [] } = useRecipients();
 
   // Helper to translate person identifiers to names
   const translatePerson = (personId: string | null | undefined): string => {
@@ -91,7 +93,15 @@ export default function Transactions() {
 
   // Dynamic persons from couple_members
   const persons = ["Todos", ...members.map(m => m.name)];
-  const forWhoOptions = ["Todos", ...members.map(m => m.name), "Casal", "Empresa"];
+
+  const allForWho = Array.from(new Set([
+    "Todos",
+    ...members.map(m => m.name),
+    "Casal",
+    "Empresa",
+    ...recipientsData.map(r => r.name)
+  ]));
+  const forWhoOptions = allForWho;
 
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"invoice" | "competence">("invoice");
@@ -327,11 +337,16 @@ export default function Transactions() {
         }
         if (personFilter !== "Todos" && t.person !== personFilter) return false;
 
-        // For "para quem" filter: include if forWho matches OR if it's a couple transaction
+        // For "para quem" filter: include if forWho matches exactly.
+        // Include the couple rule only if the filter precisely selected is "Casal".
         if (forWhoFilter !== "Todos") {
-          const matchesPerson = t.forWho === forWhoFilter;
-          const isCoupleTransaction = t.isCouple === true;
-          if (!matchesPerson && !isCoupleTransaction) return false;
+          if (forWhoFilter === "Casal") {
+            const matchesPerson = t.forWho === "Casal";
+            const isCoupleTransaction = t.isCouple === true;
+            if (!matchesPerson && !isCoupleTransaction) return false;
+          } else {
+            if (t.forWho !== forWhoFilter) return false;
+          }
         }
         if (categoryFilter !== "Todas" && t.category !== categoryFilter) return false;
         if (bankFilter !== "Todos" && t.bank !== bankFilter) return false;
