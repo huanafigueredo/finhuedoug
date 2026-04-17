@@ -1,73 +1,74 @@
-# Welcome to your Lovable project
+# 💰 Together Finanças (finhuedoug)
 
-## Project info
+O **Together Finanças** é uma plataforma de gestão financeira inteligente projetada exclusivamente para o casal Huana e Douglas. O sistema combina uma interface moderna de dashboard com a potência da Inteligência Artificial para automatizar o registro de gastos através do Telegram.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Funcionalidades Principais
 
-## How can I edit this code?
+- **🤖 Integração Inteligente com Telegram:**
+  - Envie mensagens de texto como *"Jantar 50 reais no Nubank"* ou fotos de cupons fiscais.
+  - O sistema utiliza **Google Gemini AI** para extrair automaticamente: estabelecimento, valor, data, forma de pagamento e categoria.
+  - Confirmação em tempo real diretamente no chat do bot.
 
-There are several ways of editing your application.
+- **📊 Dashboard Interativo:**
+  - Visualização completa de gastos mensais e anuais.
+  - Gráficos de distribuição por categoria e banco.
+  - Controle de gastos individuais vs. gastos do casal.
 
-**Use Lovable**
+- **🎮 Gamificação Financeira:**
+  - Sistema de XP e Níveis para incentivar a disciplina financeira.
+  - Conquistas desbloqueáveis (Achievements).
+  - Controle de sequências (Streaks) para lançamentos diários.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- **💳 Gestão de Contas e Cartões:**
+  - Suporte a múltiplos bancos e métodos de pagamento.
+  - Gestão de parcelamentos automáticos.
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠️ Tecnologias Utilizadas
 
-**Use your preferred IDE**
+- **Frontend:** React, Vite, TypeScript, Tailwind CSS, Lucide React.
+- **Backend:** Supabase (PostgreSQL, Auth, Edge Functions).
+- **IA:** Google Gemini AI (gemini-2.5-flash / gemini-2.0-flash).
+- **Integração:** Telegram Bot API.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## ⚙️ Configuração do Ambiente
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Pré-requisitos
+- Node.js instalado.
+- Conta no Supabase.
+- Chave de API do Google AI Studio (Gemini).
+- Token de Bot do Telegram (BotFather).
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Variáveis de Ambiente (.env)
+Crie um arquivo `.env` na raiz do projeto:
+```env
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave_anonima
 ```
 
-**Edit a file directly in GitHub**
+### Configuração do Bot (Supabase Secrets)
+Para o Webhook do Telegram funcionar, configure os seguintes Secrets no Supabase:
+- `TELEGRAM_BOT_TOKEN`: Token do seu bot.
+- `GEMINI_API_KEY`: Sua chave do Google Gemini.
+- `DEFAULT_TELEGRAM_USER_ID`: Seu UUID do Supabase (para vincular os gastos).
+- `SUPABASE_SERVICE_ROLE_KEY`: Chave de serviço para escrita no banco.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📦 Como rodar o projeto
 
-**Use GitHub Codespaces**
+1. Clone o repositório:
+   ```bash
+   git clone https://github.com/huanafigueredo/finhuedoug.git
+   ```
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Inicie o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📝 Licença
+Este projeto é de uso privado e pessoal do casal Huana e Douglas.
 
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+Desenvolvido com ❤️ para organizar o futuro.
