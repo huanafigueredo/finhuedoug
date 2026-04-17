@@ -1,0 +1,220 @@
+﻿
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\TransactionFormModal.tsx
+  266:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  267:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  268:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  485:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\budget\BudgetConfigSection.tsx
+   59:13  error  'p1Val' is never reassigned. Use 'const' instead  prefer-const
+   60:13  error  'p2Val' is never reassigned. Use 'const' instead  prefer-const
+  135:23  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  181:21  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  210:21  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\comprovantes\ComprovantesCard.tsx
+  81:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\comprovantes\ItensCompraCard.tsx
+  119:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\comprovantes\QrScannerModal.tsx
+   37:6   warning  React Hook useEffect has a missing dependency: 'startScanner'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   66:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  108:21  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\contas\ContasFilters.tsx
+  68:6  warning  React Hook useEffect has a missing dependency: 'selectedMonth'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\landing\FAQ.tsx
+  34:41  error  React Hook "useScrollAnimation" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function  react-hooks/rules-of-hooks
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\savings\MonthlySavingsReport.tsx
+   78:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\savings\SavingsGoalsCard.tsx
+  136:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  710:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  727:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\BanksSection.tsx
+   47:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\CategoriesSection.tsx
+  52:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  67:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\CategorySplitsSection.tsx
+  56:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\PaymentMethodsSection.tsx
+  42:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\RecipientsSection.tsx
+  31:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\SettingsListSection.tsx
+  9:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\settings\SplitSettingsSection.tsx
+  87:6  warning  React Hook useEffect has missing dependencies: 'person1Income' and 'person2Income'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\badge.tsx
+  33:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\button.tsx
+  59:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\contexts\AuthContext.tsx
+  88:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useAvatarUpload.ts
+   51:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  130:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useComprovantes.ts
+  240:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useContasAgendadas.ts
+  164:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useFinancialMetrics.ts
+  62:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useSavingsDeposits.ts
+   70:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useSavingsGoals.ts
+  70:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\hooks\useTransactions.ts
+  108:35  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  153:16  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  193:18  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  222:45  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  237:61  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  273:38  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  291:13  error  'updateData' is never reassigned. Use 'const' instead  prefer-const
+  291:25  error  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\lib\exportPdf.ts
+  189:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\lib\transactionUtils.ts
+  15:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\ChatIA.tsx
+   50:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  197:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\Dashboard.tsx
+  61:35  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  71:6   warning  React Hook useMemo has a missing dependency: 'getFilteredByBank'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\NewTransaction.tsx
+  271:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  280:21  error  Empty block statement                     no-empty
+  462:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  524:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  558:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\Orcamentos.tsx
+  124:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\People.tsx
+   97:35  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+  107:6   warning  React Hook useMemo has a missing dependency: 'getFilteredByBank'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\Settings.tsx
+  116:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  623:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\pages\Transactions.tsx
+  147:6   warning  React Hook useEffect has missing dependencies: 'monthFilter' and 'yearFilter'. Either include them or remove the dependency array             react-hooks/exhaustive-deps
+  417:6   warning  React Hook useMemo has missing dependencies: 'person1', 'person2', and 'translatePerson'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  587:12  error    Unexpected any. Specify a different type                                                                                                      @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\src\vite-env.d.ts
+  19:20  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\supabase\functions\extrair-fatura-cartao\index.ts
+  167:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\supabase\functions\extrair-itens-comprovante\index.ts
+  78:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\supabase\functions\query-finance\index.ts
+   45:33  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+   78:6   error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  291:32  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  574:34  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  610:9   error  'count' is never reassigned. Use 'const' instead  prefer-const
+  635:23  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  637:23  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  639:23  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  659:26  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  660:31  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  663:22  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  719:26  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  720:31  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+  722:35  error  Unexpected any. Specify a different type          @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\supabase\functions\scan-receipt\index.ts
+  1:1  error  Do not use "@ts-nocheck" because it alters compilation errors  @typescript-eslint/ban-ts-comment
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\supabase\functions\telegram-webhook\index.ts
+    1:1   error  Do not use "@ts-nocheck" because it alters compilation errors  @typescript-eslint/ban-ts-comment
+   58:13  error  'messageText' is never reassigned. Use 'const' instead         prefer-const
+  147:22  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+  228:32  error  Redundant double negation                                      no-extra-boolean-cast
+  266:21  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\supabase\functions\whatsapp-webhook\index.ts
+    1:1   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+    3:1   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+    6:21  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   21:19  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   82:51  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   83:42  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   84:61  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  112:22  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  150:40  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  151:59  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  175:32  error  Redundant double negation                                                                                            no-extra-boolean-cast
+  194:21  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+
+C:\Users\CRIA├ç├âO\Desktop\huana visual code\finhuedoug-main\tailwind.config.ts
+  180:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+Ô£û 116 problems (101 errors, 15 warnings)
+  7 errors and 0 warnings potentially fixable with the `--fix` option.
+

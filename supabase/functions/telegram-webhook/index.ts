@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -33,17 +34,17 @@ serve(async (req: Request) => {
 
         // Verifica se é um evento válido do Telegram
         if (!body.message && !body.channel_post) {
-             console.log("IGNORANDO: Não tem message nem channel_post");
-             return new Response("OK", { status: 200, headers: corsHeaders });
+            console.log("IGNORANDO: Não tem message nem channel_post");
+            return new Response("OK", { status: 200, headers: corsHeaders });
         }
-        
+
         const message = body.message || body.channel_post;
 
         const apiKey = Deno.env.get("GEMINI_API_KEY");
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
         const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-        
+
         // Identificar usuário dono. Note que reusamos DEFAULT_WHATSAPP_USER_ID, mas vc pode criar outra "DEFAULT_TELEGRAM_USER_ID".
         const userId = Deno.env.get("DEFAULT_TELEGRAM_USER_ID") || Deno.env.get("DEFAULT_WHATSAPP_USER_ID") || Deno.env.get("SUPABASE_USER_ID");
 
@@ -68,14 +69,14 @@ serve(async (req: Request) => {
             // 1. Pegar o `file_path`
             const fileInfoRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
             const fileInfo = await fileInfoRes.json();
-            
+
             if (fileInfo.ok) {
                 const filePath = fileInfo.result.file_path;
-                
+
                 // 2. Baixar a imagem binária real
                 const imageRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
                 const arrayBuffer = await imageRes.arrayBuffer();
-                
+
                 // 3. Converter a resposta binária para base64 (Formato que o Gemini obriga passar anexado)
                 base64Image = uint8ToBase64(new Uint8Array(arrayBuffer));
                 console.log("Imagem recebida e codificada.");
@@ -91,12 +92,33 @@ serve(async (req: Request) => {
 
         console.log("Iniciando IA do Gemini... Texto capturado:", messageText);
 
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("account_id")
+            .eq("id", userId)
+            .single();
+
+        const accountId = profile?.account_id;
+
+        if (!accountId) {
+            console.error("Usuário não possui uma account_id vinculada no perfil.");
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: message.chat.id,
+                    text: `⚠️ Seu perfil não está totalmente configurado (falta account_id).`
+                })
+            });
+            return new Response("OK", { status: 200, headers: corsHeaders });
+        }
+
         const { data: userSettings } = await supabase
             .from("user_settings")
             .select("person_1_name, person_2_name")
             .eq("user_id", userId)
             .single();
-        
+
         const person1Name = userSettings?.person_1_name || "Huana";
         const person2Name = userSettings?.person_2_name || "Douglas";
 
@@ -146,56 +168,72 @@ MOLDE DO JSON OBRIGATÓRIO:
 
         const parts: any[] = [{ text: promptParams }];
         if (base64Image) {
-             parts.push({ inline_data: { mime_type: "image/jpeg", data: base64Image } });
+            parts.push({ inline_data: { mime_type: "image/jpeg", data: base64Image } });
         }
 
-        const modelsToTry = [
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-002",
-            "gemini-1.5-flash-001",
-            "gemini-1.5-pro",
-            "gemini-pro-vision"
-        ];
-
-        let aiResponse;
+        // === CHAMADA DIRETA À API DO GEMINI (sem SDK, máxima compatibilidade) ===
+        const trimmedKey = apiKey.trim();
+        const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
+        let aiResponseText = "";
         let lastErrorText = "";
+        let geminiSuccess = false;
 
-        for (const model of modelsToTry) {
-            console.log(`Tentando modelo: ${model}...`);
-            aiResponse = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts }],
-                        generationConfig: {
-                            temperature: 0.1,
-                            topK: 32,
-                            topP: 1,
-                        },
-                    }),
+        for (const modelName of modelsToTry) {
+            console.log(`Tentando modelo: ${modelName}...`);
+            try {
+                const geminiRes = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${trimmedKey}`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            contents: [{ parts }],
+                            generationConfig: {
+                                temperature: 0.1,
+                                topK: 32,
+                                topP: 1,
+                            },
+                        }),
+                    }
+                );
+
+                if (geminiRes.ok) {
+                    const data = await geminiRes.json();
+                    aiResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    console.log(`✅ Modelo ${modelName} funcionou!`);
+                    geminiSuccess = true;
+                    break;
+                } else {
+                    lastErrorText = await geminiRes.text();
+                    console.warn(`❌ Modelo ${modelName} falhou (${geminiRes.status}):`, lastErrorText);
                 }
-            );
-
-            if (aiResponse.ok) {
-                console.log(`Modelo ${model} funcionou com sucesso!`);
-                break;
-            } else {
-                lastErrorText = await aiResponse.text();
-                console.warn(`Erro no modelo ${model}:`, lastErrorText);
+            } catch (fetchErr: any) {
+                lastErrorText = fetchErr.message || String(fetchErr);
+                console.warn(`❌ Modelo ${modelName} erro de rede:`, lastErrorText);
             }
         }
 
-        if (!aiResponse || !aiResponse.ok) {
-            console.error("Gemini Error Final (Todos os modelos falharam):", lastErrorText);
-            return new Response("OK", { status: 200, headers: corsHeaders }); 
+        if (!geminiSuccess || !aiResponseText) {
+            console.error("FALHA TOTAL: Nenhum modelo do Gemini respondeu.", lastErrorText);
+            // Notifica o usuário no Telegram sobre a falha
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: message.chat.id,
+                    text: `⚠️ Erro na IA: não consegui processar. Tente novamente em 1 minuto.`
+                })
+            });
+            return new Response("OK", { status: 200, headers: corsHeaders });
         }
 
-        const data = await aiResponse.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        
+        if (!aiResponseText) {
+            console.error("Nenhum texto retornado pela IA.");
+            return new Response("OK", { status: 200, headers: corsHeaders });
+        }
+
+        const textResponse = aiResponseText;
+
         const jsonMatch = textResponse?.match(/\{[\s\S]*\}/);
         const cleanedJson = jsonMatch ? jsonMatch[0] : "{}";
         const parsedTx = JSON.parse(cleanedJson);
@@ -209,6 +247,7 @@ MOLDE DO JSON OBRIGATÓRIO:
 
         const transactionObj = {
             user_id: userId,
+            account_id: accountId,
             date: parsedTx.date || currentDate,
             description: parsedTx.description || "Transação via Tlg",
             observacao: parsedTx.observacao || null,
@@ -224,7 +263,7 @@ MOLDE DO JSON OBRIGATÓRIO:
             payment_method_id: paymentMethodId,
             is_installment: !!parsedTx.is_installment,
             total_installments: Number(parsedTx.total_installments) || 1,
-            installment_number: 1, 
+            installment_number: 1,
             installment_value: !!parsedTx.is_installment ? (total / Math.max(1, Number(parsedTx.total_installments))) : total,
             is_generated_installment: false,
         };
@@ -234,9 +273,9 @@ MOLDE DO JSON OBRIGATÓRIO:
             .insert(transactionObj);
 
         if (insertError) {
-             console.error("Supabase fail insert:", insertError.message);
-             // Avisa o erro no Telegram se der problema no banco
-             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            console.error("Supabase fail insert:", insertError.message);
+            // Avisa o erro no Telegram se der problema no banco
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -245,11 +284,11 @@ MOLDE DO JSON OBRIGATÓRIO:
                 })
             });
         } else {
-             console.log("SUCESSO ABSOLUTO! O banco registrou:", transactionObj.description);
-             
-             // Manda a confirmação linda para o usuário
-             const dataFormatada = new Date(transactionObj.date).toLocaleDateString('pt-BR');
-             await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            console.log("SUCESSO ABSOLUTO! O banco registrou:", transactionObj.description);
+
+            // Manda a confirmação linda para o usuário
+            const dataFormatada = new Date(transactionObj.date).toLocaleDateString('pt-BR');
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -259,7 +298,7 @@ MOLDE DO JSON OBRIGATÓRIO:
                 })
             });
         }
-        
+
         // Retorna silenciosamente "OK" ao Telegram
         return new Response("OK", { status: 200, headers: corsHeaders });
 
