@@ -8,6 +8,7 @@ import { PersonComparisonCard } from "@/components/dashboard/PersonComparisonCar
 import { RecentTransactionsList } from "@/components/dashboard/RecentTransactionsList";
 import { UpcomingBillsList } from "@/components/dashboard/UpcomingBillsList";
 import { DashboardAvatars } from "@/components/dashboard/DashboardAvatars";
+import { BankFilterBar } from "@/components/shared/BankFilterBar";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
 import {
@@ -45,6 +46,7 @@ export default function Dashboard() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(months[currentDate.getMonth()]);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
+  const [selectedBanks, setSelectedBanks] = useState<string[]>([]);
 
   const { data: transactions = [], isLoading: loadingTransactions } = useTransactions();
   const { data: banks = [] } = useBanks();
@@ -53,8 +55,22 @@ export default function Dashboard() {
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
 
-  const metrics = useFinancialMetrics(transactions, monthIndex, year);
   const greeting = getGreeting();
+
+  // Helper to filter transactions by bank
+  const getFilteredByBank = (txs: any[]) => {
+    if (selectedBanks.length === 0) return txs;
+    return txs.filter(t => {
+      const bank = banks.find(b => b.id === t.bank_id);
+      return selectedBanks.includes(bank?.name || "Outro");
+    });
+  };
+
+  const transactionsFilteredByBank = useMemo(() => {
+    return getFilteredByBank(transactions);
+  }, [transactions, banks, selectedBanks]);
+
+  const metrics = useFinancialMetrics(transactionsFilteredByBank, monthIndex, year);
 
 
   const formatCurrency = (value: number) => {
@@ -65,8 +81,8 @@ export default function Dashboard() {
   };
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => shouldShowInMonth(t, monthIndex, year));
-  }, [transactions, monthIndex, year]);
+    return transactionsFilteredByBank.filter((t) => shouldShowInMonth(t, monthIndex, year));
+  }, [transactionsFilteredByBank, monthIndex, year]);
 
   const totalSavedInGoals = useMemo(() => {
     return filteredTransactions
@@ -130,7 +146,7 @@ export default function Dashboard() {
         yearOffset = -1;
       }
 
-      const monthTransactions = transactions.filter((t) => 
+      const monthTransactions = transactionsFilteredByBank.filter((t) => 
         shouldShowInMonth(t, monthIdx, yearNum + yearOffset)
       );
 
@@ -145,7 +161,7 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [transactions, selectedMonth, selectedYear]);
+  }, [transactionsFilteredByBank, selectedMonth, selectedYear]);
 
   const hasData = filteredTransactions.length > 0;
 
@@ -200,11 +216,20 @@ export default function Dashboard() {
         </div>
 
         {/* Avatares do casal */}
-        {coupleMembers.length > 0 && (
-          <div className="mb-6 animate-fade-up" style={{ animationDelay: "50ms" }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-up">
+          {coupleMembers.length > 0 && (
             <DashboardAvatars members={coupleMembers} />
-          </div>
-        )}
+          )}
+          
+          <BankFilterBar 
+            banks={banks} 
+            selectedBanks={selectedBanks}
+            onToggleBank={(name) => setSelectedBanks(prev => 
+              prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+            )}
+            onClear={() => setSelectedBanks([])}
+          />
+        </div>
 
         {/* Hero Balance Card */}
         <div className="mb-6">

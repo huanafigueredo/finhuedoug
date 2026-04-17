@@ -46,8 +46,9 @@ export function calculateInstallmentForMonth(
 }
 
 /**
- * Get detailed installment info for a transaction in a specific invoice month
- * Handles 'Invoice View' logic (shifting months based on closing day)
+ * Get detailed installment info for a transaction in a specific month.
+ * Uses competence mode only — the transaction date determines its month directly,
+ * without any shifting based on bank closing day.
  */
 export function getInstallmentDetailsForMonth(
   t: InstallmentTransaction,
@@ -69,70 +70,35 @@ export function getInstallmentDetailsForMonth(
   if (isNewStyleInstallment) {
     const startInstallment = t.installment_number || 1;
 
-    // Helper to check a candidate calendar month
-    const checkCandidate = (checkMonth: number, checkYear: number) => {
-      const calc = calculateInstallmentForMonth(
-        rawDate,
-        startInstallment,
-        t.total_installments!,
-        checkMonth,
-        checkYear
-      );
-      if (!calc || !calc.isInRange) return null;
+    const calc = calculateInstallmentForMonth(
+      rawDate,
+      startInstallment,
+      t.total_installments!,
+      filterMonthNum,
+      filterYear
+    );
+    if (!calc || !calc.isInRange) return null;
 
-      const monthsFromStart = calc.currentInstallment - startInstallment;
-      const installmentDate = addMonths(rawDate, monthsFromStart);
+    const monthsFromStart = calc.currentInstallment - startInstallment;
+    const installmentDate = addMonths(rawDate, monthsFromStart);
 
-      // Determine Invoice Month
-      let targetMonth = installmentDate.getMonth() + 1;
-      let targetYear = installmentDate.getFullYear();
+    // Use the installment's projected date directly (competence mode)
+    const targetMonth = installmentDate.getMonth() + 1;
+    const targetYear = installmentDate.getFullYear();
 
-      if (t.bank_closing_day && installmentDate.getDate() >= t.bank_closing_day) {
-        targetMonth += 1;
-        if (targetMonth > 12) {
-          targetMonth = 1;
-          targetYear += 1;
-        }
-      }
-
-      if (targetMonth === filterMonthNum && targetYear === filterYear) {
-        return {
-          currentInstallment: calc.currentInstallment,
-          installmentDate,
-          installmentValue: t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!
-        };
-      }
-      return null;
-    };
-
-    // 1. Check current calendar month
-    const match1 = checkCandidate(filterMonthNum, filterYear);
-    if (match1) return match1;
-
-    // 2. Check previous calendar month (shifted forward)
-    let prevMonth = filterMonthNum - 1;
-    let prevYear = filterYear;
-    if (prevMonth < 1) {
-      prevMonth = 12;
-      prevYear -= 1;
+    if (targetMonth === filterMonthNum && targetYear === filterYear) {
+      return {
+        currentInstallment: calc.currentInstallment,
+        installmentDate,
+        installmentValue: t.installment_value ? Number(t.installment_value) : Number(t.total_value) / t.total_installments!
+      };
     }
-    const match2 = checkCandidate(prevMonth, prevYear);
-    if (match2) return match2;
-
     return null;
   }
 
-  // Regular transaction logic
-  let targetMonth = rawDate.getMonth() + 1;
-  let targetYear = rawDate.getFullYear();
-
-  if (t.bank_closing_day && rawDate.getDate() >= t.bank_closing_day) {
-    targetMonth += 1;
-    if (targetMonth > 12) {
-      targetMonth = 1;
-      targetYear += 1;
-    }
-  }
+  // Regular transaction logic — use the raw date directly (competence mode)
+  const targetMonth = rawDate.getMonth() + 1;
+  const targetYear = rawDate.getFullYear();
 
   if (targetMonth === filterMonthNum && targetYear === filterYear) {
     return {
@@ -147,8 +113,8 @@ export function getInstallmentDetailsForMonth(
 
 /**
  * Check if a transaction should appear in the filtered month
- * Handles both regular transactions and dynamic installments
- * applies 'Invoice View' logic (shifting months based on closing day)
+ * Handles both regular transactions and dynamic installments.
+ * Uses competence mode — date determines the month directly.
  * 
  * @param t - The transaction to check
  * @param filterMonth - The month to check (0-indexed: 0 = January)

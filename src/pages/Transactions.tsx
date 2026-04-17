@@ -24,6 +24,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { usePersonNames } from "@/hooks/useUserSettings";
 import { useSplitCalculation } from "@/hooks/useSplitCalculation";
+import { BankFilterBar } from "@/components/shared/BankFilterBar";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { ptBR } from "date-fns/locale";
 
 import { useTransactions, useDeleteTransaction, useDeleteMultipleTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
@@ -104,11 +113,10 @@ export default function Transactions() {
   const forWhoOptions = allForWho;
 
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"invoice" | "competence">("invoice");
   const [personFilter, setPersonFilter] = useState("Todos");
   const [forWhoFilter, setForWhoFilter] = useState("Todos");
   const [categoryFilter, setCategoryFilter] = useState("Todas");
-  const [bankFilter, setBankFilter] = useState("Todos");
+  const [selectedBanks, setSelectedBanks] = useState<string[]>([]);
   const [paymentFilter, setPaymentFilter] = useState("Todos");
   const [typeFilter, setTypeFilter] = useState("Todos");
   const [coupleFilter, setCoupleFilter] = useState("Todos");
@@ -155,7 +163,6 @@ export default function Transactions() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
-  const banks = ["Todos", ...banksData.map((b) => b.name)];
   const paymentMethods = ["Todos", ...paymentMethodsData.map((p) => p.name)];
   const categories = ["Todas", ...categoriesData.map((c) => c.name)];
 
@@ -165,7 +172,7 @@ export default function Transactions() {
     if (personFilter !== "Todos") count++;
     if (forWhoFilter !== "Todos") count++;
     if (categoryFilter !== "Todas") count++;
-    if (bankFilter !== "Todos") count++;
+    if (selectedBanks.length > 0) count++;
     if (paymentFilter !== "Todos") count++;
     if (typeFilter !== "Todos") count++;
     if (coupleFilter !== "Todos") count++;
@@ -174,14 +181,14 @@ export default function Transactions() {
     if (splitFilter !== "Todos") count++;
     if (dayFilter !== "Todos") count++;
     return count;
-  }, [personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter]);
+  }, [personFilter, forWhoFilter, categoryFilter, selectedBanks, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter]);
 
   // Clear all filters
   const clearFilters = () => {
     setPersonFilter("Todos");
     setForWhoFilter("Todos");
     setCategoryFilter("Todas");
-    setBankFilter("Todos");
+    setSelectedBanks([]);
     setPaymentFilter("Todos");
     setTypeFilter("Todos");
     setCoupleFilter("Todos");
@@ -281,18 +288,6 @@ export default function Transactions() {
           : null;
 
 
-        let invoiceMonthLabel = undefined;
-        // Show invoice label if banking closing day exists
-        if (t.bank_closing_day) {
-          const closingDay = t.bank_closing_day;
-          if (rawDate.getDate() >= closingDay) {
-            const targetDate = addMonths(rawDate, 1);
-            // Get month name in Portuguese
-            const monthName = targetDate.toLocaleDateString('pt-BR', { month: 'long' });
-            invoiceMonthLabel = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-          }
-        }
-
         return {
           id: t.id,
           date: format(rawDate, "dd/MM/yyyy"),
@@ -327,7 +322,6 @@ export default function Transactions() {
           person1Name: person1,
           person2Name: person2,
           splitPercentages: split ? { person1: split.person1Percentage, person2: split.person2Percentage } : undefined,
-          invoiceMonth: invoiceMonthLabel,
         };
       })
       .filter((t): t is NonNullable<typeof t> => t !== null)
@@ -349,7 +343,7 @@ export default function Transactions() {
           }
         }
         if (categoryFilter !== "Todas" && t.category !== categoryFilter) return false;
-        if (bankFilter !== "Todos" && t.bank !== bankFilter) return false;
+        if (selectedBanks.length > 0 && !selectedBanks.includes(t.bank)) return false;
         if (paymentFilter !== "Todos" && t.paymentMethod !== paymentFilter) return false;
         if (typeFilter !== "Todos") {
           const isIncome = typeFilter === "Receita";
@@ -382,22 +376,9 @@ export default function Transactions() {
             if (day !== dayFilter) return false;
           }
 
-          // Credit Card Logic for Month/Year Filtering
-          const transactionDateForFilter = t.rawDate;
-          const closingDay = t.bank_closing_day; // Assuming map added this to the object passed here
-
-          // Determine target Month/Year based on View Mode
-          let targetMonth = transactionDateForFilter.getMonth() + 1;
-          let targetYear = transactionDateForFilter.getFullYear();
-
-          if (viewMode === 'invoice' && closingDay && t.rawDate.getDate() >= closingDay) {
-            // Shift to next month if in Invoice Mode and after closing day
-            targetMonth = targetMonth + 1;
-            if (targetMonth > 12) {
-              targetMonth = 1;
-              targetYear = targetYear + 1;
-            }
-          }
+          // Filtering by exact transaction date
+          const targetMonth = t.rawDate.getMonth() + 1;
+          const targetYear = t.rawDate.getFullYear();
 
           // If filtering by month
           if (monthFilter !== "Todos") {
@@ -433,7 +414,7 @@ export default function Transactions() {
     // Ordena por data (mais recente primeiro)
     return result.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
-  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, bankFilter, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction, viewMode]);
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, selectedBanks, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
 
   const years = ["Todos", "2030", "2029", "2028", "2027", "2026", "2025"];
 
@@ -771,34 +752,6 @@ export default function Transactions() {
               </div>
             </div>
 
-            {/* View Mode Toggle */}
-            <div className="flex justify-center sm:justify-start mb-4">
-              <div className="bg-muted p-1 rounded-lg inline-flex">
-                <button
-                  onClick={() => setViewMode("invoice")}
-                  className={cn(
-                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
-                    viewMode === "invoice"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Por Fatura
-                </button>
-                <button
-                  onClick={() => setViewMode("competence")}
-                  className={cn(
-                    "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
-                    viewMode === "competence"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Por Competência
-                </button>
-              </div>
-            </div>
-
             {/* Main filters row - Month/Year + Search */}
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex gap-2 flex-shrink-0">
@@ -873,6 +826,17 @@ export default function Transactions() {
               </div>
             </div>
 
+            {/* Quick Bank Filters Row */}
+            <BankFilterBar 
+              banks={banksData || []} 
+              selectedBanks={selectedBanks}
+              onToggleBank={(name) => setSelectedBanks(prev => 
+                prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+              )}
+              onClear={() => setSelectedBanks([])}
+              className="mb-4"
+            />
+
             {/* Collapsible Advanced Filters */}
             <Collapsible open={showFilters} onOpenChange={setShowFilters}>
               <CollapsibleContent>
@@ -880,18 +844,45 @@ export default function Transactions() {
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 sm:gap-3">
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-muted-foreground">Dia</label>
-                      <Select value={dayFilter} onValueChange={setDayFilter}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Dia" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {days.map((d) => (
-                            <SelectItem key={d} value={d}>
-                              {d}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full h-9 justify-start text-left font-normal px-3",
+                              dayFilter === "Todos" && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dayFilter === "Todos" ? "Selecionar" : `Dia ${dayFilter}`}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={dayFilter !== "Todos" ? new Date(parseInt(yearFilter), parseInt(monthFilter) - 1, parseInt(dayFilter)) : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                setDayFilter(date.getDate().toString().padStart(2, "0"));
+                              } else {
+                                setDayFilter("Todos");
+                              }
+                            }}
+                            initialFocus
+                            locale={ptBR}
+                          />
+                          <div className="p-2 border-t border-border">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full text-xs h-8"
+                              onClick={() => setDayFilter("Todos")}
+                            >
+                              Limpar dia
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="space-y-1">
@@ -942,21 +933,7 @@ export default function Transactions() {
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">Banco</label>
-                      <Select value={bankFilter} onValueChange={setBankFilter}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Banco" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {banks.map((b) => (
-                            <SelectItem key={b} value={b}>
-                              {b}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+
 
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-muted-foreground">Pagamento</label>

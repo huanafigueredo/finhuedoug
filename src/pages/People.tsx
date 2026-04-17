@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { PieChart } from "@/components/charts/PieChart";
 import { LineChart } from "@/components/charts/LineChart";
+import { BankFilterBar } from "@/components/shared/BankFilterBar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -83,6 +84,7 @@ export default function People() {
   const [selectedMonth, setSelectedMonth] = useState(months[currentDate.getMonth()]);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedTab, setSelectedTab] = useState("person1");
+  const [selectedBanks, setSelectedBanks] = useState<string[]>([]);
 
   const { data: transactions = [] } = useTransactions();
   const { data: banks = [] } = useBanks();
@@ -90,8 +92,21 @@ export default function People() {
 
   const monthIndex = months.indexOf(selectedMonth);
   const year = parseInt(selectedYear);
+  
+  // Helper to filter transactions by bank
+  const getFilteredByBank = (txs: any[]) => {
+    if (selectedBanks.length === 0) return txs;
+    return txs.filter(t => {
+      const bank = banks.find(b => b.id === t.bank_id);
+      return selectedBanks.includes(bank?.name || "Outro");
+    });
+  };
 
-  const metrics = useFinancialMetrics(transactions, monthIndex, year);
+  const transactionsFilteredByBank = useMemo(() => {
+    return getFilteredByBank(transactions);
+  }, [transactions, banks, selectedBanks]);
+
+  const metrics = useFinancialMetrics(transactionsFilteredByBank, monthIndex, year);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -102,8 +117,8 @@ export default function People() {
 
   // Filter transactions by selected month/year (including dynamic installments)
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => shouldShowInMonth(t, monthIndex, year));
-  }, [transactions, monthIndex, year]);
+    return transactionsFilteredByBank.filter((t) => shouldShowInMonth(t, monthIndex, year));
+  }, [transactionsFilteredByBank, monthIndex, year]);
 
   // Get person-specific transactions
   const getPersonTransactions = (personName: string) => {
@@ -214,7 +229,7 @@ export default function People() {
       const y = monthDate.getFullYear();
 
       // Use the same installment projection logic
-      const monthTransactions = transactions.filter((t) => shouldShowInMonth(t, m, y));
+      const monthTransactions = transactionsFilteredByBank.filter((t) => shouldShowInMonth(t, m, y));
 
       // Exclude savings goal deposits from expenses
       const personalExpenses = monthTransactions
@@ -472,6 +487,18 @@ export default function People() {
           <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto">
             Visualize as finanças individuais de cada pessoa
           </p>
+        </div>
+
+        {/* Bank Filter Bar */}
+        <div className="flex justify-center mb-8 animate-fade-up" style={{ animationDelay: "50ms" }}>
+          <BankFilterBar 
+            banks={banks} 
+            selectedBanks={selectedBanks}
+            onToggleBank={(name) => setSelectedBanks(prev => 
+              prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+            )}
+            onClear={() => setSelectedBanks([])}
+          />
         </div>
 
         {/* Month/Year Filter */}
