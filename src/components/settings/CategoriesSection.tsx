@@ -160,7 +160,7 @@ export function CategoriesSection() {
                             <div className="flex items-center justify-between py-2">
                                 <AccordionTrigger className="hover:no-underline py-2 px-2 flex-1">
                                     <div className="flex items-center gap-2">
-                                        <GripVertical className="w-4 h-4 text-muted-foreground/30 mr-2 cursor-grab" onClick={(e) => e.stopPropagation()} />
+                                        <GripVertical className="w-4 h-4 text-muted-foreground/30 mr-2 cursor-grab opacity-50" onClick={(e) => e.stopPropagation()} aria-hidden="true" />
                                         <Folder className="w-4 h-4 text-primary" />
                                         <span className="font-medium">{category.name}</span>
                                         <span className="text-xs text-muted-foreground ml-2">
@@ -173,24 +173,24 @@ export function CategoriesSection() {
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8"
+                                        className="h-10 w-10 sm:h-8 sm:w-8"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleOpenEditCategory(category);
                                         }}
                                     >
-                                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                                        <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                                        className="h-10 w-10 sm:h-8 sm:w-8 hover:bg-destructive/10 hover:text-destructive ml-1"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleOpenDelete(category.id, category.name, "category");
                                         }}
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                                     </Button>
                                 </div>
                             </div>
@@ -206,22 +206,22 @@ export function CategoriesSection() {
                                                 <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
                                                 <span className="text-sm text-foreground/90">{sub.name}</span>
                                             </div>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-6 w-6"
+                                                    className="h-10 w-10 sm:h-6 sm:w-6"
                                                     onClick={() => handleOpenEditSubcategory(sub)}
                                                 >
-                                                    <Pencil className="w-3 h-3" />
+                                                    <Pencil className="w-4 h-4 sm:w-3 sm:h-3" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-6 w-6 hover:text-destructive"
+                                                    className="h-10 w-10 sm:h-6 sm:w-6 hover:text-destructive ml-1"
                                                     onClick={() => handleOpenDelete(sub.id, sub.name, "subcategory")}
                                                 >
-                                                    <Trash2 className="w-3 h-3" />
+                                                    <Trash2 className="w-4 h-4 sm:w-3 sm:h-3" />
                                                 </Button>
                                             </div>
                                         </div>
@@ -244,7 +244,7 @@ export function CategoriesSection() {
 
             {/* Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-h-[90dvh] overflow-y-auto w-[95vw] sm:w-full">
                     <DialogHeader>
                         <DialogTitle>
                             {editingItem ? "Editar" : "Adicionar"} {editingType === "category" ? "Categoria" : "Subcategoria"}
@@ -276,7 +276,7 @@ export function CategoriesSection() {
                             </div>
                         )}
 
-                        <DialogFooter>
+                        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
                             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
                             <Button onClick={handleSave} disabled={!newName.trim() || isSaving}>
                                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

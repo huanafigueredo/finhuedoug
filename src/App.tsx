@@ -19,6 +19,7 @@ import Contas from "./pages/Contas";
 import ChatIA from "./pages/ChatIA";
 import Orcamentos from "./pages/Orcamentos";
 import Metas from "./pages/Metas";
+import Planejamento from "./pages/Planejamento";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,9 @@ const App = () => (
               } />
               <Route path="/metas" element={
                 <ProtectedRoute><Metas /></ProtectedRoute>
+              } />
+              <Route path="/planejamento" element={
+                <ProtectedRoute><Planejamento /></ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
             </Routes>

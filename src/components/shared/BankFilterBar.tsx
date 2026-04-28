@@ -25,43 +25,47 @@ export function BankFilterBar({
   if (!banks || banks.length === 0) return null;
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-2 animate-fade-in", className)}>
-      {banks.map((bank) => {
-        const isSelected = selectedBanks.includes(bank.name);
-        const bankColor = bank.color || "#8E9196";
+    <div className={cn("w-full overflow-x-auto", className)}
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
+      <div className="flex items-center gap-2 animate-fade-in pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
+        {banks.map((bank) => {
+          const isSelected = selectedBanks.includes(bank.name);
+          const bankColor = bank.color || "#8E9196";
 
-        return (
+          return (
+            <Button
+              key={bank.id}
+              variant={isSelected ? "default" : "outline"}
+              size="sm"
+              onClick={() => onToggleBank(bank.name)}
+              className={cn(
+                "h-8 px-4 text-xs font-semibold rounded-full transition-all duration-300 shrink-0",
+                isSelected
+                  ? "shadow-md border-transparent hover:opacity-90 active:scale-95"
+                  : "hover:border-primary/30 hover:bg-secondary/50 active:scale-95 border-border/50 shadow-sm"
+              )}
+              style={{
+                backgroundColor: isSelected ? bankColor : undefined,
+                borderColor: !isSelected ? `${bankColor}40` : undefined,
+                color: isSelected ? "#fff" : bankColor
+              }}
+            >
+              {bank.name}
+            </Button>
+          );
+        })}
+        {selectedBanks.length > 0 && (
           <Button
-            key={bank.id}
-            variant={isSelected ? "default" : "outline"}
+            variant="ghost"
             size="sm"
-            onClick={() => onToggleBank(bank.name)}
-            className={cn(
-              "h-8 px-4 text-xs font-semibold rounded-full transition-all duration-300",
-              isSelected
-                ? "shadow-md border-transparent hover:opacity-90 active:scale-95"
-                : "hover:border-primary/30 hover:bg-secondary/50 active:scale-95 border-border/50 shadow-sm"
-            )}
-            style={{
-              backgroundColor: isSelected ? bankColor : undefined,
-              borderColor: !isSelected ? `${bankColor}40` : undefined,
-              color: isSelected ? "#fff" : bankColor
-            }}
+            onClick={onClear}
+            className="h-8 px-2 text-[10px] text-muted-foreground hover:text-foreground shrink-0"
           >
-            {bank.name}
+            Limpar
           </Button>
-        );
-      })}
-      {selectedBanks.length > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onClear}
-          className="h-8 px-2 text-[10px] text-muted-foreground hover:text-foreground"
-        >
-          Limpar
-        </Button>
-      )}
+        )}
+      </div>
     </div>
   );
 }

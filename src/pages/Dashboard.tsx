@@ -167,7 +167,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
+      <div className="w-full max-w-full px-4 py-6 sm:py-8 overflow-x-hidden">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-up">
           <div>
@@ -216,7 +216,7 @@ export default function Dashboard() {
         </div>
 
         {/* Avatares do casal */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 animate-fade-up">
+        <div className="flex flex-col gap-3 mb-6 animate-fade-up">
           {coupleMembers.length > 0 && (
             <DashboardAvatars members={coupleMembers} />
           )}

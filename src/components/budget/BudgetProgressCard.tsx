@@ -92,8 +92,18 @@ function BudgetItem({
             <h4 className="font-semibold text-foreground leading-tight">
               {item.categoryName}
             </h4>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {formatCurrency(item.spent)} de {formatCurrency(item.budgeted)}
+            <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-1">
+              <span>{formatCurrency(item.spent)} de {formatCurrency(item.budgeted)}</span>
+              {item.rollover > 0 && (
+                <span className="text-[10px] font-medium text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
+                  +{formatCurrency(item.rollover)} acumulado
+                </span>
+              )}
+              {item.rollover < 0 && (
+                <span className="text-[10px] font-medium text-red-600 bg-red-500/10 px-1.5 py-0.5 rounded-md">
+                  {formatCurrency(item.rollover)} déficit
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -130,9 +140,19 @@ function BudgetItem({
           )}
         </span>
 
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary flex items-center gap-1">
-          Ver detalhes <ArrowRight className="w-3 h-3" />
-        </span>
+        <div className="flex items-center gap-2">
+          {item.pacingStatus !== "normal" && (
+            <span className={cn(
+              "text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse",
+              item.pacingStatus === "danger" ? "bg-red-500/20 text-red-600" : "bg-amber-500/20 text-amber-600"
+            )}>
+              {item.pacingStatus === "danger" ? "Pise no freio!" : "Ritmo acelerado"}
+            </span>
+          )}
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-primary flex items-center gap-1">
+            Detalhes <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
       </div>
     </div>
   );

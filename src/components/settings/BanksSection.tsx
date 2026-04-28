@@ -146,7 +146,7 @@ export function BanksSection() {
 
             {/* Add/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
+                <DialogContent className="max-h-[90dvh] overflow-y-auto w-[95vw] sm:w-full">
                     <DialogHeader>
                         <DialogTitle>{editingItem ? "Editar Conta" : "Nova Conta"}</DialogTitle>
                     </DialogHeader>
@@ -193,22 +193,22 @@ export function BanksSection() {
                                 <div className="space-y-2">
                                     <Label>Dia do Fechamento (Virada) *</Label>
                                     <Input
-                                        type="number"
-                                        min="1"
-                                        max="31"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         value={newClosingDay}
-                                        onChange={(e) => setNewClosingDay(e.target.value)}
+                                        onChange={(e) => setNewClosingDay(e.target.value.replace(/\D/g, ''))}
                                         placeholder="Ex: 5"
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Dia do Vencimento *</Label>
                                     <Input
-                                        type="number"
-                                        min="1"
-                                        max="31"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
                                         value={newDueDay}
-                                        onChange={(e) => setNewDueDay(e.target.value)}
+                                        onChange={(e) => setNewDueDay(e.target.value.replace(/\D/g, ''))}
                                         placeholder="Ex: 12"
                                     />
                                 </div>
@@ -217,7 +217,7 @@ export function BanksSection() {
 
                         <ColorPicker color={newColor} onChange={setNewColor} />
 
-                        <DialogFooter>
+                        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
                             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
                             <Button
                                 onClick={handleSave}

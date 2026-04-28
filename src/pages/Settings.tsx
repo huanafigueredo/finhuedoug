@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -105,6 +105,57 @@ export default function Settings() {
   const [deletePersonConfirmOpen, setDeletePersonConfirmOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<{ id: string; name: string } | null>(null);
 
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Intersection Observer for Scroll Sync
+  useEffect(() => {
+    const handleIntersect = (entries: IntersectionObserverEntry[]) => {
+      // Don't update from observer if we are currently clicking to scroll
+      if (isScrolling) return;
+
+      const visibleEntries = entries.filter(entry => entry.isIntersecting);
+      if (visibleEntries.length > 0) {
+        // Find the entry that is highest on the screen
+        const topEntry = visibleEntries.reduce((prev, current) => {
+          return (prev.boundingClientRect.top < current.boundingClientRect.top) ? prev : current;
+        });
+        
+        setActiveSection(topEntry.target.id);
+
+        // Scroll the mobile nav to show the active tab
+        if (isMobile) {
+          const navItem = document.getElementById(`nav-item-${topEntry.target.id}`);
+          const scrollArea = document.getElementById('settings-mobile-nav')?.querySelector('[data-radix-scroll-area-viewport]');
+          if (navItem && scrollArea) {
+            const navRect = navItem.getBoundingClientRect();
+            const scrollRect = scrollArea.getBoundingClientRect();
+            
+            if (navRect.left < scrollRect.left || navRect.right > scrollRect.right) {
+               navItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+          }
+        }
+      }
+    };
+
+    const options = {
+      root: null,
+      rootMargin: '-20% 0px -60% 0px',
+      threshold: 0,
+    };
+
+    const observer = new IntersectionObserver(handleIntersect, options);
+
+    Object.values(sectionRefs.current).forEach((element) => {
+      if (element) {
+        observer.observe(element);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [isMobile, isScrolling]);
+
   const openAddPersonDialog = () => {
     setEditingPerson(null);
     setNewPersonName("");
@@ -167,9 +218,24 @@ export default function Settings() {
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
+    setIsScrolling(true);
+    
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+
     const element = sectionRefs.current[sectionId];
     if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Adjusted offset for sticky header
+      const yOffset = -80; 
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      
+      window.scrollTo({ top: y, behavior: 'smooth' });
+
+      // Reset isScrolling after animation completes
+      scrollTimeout.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 800);
     }
   };
 
@@ -186,8 +252,9 @@ export default function Settings() {
     children: React.ReactNode;
   }) => (
     <div
+      id={id}
       ref={(el) => { sectionRefs.current[id] = el; }}
-      className="scroll-mt-6"
+      className="scroll-mt-[100px]"
     >
       <h2 className="text-lg font-semibold text-foreground mb-1">{title}</h2>
       {description && (
@@ -239,26 +306,35 @@ export default function Settings() {
 
             {/* Mobile: Horizontal Tabs Navigation */}
             {isMobile && (
-              <div className="mb-6 -mx-4 px-4 sticky top-0 bg-background/95 backdrop-blur z-10 py-2 border-b">
-                <ScrollArea className="w-full whitespace-nowrap">
-                  <div className="flex w-max space-x-2 p-1">
-                    {navSections.map((section) => (
-                      <button
-                        key={section.id}
-                        onClick={() => scrollToSection(section.id)}
-                        className={cn(
-                          "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors",
-                          activeSection === section.id
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                        )}
-                      >
-                        <section.icon className="w-4 h-4" />
-                        {section.label}
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
+              <div className="mb-6 -mx-4 sticky top-0 bg-background/95 backdrop-blur z-20 py-2 border-b">
+                <div className="relative w-full">
+                  {/* Left fade indicator */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                  
+                  <ScrollArea id="settings-mobile-nav" className="w-full whitespace-nowrap px-4">
+                    <div className="flex w-max space-x-2 p-1">
+                      {navSections.map((section) => (
+                        <button
+                          key={section.id}
+                          id={`nav-item-${section.id}`}
+                          onClick={() => scrollToSection(section.id)}
+                          className={cn(
+                            "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors",
+                            activeSection === section.id
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          <section.icon className="w-4 h-4" />
+                          {section.label}
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+
+                  {/* Right fade indicator */}
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+                </div>
               </div>
             )}
 
@@ -340,7 +416,7 @@ export default function Settings() {
                           className="flex items-center gap-2"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <Label htmlFor={`dashboard-${person.id}`} className="text-xs text-muted-foreground hidden sm:inline cursor-pointer">
+                          <Label htmlFor={`dashboard-${person.id}`} className="text-xs text-muted-foreground cursor-pointer">
                             Dashboard
                           </Label>
                           <Switch
@@ -365,20 +441,20 @@ export default function Settings() {
                               e.stopPropagation();
                               openEditPersonDialog(person);
                             }}
-                            className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+                            className="p-2 sm:p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                             title="Editar"
                           >
-                            <Pencil className="w-3.5 h-3.5" />
+                            <Pencil className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                           </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               confirmDeletePerson(person.id, person.name);
                             }}
-                            className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors"
+                            className="p-2 sm:p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center ml-2 sm:ml-0"
                             title="Excluir"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -465,10 +541,10 @@ export default function Settings() {
                         Excluir sua conta é uma ação permanente. Todos os seus dados serão apagados.
                       </p>
                       <Button
-                        variant="outline"
+                        variant="destructive"
                         size="sm"
                         onClick={() => setDeleteAccountConfirmOpen(true)}
-                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground border-destructive/50"
+                        className="w-full sm:w-auto"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Excluir minha conta
@@ -485,7 +561,7 @@ export default function Settings() {
 
       {/* People Add/Edit Dialog */}
       <Dialog open={isPeopleDialogOpen} onOpenChange={setIsPeopleDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingPerson ? "Editar Pessoa" : "Adicionar Pessoa"}
@@ -599,6 +675,8 @@ export default function Settings() {
                 onChange={(e) => setDeleteAccountText(e.target.value)}
                 placeholder="Digite EXCLUIR para confirmar"
                 className="mt-2"
+                autoCapitalize="characters"
+                inputMode="text"
               />
             </AlertDialogDescription>
           </AlertDialogHeader>

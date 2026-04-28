@@ -9,9 +9,9 @@ import { usePersonNames } from "@/hooks/useUserSettings";
 import { useSplitSettings } from "@/hooks/useSplitSettings";
 import { useCoupleMembers } from "@/hooks/useCoupleMembers";
 import { useCategorySplits, getCategorySplit } from "@/hooks/useCategorySplits";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Users, TrendingUp, TrendingDown, DollarSign, Calendar, Wallet } from "lucide-react";
+import { Heart, Users, TrendingUp, TrendingDown, DollarSign, Calendar, Wallet, AlertTriangle } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
   Dialog,
@@ -167,38 +167,31 @@ export default function Orcamentos() {
     return baseValue / 2;
   };
 
-  const filteredTransactions = detailsCategory
-    ? transactions.filter(t => {
+  const filteredTransactions = useMemo(() => {
+    if (!detailsCategory) return [];
+    
+    const catName = budgetSummary.budgetProgress.find(b => b.categoryId === detailsCategory)?.categoryName;
+    
+    return transactions.filter(t => {
       const cat = t.category || "Outros";
-      const catName = budgetSummary.budgetProgress.find(b => b.categoryId === detailsCategory)?.categoryName;
-      // Strict category match
       if (cat !== catName) return false;
-
-      // Check Month Scope & Type
       if (!shouldShowInMonth(t, monthIndex, year)) return false;
       if (t.type !== 'expense') return false;
       if (t.savings_deposit_id) return false;
 
-      // Filter by Person (Strict logic matching useBudgetProgress)
       switch (selectedTab) {
         case "person1":
-          return t.paid_by === person1Name ||
-            t.for_who === person1Name ||
-            t.for_who === "Casal" ||
-            t.is_couple === true;
+          return t.paid_by === person1Name || t.for_who === person1Name || t.for_who === "Casal" || t.is_couple === true;
         case "person2":
-          return t.paid_by === person2Name ||
-            t.for_who === person2Name ||
-            t.for_who === "Casal" ||
-            t.is_couple === true;
+          return t.paid_by === person2Name || t.for_who === person2Name || t.for_who === "Casal" || t.is_couple === true;
         case "couple":
           return t.for_who === "Casal" || t.is_couple === true;
         case "all":
         default:
           return true;
       }
-    })
-    : [];
+    });
+  }, [detailsCategory, transactions, budgetSummary.budgetProgress, monthIndex, year, selectedTab, person1Name, person2Name]);
 
   return (
     <AppLayout>
@@ -226,13 +219,13 @@ export default function Orcamentos() {
           </div>
 
           {/* Floating Pill Tabs */}
-          <div className="flex justify-center -mt-2">
+          <div className="flex justify-center -mt-2 w-full overflow-x-auto pb-2 scrollbar-hide">
             <Tabs
               value={selectedTab}
               onValueChange={(value) => setSelectedTab(value as PersonFilter)}
               className="w-full max-w-xl"
             >
-              <TabsList className="grid w-full grid-cols-4 h-14 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-full shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50 border border-slate-200/50 dark:border-slate-800">
+              <TabsList className="flex w-max min-w-full sm:grid sm:grid-cols-4 h-14 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-full shadow-lg shadow-slate-200/50 dark:shadow-slate-950/50 border border-slate-200/50 dark:border-slate-800">
                 <TabsTrigger
                   value="all"
                   className="rounded-full data-[state=active]:bg-slate-900 data-[state=active]:text-white dark:data-[state=active]:bg-white dark:data-[state=active]:text-slate-900 transition-all duration-300"
@@ -269,8 +262,42 @@ export default function Orcamentos() {
             </Tabs>
           </div>
 
+          {/* Master Progress Bar */}
+          <div className="w-full bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-xl shadow-slate-200/30 dark:shadow-black/20 border border-slate-100 dark:border-slate-800 animate-fade-up">
+            <div className="flex justify-between items-end mb-3">
+              <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Saúde Global do Mês</span>
+              <span className="text-lg font-bold font-display text-slate-700 dark:text-slate-300">
+                {budgetSummary.totalBudgeted > 0 ? ((budgetSummary.totalSpent / budgetSummary.totalBudgeted) * 100).toFixed(1) : 0}% Consumido
+              </span>
+            </div>
+            <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+              <div 
+                className={cn(
+                  "h-full rounded-full transition-all duration-1000 ease-out",
+                  budgetSummary.totalRemaining >= 0 ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]"
+                )}
+                style={{ width: `${Math.min(100, budgetSummary.totalBudgeted > 0 ? (budgetSummary.totalSpent / budgetSummary.totalBudgeted) * 100 : 0)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Master Pacing Alert */}
+          {budgetSummary.budgetProgress.some(b => b.pacingStatus === "danger") && (
+            <div className="w-full bg-red-500/10 border border-red-500/20 rounded-2xl p-4 sm:p-6 flex items-start gap-4 animate-in slide-in-from-top-4 shadow-sm">
+              <div className="p-2 bg-red-500/20 rounded-full shrink-0 animate-pulse">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-red-600 text-lg">Atenção: Ritmo de Gasto Acelerado!</h4>
+                <p className="text-sm sm:text-base text-red-600/80 mt-1 font-medium">
+                  Você está gastando rápido demais em: <span className="font-bold">{budgetSummary.budgetProgress.filter(b => b.pacingStatus === "danger").map(b => b.categoryName).join(', ')}</span>. No ritmo atual, seu orçamento vai acabar antes do fim do mês. Pise no freio!
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Hero Statistics - Ultra Clean */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-up" style={{ animationDelay: "100ms" }}>
             <div className="relative overflow-hidden rounded-[2rem] bg-white dark:bg-slate-900 p-8 shadow-xl shadow-slate-200/40 dark:shadow-black/20 border border-slate-100 dark:border-slate-800 group transition-transform hover:-translate-y-1 duration-500">
               <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity transform group-hover:scale-110 duration-700">
                 <Wallet className="w-32 h-32 -mr-8 -mt-8" />
@@ -315,14 +342,14 @@ export default function Orcamentos() {
               </p>
               <div className="mt-4 flex items-center text-xs text-slate-400 font-medium">
                 {budgetSummary.totalRemaining >= 0 ? (
-                  <span className="text-emerald-600/70 flex items-center">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
-                    Dentro do orçamento
+                  <span className="text-emerald-600/80 flex items-center font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 mr-2 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></span>
+                    Ótimo ritmo! Você está economizando.
                   </span>
                 ) : (
-                  <span className="text-rose-600/70 flex items-center">
-                    <span className="w-2 h-2 rounded-full bg-rose-400 mr-2 animate-pulse"></span>
-                    Orçamento estourado
+                  <span className="text-rose-600/80 flex items-center font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400 mr-2 animate-pulse shadow-[0_0_8px_rgba(251,113,133,0.5)]"></span>
+                    Atenção: orçamento excedido.
                   </span>
                 )}
               </div>
@@ -330,7 +357,7 @@ export default function Orcamentos() {
           </div>
 
           {/* AI Advisor Section */}
-          <div className="animate-fade-up" style={{ animationDelay: "100ms" }}>
+          <div className="animate-fade-up" style={{ animationDelay: "200ms" }}>
             <BudgetAIAdvisor summary={budgetSummary} personName={getFilterLabel()} />
           </div>
 
@@ -363,24 +390,25 @@ export default function Orcamentos() {
             </SheetContent>
           </Sheet>
 
-          {/* Transaction Details Dialog Clean */}
-          <Dialog open={!!detailsCategory} onOpenChange={(open) => !open && setDetailsCategory(null)}>
-            <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto border-none shadow-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl sm:rounded-3xl p-0">
-              <div className="sticky top-0 z-10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-6 border-b border-slate-100 dark:border-slate-800">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl font-display font-light flex items-center gap-3">
+          {/* Transaction Details Sheet (Mobile-First Bottom Sheet) */}
+          <Sheet open={!!detailsCategory} onOpenChange={(open) => !open && setDetailsCategory(null)}>
+            <SheetContent side="bottom" className="h-[85vh] sm:h-[90vh] rounded-t-[2rem] p-0 border-none shadow-2xl flex flex-col bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
+              <div className="px-6 pt-8 pb-4 border-b border-slate-100 dark:border-slate-800 flex-shrink-0 relative">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full" />
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-display font-light flex items-center gap-3">
                     {budgetSummary.budgetProgress.find(b => b.categoryId === detailsCategory)?.categoryName}
                     <span className="text-xs font-sans font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
                       {selectedTab === 'all' ? 'Todas as Pessoas' : getFilterLabel()}
                     </span>
-                  </DialogTitle>
-                  <DialogDescription>
+                  </SheetTitle>
+                  <SheetDescription>
                     Histórico detalhado deste mês
-                  </DialogDescription>
-                </DialogHeader>
+                  </SheetDescription>
+                </SheetHeader>
               </div>
 
-              <div className="p-6 space-y-1">
+              <div className="p-6 overflow-y-auto flex-1 space-y-1">
                 {filteredTransactions.length > 0 ? (
                   filteredTransactions.map(t => {
                     const baseValue = getTransactionMonthValue(t);
@@ -393,8 +421,8 @@ export default function Orcamentos() {
                     return (
                       <div key={t.id} className="group flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-800">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors">
-                            <Calendar className="w-5 h-5" />
+                          <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 font-bold font-display text-lg group-hover:text-primary group-hover:bg-primary/10 transition-colors">
+                            {t.description.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <p className="font-medium text-slate-700 dark:text-slate-200">{t.description}</p>
@@ -426,8 +454,8 @@ export default function Orcamentos() {
                   </div>
                 )}
               </div>
-            </DialogContent>
-          </Dialog>
+            </SheetContent>
+          </Sheet>
 
         </div>
       </div>

@@ -11,14 +11,19 @@ export type BudgetStatus = "ok" | "warning" | "exceeded";
 
 export type PersonFilter = "all" | "person1" | "person2" | "couple";
 
+export type PacingStatus = "normal" | "fast" | "danger";
+
 export interface BudgetProgress {
   categoryId: string;
   categoryName: string;
-  budgeted: number; // em centavos
+  originalBudgeted: number; // limite base
+  budgeted: number; // limite base + rollover (em centavos)
   spent: number; // em centavos
   percentage: number;
   status: BudgetStatus;
   remaining: number; // em centavos (pode ser negativo)
+  rollover: number; // quanto acumulou/perdeu dos meses anteriores
+  pacingStatus: PacingStatus; // ritmo de gasto vs dias do mês
 }
 
 export interface BudgetSummary {
@@ -161,6 +166,43 @@ export function useBudgetProgress(
       }
     });
 
+    // --- ROLLOVER CALCULATION ---
+    const pastSpentByCategory: Record<string, number> = {};
+    const monthsActiveSet = new Set<string>();
+
+    transactions.forEach((t) => {
+      // Must be expense and not savings
+      if (t.type !== "expense" || t.savings_deposit_id) return;
+      
+      const tDate = new Date(t.date);
+      const tYear = tDate.getFullYear();
+      const tMonth = tDate.getMonth();
+      
+      // Check if transaction is from a strictly previous month
+      if (tYear < year || (tYear === year && tMonth < monthIndex)) {
+        monthsActiveSet.add(`${tYear}-${tMonth}`);
+        
+        const cat = t.category || "Outros";
+        const baseValue = getBaseMonthValueInCents(t);
+        
+        let valueToAdd = baseValue;
+        if (personFilter !== "all" && personFilter !== "couple" && t.is_couple) {
+          const split = calculateSplitForCategory(baseValue, t.category, t.subcategory, t.custom_person1_percentage, t.custom_person2_percentage);
+          valueToAdd = personFilter === "person1" ? split.person1 : split.person2;
+        }
+        pastSpentByCategory[cat] = (pastSpentByCategory[cat] || 0) + valueToAdd;
+      }
+    });
+    const activePastMonthsCount = monthsActiveSet.size;
+    // --- END ROLLOVER CALCULATION ---
+
+    // Pacing calculations setup
+    const today = new Date();
+    const isCurrentMonth = today.getMonth() === monthIndex && today.getFullYear() === year;
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const currentDay = isCurrentMonth ? today.getDate() : daysInMonth;
+    const monthProgressRatio = currentDay / daysInMonth;
+
     // Calcular gastos por categoria (em centavos) using split rules
     const spentByCategory: Record<string, number> = {};
     monthTransactions.forEach((t) => {
@@ -188,47 +230,66 @@ export function useBudgetProgress(
       const category = categories.find((c) => c.id === budget.category_id);
       const categoryName = category?.name || "Categoria";
 
-      let budgeted = budget.budget_amount;
+      let baseBudget = budget.budget_amount;
 
       switch (personFilter) {
         case "person1":
-          budgeted = budget.person1_budget || 0; // Se não definido, assume 0 (requer configuração)
+          baseBudget = budget.person1_budget || 0;
           break;
         case "person2":
-          budgeted = budget.person2_budget || 0;
+          baseBudget = budget.person2_budget || 0;
           break;
         case "couple":
-          budgeted = budget.couple_budget || 0;
+          baseBudget = budget.couple_budget || 0;
           break;
         default:
-          budgeted = budget.budget_amount;
+          baseBudget = budget.budget_amount;
       }
 
+      const pastSpent = pastSpentByCategory[categoryName] || 0;
+      const pastBudgeted = baseBudget * activePastMonthsCount;
+      const rollover = activePastMonthsCount > 0 ? (pastBudgeted - pastSpent) : 0;
+      
+      // Effective budget includes rollover bonus/deficit
+      const effectiveBudget = Math.max(0, baseBudget + rollover); 
+
       const spent = spentByCategory[categoryName] || 0;
-      const percentage = budgeted > 0 ? Math.round((spent / budgeted) * 100) : 0;
-      const remaining = budgeted - spent;
+      const percentage = effectiveBudget > 0 ? Math.round((spent / effectiveBudget) * 100) : 0;
+      const remaining = effectiveBudget - spent;
 
       let status: BudgetStatus = "ok";
-      if (budgeted > 0 && percentage >= 100) {
+      if (effectiveBudget > 0 && percentage >= 100) {
         status = "exceeded";
-      } else if (budgeted > 0 && percentage >= 80) {
+      } else if (effectiveBudget > 0 && percentage >= 80) {
         status = "warning";
       }
 
-      // Se não tem orçamento definido mas gastou, e o filtro é específico, marcar como exceeded?
-      // Se budgeted == 0 e spent > 0 -> Exceeded tecnicamente.
-      if (budgeted === 0 && spent > 0) {
+      if (effectiveBudget === 0 && spent > 0) {
         status = "exceeded";
+      }
+
+      // Pacing alert (only applies if we are in the current month and there's a budget)
+      let pacingStatus: PacingStatus = "normal";
+      if (isCurrentMonth && effectiveBudget > 0 && spent > 0) {
+        const spendRatio = spent / effectiveBudget;
+        if (spendRatio > monthProgressRatio * 1.3) {
+          pacingStatus = "danger"; // Gastando 30% mais rápido que o esperado
+        } else if (spendRatio > monthProgressRatio * 1.1) {
+          pacingStatus = "fast"; // Gastando 10% mais rápido que o esperado
+        }
       }
 
       return {
         categoryId: budget.category_id,
         categoryName,
-        budgeted,
+        originalBudgeted: baseBudget,
+        budgeted: effectiveBudget,
         spent,
         percentage,
         status,
         remaining,
+        rollover,
+        pacingStatus
       };
     });
 

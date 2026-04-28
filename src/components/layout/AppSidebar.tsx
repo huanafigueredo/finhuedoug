@@ -10,6 +10,7 @@ import {
   Plus,
   Wallet,
   Target,
+  Zap,
 } from "lucide-react";
 import { TogetherLogo } from "@/components/shared/TogetherLogo";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const mainNavItems = [
 const financeNavItems = [
   { label: "Orçamentos", path: "/orcamentos", icon: Wallet },
   { label: "Metas de Economia", path: "/metas", icon: Target },
+  { label: "Laboratório", path: "/planejamento", icon: Zap },
 ];
 
 const configNavItems = [
@@ -55,7 +57,7 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50">
+    <Sidebar collapsible="offcanvas" className="border-r border-border/50">
       <SidebarHeader className="p-4">
         <Link to="/dashboard" className="flex items-center gap-2.5 group">
           <div className="group-hover:scale-105 transition-all duration-300">

@@ -13,19 +13,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   TrendingDown,
   TrendingUp,
   Heart,
   ArrowRight,
   Receipt,
-  PiggyBank
+  PiggyBank,
+  Trophy,
+  AlertTriangle,
+  CheckCircle2,
+  Landmark,
+  Tag,
+  Users
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useBanks } from "@/hooks/useBanks";
 import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
 import { useSplitCalculation } from "@/hooks/useSplitCalculation";
-import { parseISO, subMonths, format, differenceInMonths } from "date-fns";
+import { parseISO, subMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -214,7 +221,7 @@ export default function People() {
   const getRecentTransactions = (personName: string) => {
     return getPersonTransactions(personName)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
+      .slice(0, 8);
   };
 
   // Calculate monthly evolution for a person (last 6 months) using split rules
@@ -302,10 +309,24 @@ export default function People() {
     const bankData = getBankBreakdown(personName);
     const recentTransactions = getRecentTransactions(personName);
     const evolutionData = getMonthlyEvolution(personName);
+    const coupleShare = totalExpenses - individualExpenses;
+    const topCategories = categoryData.slice(0, 3);
+    const allExpenses = getPersonExpenses(personName);
+    const isHealthy = balance >= 0;
+    const savingsRate = income > 0 ? ((income - totalExpenses) / income) * 100 : 0;
+
+    // Comparação mês-a-mês
+    const prevMonth = evolutionData[4]; // Índice 4 é o mês passado, 5 é o atual
+    const prevExpenses = prevMonth?.despesas || 0;
+    const prevIncome = prevMonth?.receitas || 0;
+    
+    const expensesVariation = prevExpenses > 0 ? ((totalExpenses - prevExpenses) / prevExpenses) * 100 : 0;
+    const incomeVariation = prevIncome > 0 ? ((income - prevIncome) / prevIncome) * 100 : 0;
 
     return (
       <div className="space-y-6 sm:space-y-8">
-        {/* Person Header with Avatar */}
+
+        {/* Person Header with Avatar + Health Badge */}
         <div className="flex items-center gap-4 p-4 sm:p-6 rounded-2xl bg-card border border-border/50 shadow-card animate-fade-up">
           <AvatarUpload
             name={personName}
@@ -314,54 +335,216 @@ export default function People() {
             size="lg"
             editable={true}
           />
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="font-display text-xl sm:text-2xl font-bold text-foreground">
               {personName}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Resumo financeiro de {selectedMonth}/{selectedYear}
+              Resumo de {selectedMonth}/{selectedYear}
             </p>
-            <p className="text-xs text-primary/70 mt-1">
+            <p className="text-xs text-primary/70 mt-0.5">
               Clique no avatar para alterar
             </p>
           </div>
+          {/* Health Badge */}
+          <div className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0",
+            isHealthy
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          )}>
+            {isHealthy
+              ? <><CheckCircle2 className="w-3.5 h-3.5" /> Saldo positivo</>
+              : <><AlertTriangle className="w-3.5 h-3.5" /> Gastou mais que ganhou</>
+            }
+          </div>
         </div>
 
-        {/* Metrics */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <MetricCard
-            title="Despesas Totais"
-            value={formatCurrency(totalExpenses)}
-            emoji="💸"
-            variant="primary"
-            delay={100}
-          />
-          <MetricCard
-            title="Receitas"
-            value={formatCurrency(income)}
-            emoji="💰"
-            variant="success"
-            delay={200}
-          />
-          <MetricCard
-            title="Saldo"
-            value={formatCurrency(balance)}
-            emoji={balance >= 0 ? "🎉" : "😅"}
-            variant={balance >= 0 ? "success" : "primary"}
-            delay={300}
-          />
-          <MetricCard
-            title="Gastos Pessoais"
-            value={formatCurrency(individualExpenses)}
-            emoji="🧾"
-            variant="info"
-            delay={400}
-          />
+        {/* Improved Metrics — Composition Card */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 animate-fade-up" style={{ animationDelay: "100ms" }}>
+
+          {/* Expenses Breakdown */}
+          <div className="sm:col-span-2 rounded-2xl bg-card border border-border/50 p-4 sm:p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                <TrendingDown className="w-3.5 h-3.5 text-destructive" /> Composição dos Gastos
+              </span>
+              <div className="text-right">
+                <span className="text-lg font-bold text-foreground tabular-nums block">
+                  {formatCurrency(totalExpenses)}
+                </span>
+                {prevExpenses > 0 && (
+                  <span className={cn(
+                    "text-[10px] font-medium flex items-center justify-end gap-0.5",
+                    expensesVariation > 0 ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"
+                  )}>
+                    {expensesVariation > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {Math.abs(expensesVariation).toFixed(0)}% vs mês ant.
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Bar showing personal vs couple share */}
+            {totalExpenses > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex rounded-full overflow-hidden h-2.5">
+                  <div
+                    className="bg-primary transition-all duration-700"
+                    style={{ width: `${(individualExpenses / totalExpenses) * 100}%` }}
+                  />
+                  <div
+                    className="bg-primary/30"
+                    style={{ width: `${(coupleShare / totalExpenses) * 100}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+                    Pessoal: <span className="font-semibold text-foreground tabular-nums">{formatCurrency(individualExpenses)}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-primary/30 inline-block" />
+                    Parte do casal: <span className="font-semibold text-foreground tabular-nums">{formatCurrency(coupleShare)}</span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Income + Balance stacked */}
+          <div className="grid grid-rows-2 gap-3">
+            <div className="rounded-2xl bg-card border border-border/50 p-4 flex flex-col justify-between">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-emerald-500" /> Receitas
+              </span>
+              <div>
+                <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums block">
+                  {formatCurrency(income)}
+                </span>
+                {prevIncome > 0 && (
+                  <span className={cn(
+                    "text-[10px] font-medium flex items-center gap-0.5 mt-0.5",
+                    incomeVariation > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+                  )}>
+                    {incomeVariation > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    {Math.abs(incomeVariation).toFixed(0)}% vs mês ant.
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className={cn(
+              "rounded-2xl border p-4 flex flex-col justify-between",
+              isHealthy
+                ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800"
+                : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"
+            )}>
+              <span className="text-xs text-muted-foreground">
+                {isHealthy ? "🎉" : "😅"} Saldo
+              </span>
+              <span className={cn(
+                "text-lg font-bold tabular-nums",
+                isHealthy ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+              )}>
+                {formatCurrency(balance)}
+              </span>
+            </div>
+          </div>
         </div>
+
+        {/* Top 3 Categories Highlight */}
+        {topCategories.length > 0 && (
+          <div
+            className="rounded-2xl border border-border/50 bg-card overflow-hidden animate-fade-up"
+            style={{ animationDelay: "200ms" }}
+          >
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Top 3 maiores gastos do mês
+              </span>
+            </div>
+            <Accordion type="single" collapsible className="w-full divide-y divide-border/50">
+              {topCategories.map((cat, idx) => {
+                const catTransactions = allExpenses
+                  .filter(t => (t.category || "Outros") === cat.name)
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                return (
+                  <AccordionItem value={cat.name} key={cat.name} className="border-b-0">
+                    <AccordionTrigger className="hover:no-underline py-0 px-0 group">
+                      <div className="flex items-center gap-3 px-4 py-3 w-full text-left">
+                        {/* Rank badge */}
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                          style={{ backgroundColor: `${cat.color}25`, color: cat.color }}
+                        >
+                          {idx + 1}
+                        </div>
+                        {/* Category name + progress bar */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium text-foreground truncate">{cat.name}</span>
+                            <span className="text-sm font-bold tabular-nums ml-2 shrink-0" style={{ color: cat.color }}>
+                              {formatCurrency(cat.value)}
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{
+                                width: `${topCategories[0].value > 0 ? (cat.value / topCategories[0].value) * 100 : 0}%`,
+                                backgroundColor: cat.color,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        {/* % of total */}
+                        <span className="text-xs text-muted-foreground shrink-0 w-9 text-right pr-2">
+                          {totalExpenses > 0 ? `${((cat.value / totalExpenses) * 100).toFixed(0)}%` : ""}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-3 pt-0">
+                      <div className="pl-9 space-y-1.5">
+                        {catTransactions.slice(0, 5).map(t => {
+                          let value = getTransactionMonthValue(t);
+                          if (t.is_couple) {
+                            const split = calculateSplitForTransaction(
+                              value, t.category, t.subcategory,
+                              t.custom_person1_percentage, t.custom_person2_percentage
+                            );
+                            value = personName === metrics.person1Name ? split.person1 : split.person2;
+                          }
+                          return (
+                            <div key={t.id} className="flex justify-between items-center text-xs p-2 rounded-md bg-secondary/30 border border-border/20">
+                              <div className="min-w-0 flex-1 pr-2">
+                                <p className="font-medium truncate text-foreground">{t.description}</p>
+                                <p className="text-[10px] text-muted-foreground">{format(parseISO(t.date), "dd/MM")}</p>
+                              </div>
+                              <span className="font-semibold tabular-nums text-destructive">
+                                {formatCurrency(value)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {catTransactions.length > 5 && (
+                          <div className="text-center text-[10px] text-muted-foreground pt-1">
+                            + {catTransactions.length - 5} transações
+                          </div>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          </div>
+        )}
 
         {/* Charts */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-          <div className="animate-fade-up opacity-0" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
+          <div className="animate-fade-up opacity-0" style={{ animationDelay: "300ms", animationFillMode: "forwards" }}>
             {categoryData.length > 0 ? (
               <PieChart data={categoryData} title="Gastos por Categoria" />
             ) : (
@@ -376,7 +559,7 @@ export default function People() {
             )}
           </div>
 
-          <div className="animate-fade-up opacity-0" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
+          <div className="animate-fade-up opacity-0" style={{ animationDelay: "400ms", animationFillMode: "forwards" }}>
             {bankData.length > 0 ? (
               <PieChart data={bankData} title="Gastos por Banco" />
             ) : (
@@ -393,7 +576,7 @@ export default function People() {
         </div>
 
         {/* Evolution Chart */}
-        <div className="animate-fade-up opacity-0" style={{ animationDelay: "700ms", animationFillMode: "forwards" }}>
+        <div className="animate-fade-up opacity-0" style={{ animationDelay: "500ms", animationFillMode: "forwards" }}>
           <LineChart
             data={evolutionData}
             lines={[
@@ -404,8 +587,8 @@ export default function People() {
           />
         </div>
 
-        {/* Recent Transactions */}
-        <div className="animate-fade-up opacity-0" style={{ animationDelay: "800ms", animationFillMode: "forwards" }}>
+        {/* Recent Transactions — enriched */}
+        <div className="animate-fade-up opacity-0" style={{ animationDelay: "600ms", animationFillMode: "forwards" }}>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg">Últimas Transações</CardTitle>
@@ -431,11 +614,12 @@ export default function People() {
                       );
                       value = personName === metrics.person1Name ? split.person1 : split.person2;
                     }
+                    const bank = banks.find(b => b.id === t.bank_id);
                     return (
                       <div
                         key={t.id}
                         className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-all duration-200 hover:scale-[1.01]"
-                        style={{ animationDelay: `${850 + index * 50}ms` }}
+                        style={{ animationDelay: `${650 + index * 50}ms` }}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -446,19 +630,41 @@ export default function People() {
                               <Heart className="w-3 h-3 text-primary fill-primary shrink-0" />
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {format(parseISO(t.date), "dd/MM")} • {t.category || "Outros"}
+                          {/* Enriched: date + category + subcategory + bank */}
+                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5 flex-wrap">
+                            <span>{format(parseISO(t.date), "dd/MM")}</span>
+                            {t.category && (
+                              <span className="flex items-center gap-0.5">
+                                <Tag className="w-2.5 h-2.5" />
+                                {t.category}{t.subcategory ? ` · ${t.subcategory}` : ""}
+                              </span>
+                            )}
+                            {bank && (
+                              <span className="flex items-center gap-0.5">
+                                <Landmark className="w-2.5 h-2.5" />
+                                {bank.name}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <span className={cn(
                           "font-semibold tabular-nums ml-2 text-sm",
-                          t.type === "income" ? "text-success" : "text-destructive"
+                          t.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
                         )}>
                           {t.type === "income" ? "+" : "-"}{formatCurrency(value)}
                         </span>
                       </div>
                     );
                   })}
+                  
+                  {/* Botão Ver todas no final da lista */}
+                  <div className="pt-2 sm:pt-4 text-center mt-2">
+                    <Link to={`/lancamentos?for_who=${encodeURIComponent(personName)}`}>
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto gap-2 rounded-xl border-border/50 bg-background/50 hover:bg-secondary">
+                        Ver todas as transações <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
@@ -473,8 +679,9 @@ export default function People() {
   };
 
   return (
+
     <AppLayout>
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="w-full max-w-full overflow-x-hidden px-4 py-6 sm:py-8 sm:container sm:mx-auto sm:max-w-6xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8 animate-fade-up">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4 sm:mb-6 shadow-sm">
@@ -533,21 +740,21 @@ export default function People() {
         {/* Tabs for each person */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="grid w-full max-w-sm sm:max-w-md mx-auto grid-cols-2 mb-6 sm:mb-8 h-14 p-1.5 animate-fade-up" style={{ animationDelay: "150ms" }}>
-            <TabsTrigger value="person1" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
+            <TabsTrigger value="person1" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300 overflow-hidden">
               <PersonAvatar
                 name={metrics.person1Name}
                 avatar={personSettings.person1Avatar || avatarPerson1}
                 size="sm"
               />
-              <span className="hidden sm:inline">{metrics.person1Name}</span>
+              <span className="truncate">{metrics.person1Name}</span>
             </TabsTrigger>
-            <TabsTrigger value="person2" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300">
+            <TabsTrigger value="person2" className="gap-2 sm:gap-3 text-xs sm:text-sm h-full rounded-lg data-[state=active]:shadow-pink transition-all duration-300 overflow-hidden">
               <PersonAvatar
                 name={metrics.person2Name}
                 avatar={personSettings.person2Avatar || avatarPerson2}
                 size="sm"
               />
-              <span className="hidden sm:inline">{metrics.person2Name}</span>
+              <span className="truncate">{metrics.person2Name}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -578,79 +785,137 @@ export default function People() {
           </TabsContent>
         </Tabs>
 
-        {/* Summary Card */}
-        <div className="mt-8 sm:mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-card to-secondary/30 border border-border/50 shadow-card text-center animate-fade-up" style={{ animationDelay: "200ms" }}>
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/15 mb-4">
-            <Heart className="w-8 h-8 text-primary" />
-          </div>
-          <h2 className="font-display text-xl sm:text-2xl font-semibold text-foreground mb-2">
-            Resumo do Casal 💕
-          </h2>
-          <p className="text-muted-foreground text-sm mb-6">
-            Totais em {selectedMonth}/{selectedYear}
-          </p>
-
-          {/* First row: Overall totals */}
-          <div className="grid grid-cols-3 gap-4 sm:gap-8 max-w-lg mx-auto mb-6">
-            <div className="p-3 sm:p-4 rounded-xl bg-card/50">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Despesas</p>
-              <p className="text-lg sm:text-2xl font-display font-bold text-destructive">
-                {formatCurrency(metrics.totalExpenses)}
-              </p>
+        {/* Comparative Panel - replaces the old "Resumo do Casal" */}
+        <div className="mt-8 sm:mt-12 rounded-2xl bg-card border border-border/50 shadow-card overflow-hidden animate-fade-up" style={{ animationDelay: "200ms" }}>
+          {/* Panel Header */}
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+            <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+              <Users className="w-4 h-4 text-primary" />
             </div>
-            <div className="p-3 sm:p-4 rounded-xl bg-card/50">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Receitas</p>
-              <p className="text-lg sm:text-2xl font-display font-bold text-success">
-                {formatCurrency(metrics.totalIncome)}
-              </p>
-            </div>
-            <div className="p-3 sm:p-4 rounded-xl bg-card/50">
-              <p className="text-xs sm:text-sm text-muted-foreground mb-1">Saldo</p>
-              <p className={`text-lg sm:text-2xl font-display font-bold ${metrics.totalBalance >= 0 ? 'text-success' : 'text-destructive'}`}>
-                {formatCurrency(metrics.totalBalance)}
-              </p>
+            <div>
+              <h2 className="font-semibold text-foreground">Painel Comparativo do Casal 💕</h2>
+              <p className="text-xs text-muted-foreground">Totais em {selectedMonth}/{selectedYear}</p>
             </div>
           </div>
 
-          {/* Second row: Per-person breakdown */}
-          {metrics.coupleExpenses > 0 && (
-            <div className="pt-4 border-t border-border/50">
-              <p className="text-xs text-muted-foreground mb-4 flex items-center justify-center gap-1.5">
-                <Heart className="w-3 h-3 text-primary" />
-                Divisão por pessoa
-              </p>
-              <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                {/* Person 1 */}
-                <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
-                  <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person1Name}</p>
-                  <div className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">P/ Casal:</span>
-                      <span className="font-medium">{formatCurrency(metrics.person1CoupleShare)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs pt-1 border-t border-border/50">
-                      <span className="text-muted-foreground">Total Real:</span>
-                      <span className="font-bold text-primary">{formatCurrency(metrics.person1TotalExpenses)}</span>
-                    </div>
+          <div className="p-4 sm:p-6 space-y-6">
+
+            {/* Couple total stats row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 rounded-xl bg-secondary/40">
+                <p className="text-xs text-muted-foreground mb-1">Total Despesas</p>
+                <p className="font-bold text-destructive tabular-nums">{formatCurrency(metrics.totalExpenses)}</p>
+              </div>
+              <div className="text-center p-3 rounded-xl bg-secondary/40">
+                <p className="text-xs text-muted-foreground mb-1">Total Receitas</p>
+                <p className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(metrics.totalIncome)}</p>
+              </div>
+              <div className="text-center p-3 rounded-xl bg-secondary/40">
+                <p className="text-xs text-muted-foreground mb-1">Saldo Casal</p>
+                <p className={cn("font-bold tabular-nums", metrics.totalBalance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                  {formatCurrency(metrics.totalBalance)}
+                </p>
+              </div>
+            </div>
+
+            {/* Spending proportion bar */}
+            {metrics.totalExpenses > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                  <TrendingDown className="w-3 h-3" /> Proporção de Gastos
+                </p>
+                <div className="flex rounded-full overflow-hidden h-4">
+                  <div
+                    className="bg-primary flex items-center justify-center text-[10px] text-white font-bold transition-all duration-700"
+                    style={{ width: `${(metrics.person1TotalExpenses / metrics.totalExpenses) * 100}%` }}
+                  >
+                    {metrics.person1TotalExpenses > 0 && metrics.person1TotalExpenses / metrics.totalExpenses > 0.15
+                      ? `${((metrics.person1TotalExpenses / metrics.totalExpenses) * 100).toFixed(0)}%`
+                      : ""}
+                  </div>
+                  <div
+                    className="bg-primary/40 flex items-center justify-center text-[10px] text-foreground font-bold transition-all duration-700"
+                    style={{ width: `${(metrics.person2TotalExpenses / metrics.totalExpenses) * 100}%` }}
+                  >
+                    {metrics.person2TotalExpenses > 0 && metrics.person2TotalExpenses / metrics.totalExpenses > 0.15
+                      ? `${((metrics.person2TotalExpenses / metrics.totalExpenses) * 100).toFixed(0)}%`
+                      : ""}
                   </div>
                 </div>
-                {/* Person 2 */}
-                <div className="p-3 sm:p-4 rounded-xl bg-primary/5 border border-primary/10">
-                  <p className="text-xs sm:text-sm font-medium text-foreground mb-2">{metrics.person2Name}</p>
-                  <div className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">P/ Casal:</span>
-                      <span className="font-medium">{formatCurrency(metrics.person2CoupleShare)}</span>
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+                    {metrics.person1Name}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    {metrics.person2Name}
+                    <span className="w-2 h-2 rounded-full bg-primary/40 inline-block" />
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Side-by-side person comparison */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {/* Person 1 */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 space-y-2">
+                <p className="text-xs font-semibold text-foreground truncate">{metrics.person1Name}</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Despesas</span>
+                    <span className="font-semibold text-destructive tabular-nums">{formatCurrency(metrics.person1TotalExpenses)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Receitas</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(metrics.person1Income)}</span>
+                  </div>
+                  {metrics.coupleExpenses > 0 && (
+                    <div className="flex justify-between pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground flex items-center gap-0.5">
+                        <Heart className="w-2.5 h-2.5 text-primary" /> P/ casal
+                      </span>
+                      <span className="font-semibold tabular-nums">{formatCurrency(metrics.person1CoupleShare)}</span>
                     </div>
-                    <div className="flex justify-between text-xs pt-1 border-t border-border/50">
-                      <span className="text-muted-foreground">Total Real:</span>
-                      <span className="font-bold text-primary">{formatCurrency(metrics.person2TotalExpenses)}</span>
+                  )}
+                  <div className="flex justify-between pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">Saldo</span>
+                    <span className={cn("font-bold tabular-nums", metrics.person1Balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                      {formatCurrency(metrics.person1Balance)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Person 2 */}
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4 space-y-2">
+                <p className="text-xs font-semibold text-foreground truncate">{metrics.person2Name}</p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Despesas</span>
+                    <span className="font-semibold text-destructive tabular-nums">{formatCurrency(metrics.person2TotalExpenses)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Receitas</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(metrics.person2Income)}</span>
+                  </div>
+                  {metrics.coupleExpenses > 0 && (
+                    <div className="flex justify-between pt-1 border-t border-border/50">
+                      <span className="text-muted-foreground flex items-center gap-0.5">
+                        <Heart className="w-2.5 h-2.5 text-primary" /> P/ casal
+                      </span>
+                      <span className="font-semibold tabular-nums">{formatCurrency(metrics.person2CoupleShare)}</span>
                     </div>
+                  )}
+                  <div className="flex justify-between pt-1 border-t border-border/50">
+                    <span className="text-muted-foreground font-medium">Saldo</span>
+                    <span className={cn("font-bold tabular-nums", metrics.person2Balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                      {formatCurrency(metrics.person2Balance)}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </AppLayout>

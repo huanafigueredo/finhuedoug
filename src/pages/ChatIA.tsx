@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DOMPurify from "dompurify";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +23,8 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +67,10 @@ export default function ChatIA() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0);
   const [expandedTransactions, setExpandedTransactions] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const quickSuggestions = [
     "Quanto gastei este mês?",
@@ -78,9 +82,27 @@ export default function ChatIA() {
     "Contas a vencer nos próximos 7 dias",
   ];
 
+  const loadingTexts = [
+    "Analisando lançamentos...",
+    "Cruzando categorias e valores...",
+    "Calculando os totais...",
+    "Gerando a melhor resposta..."
+  ];
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loadingTextIndex]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLoadingTextIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingTextIndex((prev) => (prev + 1) % loadingTexts.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isLoading]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -174,6 +196,7 @@ export default function ChatIA() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
+      setInput(messageText); // Retain input context on error
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
@@ -214,8 +237,8 @@ export default function ChatIA() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8 h-full max-w-4xl">
-        <div className="flex flex-col h-[calc(100vh-140px)]">
+      <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 h-[calc(100dvh-70px)] sm:h-[calc(100dvh-80px)] flex flex-col">
+        <div className="flex flex-col flex-1 h-full min-h-0 bg-background sm:bg-transparent">
           {/* Header */}
           <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -229,18 +252,26 @@ export default function ChatIA() {
               </div>
             </div>
 
-            {/* Quick Suggestions */}
+            {/* Hero / Empty State */}
             {messages.length === 0 && (
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-2">Sugestões rápidas:</p>
-                <div className="flex flex-wrap gap-2">
-                  {quickSuggestions.map((suggestion) => (
+              <div className="flex-1 flex flex-col items-center justify-center py-10 px-2 sm:px-4 text-center animate-fade-up">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 shadow-sm border border-primary/20">
+                  <Sparkles className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold mb-3 tracking-tight">Como posso ajudar hoje?</h2>
+                <p className="text-muted-foreground max-w-md mb-8 text-sm sm:text-base leading-relaxed">
+                  Sou seu assistente financeiro. Tire dúvidas sobre os gastos do casal, compare os meses ou veja os maiores lançamentos.
+                </p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl text-left">
+                  {quickSuggestions.slice(0, 4).map((suggestion) => (
                     <button
                       key={suggestion}
                       onClick={() => handleSend(suggestion)}
-                      className="px-3 py-1.5 text-sm bg-secondary hover:bg-secondary/80 rounded-full transition-colors"
+                      className="p-4 border border-border/60 bg-card rounded-xl hover:bg-secondary/60 hover:border-border transition-all group flex flex-col gap-2 shadow-sm"
                     >
-                      {suggestion}
+                      <span className="text-sm font-medium text-foreground">{suggestion}</span>
+                      <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </button>
                   ))}
                 </div>
@@ -273,16 +304,11 @@ export default function ChatIA() {
                       )}
                     >
                       {/* Message Content */}
-                      <div 
-                        className="prose prose-sm dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ 
-                          __html: DOMPurify.sanitize(
-                            message.content
-                              .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                              .replace(/\n/g, "<br />")
-                          )
-                        }}
-                      />
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:p-0">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
 
                       {/* Grouped Data */}
                       {message.groupedData && Object.keys(message.groupedData).length > 0 && (
@@ -391,11 +417,16 @@ export default function ChatIA() {
 
                 {isLoading && (
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Bot className="w-4 h-4 text-primary" />
                     </div>
-                    <div className="bg-secondary rounded-2xl px-4 py-3">
-                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    <div className="bg-secondary/50 rounded-2xl px-5 py-4 min-w-[200px]">
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        <span className="text-sm text-muted-foreground animate-pulse">
+                          {loadingTexts[loadingTextIndex]}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -404,25 +435,36 @@ export default function ChatIA() {
               </div>
             </ScrollArea>
 
-            {/* Input */}
-            <div className="mt-4 flex gap-2">
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Pergunte sobre suas finanças..."
-                disabled={isLoading}
-                className="flex-1"
-              />
-              <Button onClick={() => handleSend()} disabled={isLoading || !input.trim()}>
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </Button>
-          </div>
+            {/* Input Area */}
+            <div className="mt-4 shrink-0">
+              <div className="relative flex items-end gap-2 p-2 bg-background border border-border rounded-2xl shadow-sm focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
+                <Textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Mensagem para o assistente..."
+                  disabled={isLoading}
+                  className="flex-1 min-h-[44px] max-h-32 resize-none border-0 shadow-none focus-visible:ring-0 py-3 px-3 text-base sm:text-sm"
+                  rows={input.split('\n').length > 1 ? Math.min(input.split('\n').length, 4) : 1}
+                />
+                <Button 
+                  onClick={() => handleSend()} 
+                  disabled={isLoading || !input.trim()}
+                  className="rounded-xl w-10 h-10 mb-1 shrink-0"
+                  size="icon"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-center text-[10px] text-muted-foreground mt-2 hidden sm:block">
+                A IA pode cometer erros. Sempre verifique as transações agrupadas.
+              </p>
+            </div>
         </div>
       </div>
     </AppLayout>

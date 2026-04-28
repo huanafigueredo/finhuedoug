@@ -199,7 +199,7 @@ export default function Contas() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-6">
+      <div className="w-full max-w-full px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-6 overflow-x-hidden">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">

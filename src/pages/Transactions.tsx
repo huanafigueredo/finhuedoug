@@ -678,8 +678,8 @@ export default function Transactions() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen pb-32 md:pb-8">
-        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <div className="min-h-screen pb-56 md:pb-8 overflow-x-hidden">
+        <div className="w-full max-w-full px-3 sm:px-4 py-4 sm:py-6">
           {/* Header */}
           <div className="flex flex-col gap-3 mb-4 sm:mb-6">
             <div className="flex items-start justify-between gap-2">
@@ -692,8 +692,19 @@ export default function Transactions() {
                 </p>
               </div>
 
-              {/* Mobile button for import */}
+              {/* Mobile button for import + bulk delete */}
               <div className="flex sm:hidden items-center gap-2 flex-shrink-0">
+                {selectedIds.size > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    ({selectedIds.size})
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -1252,79 +1263,45 @@ export default function Transactions() {
           </div>
         </div>
 
-        {/* Mobile Summary Section - Two Cards Stacked */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 z-40 p-3 space-y-3 max-h-[45vh] overflow-y-auto">
-          {/* Card 1: Resumo do Mês */}
-          <div className="bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-            <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-              Resumo do Mês
-            </h3>
-            <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
-              <span className="text-slate-600 dark:text-slate-300">Movimentação</span>
-              <span className="text-right font-medium text-primary tabular-nums">
-                {formatCurrency(summary.totalExpenses + summary.income)}
-              </span>
-              <span className="text-slate-600 dark:text-slate-300">Despesas</span>
-              <span className="text-right font-medium text-primary tabular-nums">
-                {formatCurrency(summary.expenses)}
-              </span>
-              <span className="text-slate-600 dark:text-slate-300">Receitas</span>
-              <span className="text-right font-medium text-emerald-600 dark:text-emerald-500 tabular-nums">
-                {formatCurrency(summary.income)}
-              </span>
-              <span className="text-slate-700 dark:text-slate-200 font-medium border-t border-slate-100 dark:border-slate-700 pt-2">Saldo</span>
-              <span className={cn(
-                "text-right font-bold tabular-nums border-t border-slate-100 dark:border-slate-700 pt-2",
-                summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-500" : "text-primary"
-              )}>
-                {formatCurrency(summary.balance)}
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Divisão do Casal */}
-          {filteredTransactions.some(t => t.isCouple) && (
-            <div className="bg-card border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm">
-              <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-                Divisão do Casal
-              </h3>
-              <div className="space-y-2">
-                {/* Header */}
-                <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 uppercase pb-1">
-                  <span>Pessoa</span>
-                  <div className="flex gap-4">
-                    <span className="inline-flex items-center gap-1">
-                      P/ Pessoa <Heart className="w-2.5 h-2.5 text-primary/70" />
-                    </span>
-                    <span className="bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded text-[10px]">Combinado</span>
-                  </div>
-                </div>
-                {/* Pessoa 1 */}
-                <div className="flex justify-between items-center text-sm border-t border-slate-100 dark:border-slate-700 pt-2">
-                  <span className="text-slate-700 dark:text-slate-200">{summary.person1Name}</span>
-                  <div className="flex gap-4 items-center">
-                    <span className="text-slate-600 dark:text-slate-300 tabular-nums">{formatCurrency(summary.person1CoupleTotal)}</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded min-w-[90px] text-right">
-                      {formatCurrency(summary.person1Combined)}
-                    </span>
-                  </div>
-                </div>
-                {/* Pessoa 2 */}
-                <div className="flex justify-between items-center text-sm border-t border-slate-100 dark:border-slate-700 pt-2">
-                  <span className="text-slate-700 dark:text-slate-200">{summary.person2Name}</span>
-                  <div className="flex gap-4 items-center">
-                    <span className="text-slate-600 dark:text-slate-300 tabular-nums">{formatCurrency(summary.person2CoupleTotal)}</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums bg-slate-50 dark:bg-slate-800/50 px-2 py-0.5 rounded min-w-[90px] text-right">
-                      {formatCurrency(summary.person2Combined)}
-                    </span>
-                  </div>
-                </div>
+        {/* Mobile Summary Section - Compact Bar at Bottom */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-40">
+          {/* Resumo compacto em uma linha */}
+          <div className="px-3 py-2">
+            <div className="grid grid-cols-3 gap-1 text-center">
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Despesas</div>
+                <div className="text-sm font-bold text-primary tabular-nums">{formatCurrency(summary.expenses)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Receitas</div>
+                <div className="text-sm font-bold text-emerald-600 dark:text-emerald-500 tabular-nums">{formatCurrency(summary.income)}</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Saldo</div>
+                <div className={cn(
+                  "text-sm font-bold tabular-nums",
+                  summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-500" : "text-primary"
+                )}>{formatCurrency(summary.balance)}</div>
               </div>
             </div>
-          )}
+
+            {/* Divisão do Casal - apenas se houver transações de casal */}
+            {filteredTransactions.some(t => t.isCouple) && (
+              <div className="mt-2 pt-2 border-t border-border grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg px-2 py-1">
+                  <span className="text-xs text-muted-foreground truncate mr-1">{summary.person1Name}</span>
+                  <span className="text-xs font-semibold tabular-nums shrink-0">{formatCurrency(summary.person1Combined)}</span>
+                </div>
+                <div className="flex items-center justify-between bg-muted/50 rounded-lg px-2 py-1">
+                  <span className="text-xs text-muted-foreground truncate mr-1">{summary.person2Name}</span>
+                  <span className="text-xs font-semibold tabular-nums shrink-0">{formatCurrency(summary.person2Combined)}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Mobile FAB - positioned above the summary cards */}
+        {/* Mobile FAB - above the summary bar */}
         <Button
           onClick={() => {
             setEditTransactionId(null);
@@ -1332,7 +1309,7 @@ export default function Transactions() {
             setNewTransactionModalOpen(true);
           }}
           size="lg"
-          className="fixed bottom-[220px] right-4 md:hidden h-14 w-14 rounded-full shadow-lg z-50"
+          className="fixed bottom-20 right-4 md:hidden h-14 w-14 rounded-full shadow-lg z-50"
         >
           <Plus className="h-6 w-6" />
         </Button>

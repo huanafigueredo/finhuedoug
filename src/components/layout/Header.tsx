@@ -12,6 +12,7 @@ const navItems = [
   { label: "Contas", path: "/contas" },
   { label: "Chat IA", path: "/chat-ia", icon: Sparkles },
   { label: "Pessoas", path: "/pessoas" },
+  { label: "Laboratório", path: "/planejamento", icon: Sparkles },
   { label: "Configurações", path: "/config" },
 ];
 

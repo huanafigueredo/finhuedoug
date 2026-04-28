@@ -7,14 +7,14 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+    <SidebarProvider defaultOpen={false}>
+      <div className="min-h-screen flex w-full overflow-x-hidden">
         <AppSidebar />
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
           <header className="h-14 flex items-center border-b border-border/50 bg-card/50 backdrop-blur-sm px-4 sticky top-0 z-40">
             <SidebarTrigger className="mr-4" />
           </header>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {children}
           </div>
         </main>
