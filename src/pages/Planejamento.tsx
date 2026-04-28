@@ -25,7 +25,15 @@ export default function Planejamento() {
   const [simValue, setSimValue] = useState("");
   const [simInstallments, setSimInstallments] = useState("1");
   const [isIncome, setIsIncome] = useState(false);
-  const [simulations, setSimulations] = useState<any[]>([]);
+  interface Simulation {
+    id: string;
+    title: string;
+    value: number;
+    installments: number;
+    isIncome: boolean;
+    startMonth: number;
+  }
+  const [simulations, setSimulations] = useState<Simulation[]>([]);
 
   // 1. Radar de Assinaturas (Subscriptions Logic)
   const { activeSubs, ghostSubs } = useMemo(() => {
@@ -33,9 +41,9 @@ export default function Planejamento() {
     const last6Months = Array.from({ length: 6 }).map((_, i) => subMonths(new Date(), i));
     
     // Group by description (Fuzzy/Normalized matching)
-    const groups: Record<string, any[]> = {};
+    const groups: Record<string, typeof transactions> = {};
     expenses.forEach(t => {
-      let name = t.description.toLowerCase().trim()
+      const name = t.description.toLowerCase().trim()
         .replace(/[0-9]/g, '')
         .replace(/ - parcela.*/g, '')
         .replace(/ltda/g, '')
@@ -50,8 +58,8 @@ export default function Planejamento() {
       groups[key].push(t);
     });
 
-    const active: any[] = [];
-    const ghosts: any[] = [];
+    const active: { name: string; value: number; isIncreasing: boolean; }[] = [];
+    const ghosts: { name: string; value: number; monthsSinceLast: number; }[] = [];
 
     Object.entries(groups).forEach(([key, txs]) => {
       const monthsPresent = new Set<number>();
@@ -556,7 +564,7 @@ export default function Planejamento() {
 
                     {/* Linha 2: Colisão */}
                     {(() => {
-                      const collisionMonths = projectionData.filter((d: any) => totalBudgetLimit > 0 && d.TotalLiquido > totalBudgetLimit);
+                      const collisionMonths = projectionData.filter((d) => totalBudgetLimit > 0 && d.TotalLiquido > totalBudgetLimit);
                       if (collisionMonths.length > 0) {
                         return (
                           <div className="flex items-start gap-3 p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-100 dark:border-rose-900/50">
