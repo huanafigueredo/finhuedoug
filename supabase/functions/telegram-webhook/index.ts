@@ -237,24 +237,40 @@ serve(async (req: Request) => {
         if (base64Image) parts.push({ inline_data: { mime_type: "image/jpeg", data: base64Image } });
         if (messageText) parts[0].text += `\nTexto: ${messageText}`;
 
-        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts }] })
-        });
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.5-flash-8b"];
+        let aiText = "";
+        let geminiSuccess = false;
 
-        if (!gRes.ok) {
-            console.error("Gemini Error Status:", gRes.status);
-            await sendMessage("⚠️ O servidor da IA demorou muito para responder. Por favor, tente enviar novamente em alguns segundos.");
-            return new Response("OK", { status: 200 });
+        for (const modelName of modelsToTry) {
+            try {
+                console.log(`Tentando modelo: ${modelName}...`);
+                const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts }] })
+                });
+
+                if (gRes.ok) {
+                    const gData = await gRes.json();
+                    aiText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                    if (aiText) {
+                        geminiSuccess = true;
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.error(`Erro no modelo ${modelName}:`, err);
+            }
         }
 
-        const gData = await gRes.json();
-        const gText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+        if (!geminiSuccess) {
+            await sendMessage("⚠️ O servidor da IA está sobrecarregado agora. Por favor, tente reenviar em instantes.");
+            return new Response("OK", { status: 200 });
+        }
         
         // Captura o JSON de forma mais robusta
-        const jsonMatch = gText.match(/\{[\s\S]*\}/);
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
-            console.error("AI returned no JSON:", gText);
+            console.error("AI returned no JSON:", aiText);
             await sendMessage("⚠️ Não consegui extrair os dados da nota automaticamente. Pode tentar tirar outra foto?");
             return new Response("OK", { status: 200 });
         }
@@ -263,7 +279,7 @@ serve(async (req: Request) => {
         try {
             parsed = JSON.parse(jsonMatch[0]);
         } catch (e) {
-            console.error("JSON Parse Fail:", e, gText);
+            console.error("JSON Parse Fail:", e, aiText);
             await sendMessage("⚠️ Houve um erro ao processar os itens da nota. Tente novamente.");
             return new Response("OK", { status: 200 });
         }
