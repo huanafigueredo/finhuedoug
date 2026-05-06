@@ -2,308 +2,256 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Converte Uint8Array para base64 com chunks mais curtos para evitar travamentos de buffer do deno
 function uint8ToBase64(uint8Array: Uint8Array): string {
     let binary = '';
     const len = uint8Array.byteLength;
-    for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
-    }
+    for (let i = 0; i < len; i++) { binary += String.fromCharCode(uint8Array[i]); }
     return btoa(binary);
 }
 
-interface Category { id: string; name: string; }
-interface Bank { id: string; name: string; }
-interface PaymentMethod { id: string; name: string; }
+function base64ToUint8(base64: string): Uint8Array {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+    return bytes;
+}
 
 serve(async (req: Request) => {
-    // Tratamento CORS
-    if (req.method === "OPTIONS") { return new Response(null, { headers: corsHeaders }); }
-
-    console.log("==== WEBHOOK RECEBEU REQUISIÇÃO ====", req.method);
+    if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
     try {
         const body = await req.json();
-        console.log("CORPO RECEBIDO DO TELEGRAM:", JSON.stringify(body, null, 2));
-
-        // Verifica se é um evento válido do Telegram
-        if (!body.message && !body.channel_post) {
-            console.log("IGNORANDO: Não tem message nem channel_post");
-            return new Response("OK", { status: 200, headers: corsHeaders });
-        }
-
-        const message = body.message || body.channel_post;
+        const message = body.message || body.channel_post || body.callback_query?.message;
+        const callbackQuery = body.callback_query;
 
         const apiKey = Deno.env.get("GEMINI_API_KEY");
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
         const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-
-        // Identificar usuário dono. Note que reusamos DEFAULT_WHATSAPP_USER_ID, mas vc pode criar outra "DEFAULT_TELEGRAM_USER_ID".
         const userId = Deno.env.get("DEFAULT_TELEGRAM_USER_ID") || Deno.env.get("DEFAULT_WHATSAPP_USER_ID") || Deno.env.get("SUPABASE_USER_ID");
 
-        if (!apiKey || !supabaseUrl || !supabaseKey || !userId || !botToken) {
-            console.error("Faltam variáveis de ambiente críticas: GEMINI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, TELEGRAM_BOT_TOKEN, DEFAULT_WHATSAPP_USER_ID");
-            // Retorna 200 pro Telegram não ficar executando infinite retries e banir o IP deles
-            return new Response("OK", { status: 200, headers: corsHeaders });
-        }
+        if (!apiKey || !supabaseUrl || !supabaseKey || !userId || !botToken) return new Response("Missing env", { status: 200 });
 
         const supabase = createClient(supabaseUrl, supabaseKey);
+        const chat_id = message?.chat?.id || callbackQuery?.from?.id;
+        if (!chat_id) return new Response("No chat_id", { status: 200 });
 
-        let messageText = message.text || message.caption || "";
-        let base64Image = null;
-
-        // Extraindo imagem, se houver, baixando a URL privada da API nativa do Telegram
-        if (message.photo && message.photo.length > 0) {
-            console.log("Baixando imagem do Telegram...");
-            // O último item do array photo é sempre a de maior resolução enviada pelo aparelho
-            const highestResPhoto = message.photo[message.photo.length - 1];
-            const fileId = highestResPhoto.file_id;
-
-            // 1. Pegar o `file_path`
-            const fileInfoRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
-            const fileInfo = await fileInfoRes.json();
-
-            if (fileInfo.ok) {
-                const filePath = fileInfo.result.file_path;
-
-                // 2. Baixar a imagem binária real
-                const imageRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
-                const arrayBuffer = await imageRes.arrayBuffer();
-
-                // 3. Converter a resposta binária para base64 (Formato que o Gemini obriga passar anexado)
-                base64Image = uint8ToBase64(new Uint8Array(arrayBuffer));
-                console.log("Imagem recebida e codificada.");
-            } else {
-                console.error("Erro ao pegar info da imagem: ", fileInfo.description);
-            }
-        }
-
-        if (!messageText && !base64Image) {
-            console.log("A mensagem era vazia ou não continha midia útil ou de foto.");
-            return new Response("OK", { status: 200, headers: corsHeaders });
-        }
-
-        console.log("Iniciando IA do Gemini... Texto capturado:", messageText);
-
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("account_id")
-            .eq("id", userId)
-            .single();
-
-        const accountId = profile?.account_id;
-
-        if (!accountId) {
-            console.error("Usuário não possui uma account_id vinculada no perfil.");
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: message.chat.id,
-                    text: `⚠️ Seu perfil não está totalmente configurado (falta account_id).`
-                })
-            });
-            return new Response("OK", { status: 200, headers: corsHeaders });
-        }
-
-        const { data: userSettings } = await supabase
-            .from("user_settings")
-            .select("person_1_name, person_2_name")
-            .eq("user_id", userId)
-            .single();
+        const [{ data: profile }, { data: userSettings }, { data: banks }, { data: paymentMethods }] = await Promise.all([
+            supabase.from("profiles").select("account_id").eq("id", userId).single(),
+            supabase.from("user_settings").select("person_1_name, person_2_name").eq("user_id", userId).single(),
+            supabase.from("banks").select("id, name"),
+            supabase.from("payment_methods").select("id, name")
+        ]);
 
         const person1Name = userSettings?.person_1_name || "Huana";
         const person2Name = userSettings?.person_2_name || "Douglas";
+        const accountId = profile?.account_id;
 
-        const { data: categories } = await supabase.from("categories").select("id, name");
-        const { data: banks } = await supabase.from("banks").select("id, name");
-        const { data: paymentMethods } = await supabase.from("payment_methods").select("id, name");
-
-        const categoryNames = categories?.map((c: Category) => c.name).join(", ") || "";
-        const bankNames = banks?.map((b: Bank) => b.name).join(", ") || "";
-        const paymentMethodNames = paymentMethods?.map((pm: PaymentMethod) => pm.name).join(", ") || "";
-        const currentDate = new Date().toISOString().split("T")[0];
-
-        const promptParams = `Você é um assistente financeiro de elite do casal ${person1Name} e ${person2Name}.
-Os dois moram juntos e enviam mensagens ou fotos de notas fiscais pelo Telegram para automatizar os preenchimentos exatos do sistema financeiro deles.
-Sua única função é extrair TUDO do comprovante e da mensagem, deduzindo inteligentemente, e retornar ESTRITAMENTE um objeto JSON limpo (sem markdown).
-
-Hoje é dia: ${currentDate}. (Use esta data APENAS se não houver data impressa na foto/cupom).
-Mensagem original: "${messageText}"
-
-REGRAS RÍGIDAS DE EXTRAÇÃO VISUAL:
-- Data: Procure ativamente a data e hora informadas no cupom fiscal/recibo. Formate no padrão YYYY-MM-DD.
-- Descrição: Capture o Nome Fantasia da loja impresso no topo da nota (ex: Giassi Supermercados).
-- Observação: Se for mercado/restaurante, liste resumidamente os 3 itens mais caros ou o propósito da compra.
-- Quem Pagou / Banco: Deduzir buscando por nomes (ex: cartão Mastercard final 1234, débito Nubank). Tente cruzar a bandeira/banco visto com: [${bankNames}]. Se não souber, retorne nulo.
-- Forma de Pagamento: Leia a seção de pagamentos (Cartão de Crédito, Débito, PIX, Dinheiro). Ligue exatamente à lista: [${paymentMethodNames}].
-- Parcelado: Se a nota acusar (Ex: Parc 1/3, 2x), extraia o número de parcelas. Senão false.
-- Para Quem / Compra do Casal: Compras em mercado, farmácia, padaria, iFood geralmente são "Casal" (is_couple = true). Roupas, salão, etc., tendem a ser individuais.
-- Valor Total: Extraia o valor MÁXIMO (Valor a Pagar/Total) após descontos.
-
-MOLDE DO JSON OBRIGATÓRIO:
-{
-    "date": "YYYY-MM-DD",
-    "description": "Nome da loja/estabelecimento limpo",
-    "observacao": "Resumo inteligente",
-    "type": "expense",
-    "total_value": 00.00 (decimal inglês, ex: 125.50),
-    "category": "Exatamente da lista: [${categoryNames}]",
-    "subcategory": "Curta ou null",
-    "paid_by": "Exatamente da lista: ['${person1Name}', '${person2Name}', ou null]",
-    "for_who": "Exatamente da lista: ['${person1Name}', '${person2Name}', 'Casal']",
-    "is_couple": true (se for para o 'Casal') ou falso,
-    "bank_name": "Da lista: [${bankNames}] ou null",
-    "payment_method_name": "Da lista: [${paymentMethodNames}] ou null",
-    "is_installment": true ou false,
-    "total_installments": número inteiro (ex: 2) ou null
-}`;
-
-        const parts: any[] = [{ text: promptParams }];
-        if (base64Image) {
-            parts.push({ inline_data: { mime_type: "image/jpeg", data: base64Image } });
+        async function sendMessage(text: string, replyMarkup?: any) {
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id, text, parse_mode: "Markdown", reply_markup: replyMarkup })
+            });
         }
 
-        // === CHAMADA DIRETA À API DO GEMINI (sem SDK, máxima compatibilidade) ===
-        const trimmedKey = apiKey.trim();
-        const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"];
-        let aiResponseText = "";
-        let lastErrorText = "";
-        let geminiSuccess = false;
+        async function answerCallback(text?: string) {
+            if (!callbackQuery) return;
+            await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ callback_query_id: callbackQuery.id, text })
+            });
+        }
 
-        for (const modelName of modelsToTry) {
-            console.log(`Tentando modelo: ${modelName}...`);
-            try {
-                const geminiRes = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${trimmedKey}`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            contents: [{ parts }],
-                            generationConfig: {
-                                temperature: 0.1,
-                                topK: 32,
-                                topP: 1,
-                            },
-                        }),
-                    }
-                );
+        async function askNextQuestion(sessionData: any) {
+            if (!sessionData.total_value) { await sendMessage("Qual o valor total da compra? (Ex: 150,50)"); return; }
+            if (!sessionData.for_who) {
+                await sendMessage("Para quem é esse gasto?", {
+                    inline_keyboard: [[
+                        { text: person1Name, callback_data: `set_for_who:${person1Name}` },
+                        { text: person2Name, callback_data: `set_for_who:${person2Name}` },
+                        { text: "Casal 🏠", callback_data: "set_for_who:Casal" }
+                    ]]
+                });
+                return;
+            }
+            if (!sessionData.bank_id) {
+                const bankButtons = banks?.map(b => [{ text: b.name, callback_data: `set_bank:${b.id}` }]) || [];
+                await sendMessage("Qual banco/cartão foi utilizado?", { inline_keyboard: bankButtons });
+                return;
+            }
+            if (!sessionData.payment_method_id) {
+                const methodButtons = paymentMethods?.map(pm => [{ text: pm.name, callback_data: `set_method:${pm.id}` }]) || [];
+                await sendMessage("Qual a forma de pagamento?", { inline_keyboard: methodButtons });
+                return;
+            }
+            if (sessionData.is_installment === undefined) {
+                await sendMessage("A compra foi parcelada?", {
+                    inline_keyboard: [[
+                        { text: "À Vista 💰", callback_data: "set_installment:false" },
+                        { text: "Parcelada 💳", callback_data: "set_installment:true" }
+                    ]]
+                });
+                return;
+            }
+            if (sessionData.is_installment && (!sessionData.total_installments || sessionData.total_installments <= 1)) {
+                await sendMessage("Em quantas parcelas? (Envie apenas o número)");
+                return;
+            }
 
-                if (geminiRes.ok) {
-                    const data = await geminiRes.json();
-                    aiResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                    console.log(`✅ Modelo ${modelName} funcionou!`);
-                    geminiSuccess = true;
-                    break;
-                } else {
-                    lastErrorText = await geminiRes.text();
-                    console.warn(`❌ Modelo ${modelName} falhou (${geminiRes.status}):`, lastErrorText);
+            // PERGUNTA SOBRE SALVAR NOTA FISCAL (Se houver imagem)
+            if (sessionData.base64Image && sessionData.save_receipt === undefined) {
+                await sendMessage("📸 Identifiquei uma nota fiscal. Deseja salvar a foto no site?", {
+                    inline_keyboard: [[
+                        { text: "Sim, Salvar ✅", callback_data: "set_save_receipt:true" },
+                        { text: "Não, apenas o dado ❌", callback_data: "set_save_receipt:false" }
+                    ]]
+                });
+                return;
+            }
+
+            await finalizeTransaction(sessionData);
+        }
+
+        async function finalizeTransaction(data: any) {
+            const total = Number(data.total_value);
+            const valuePerPerson = data.for_who === "Casal" ? (total / 2) : total;
+            
+            const transactionObj = {
+                user_id: userId,
+                account_id: accountId,
+                date: data.date || new Date().toISOString().split("T")[0],
+                description: data.description || "Transação via Tlg",
+                observacao: data.observacao || null,
+                type: "expense",
+                total_value: total,
+                value_per_person: valuePerPerson,
+                category: data.category || "Outros",
+                is_couple: data.for_who === "Casal",
+                paid_by: data.paid_by || (data.for_who !== "Casal" ? data.for_who : null),
+                for_who: data.for_who,
+                bank_id: data.bank_id,
+                payment_method_id: data.payment_method_id,
+                is_installment: !!data.is_installment,
+                total_installments: Number(data.total_installments) || 1,
+                installment_number: 1,
+                installment_value: !!data.is_installment ? (total / Math.max(1, Number(data.total_installments))) : total,
+            };
+
+            const { data: tx, error } = await supabase.from("transactions").insert(transactionObj).select().single();
+            
+            if (error) {
+                await sendMessage(`❌ Erro ao salvar: ${error.message}`);
+                return;
+            }
+
+            // SALVAR IMAGEM SE SOLICITADO
+            if (data.save_receipt && data.base64Image && tx) {
+                const fileName = `${userId}/${Date.now()}.jpg`;
+                const fileBody = base64ToUint8(data.base64Image);
+                
+                const { error: uploadError } = await supabase.storage
+                    .from('comprovantes')
+                    .upload(fileName, fileBody, { contentType: 'image/jpeg', upsert: true });
+
+                if (!uploadError) {
+                    const { data: { publicUrl } } = supabase.storage.from('comprovantes').getPublicUrl(fileName);
+                    await supabase.from("comprovantes_lancamento").insert({
+                        lancamento_id: tx.id,
+                        user_id: userId,
+                        file_url: publicUrl,
+                        file_name: fileName,
+                        file_type: 'image/jpeg'
+                    });
                 }
-            } catch (fetchErr: any) {
-                lastErrorText = fetchErr.message || String(fetchErr);
-                console.warn(`❌ Modelo ${modelName} erro de rede:`, lastErrorText);
+            }
+
+            await sendMessage(`✅ *Lançamento Realizado!* 100% Completo!\n\n🛒 *Local:* ${transactionObj.description}\n💰 *Valor:* R$ ${transactionObj.total_value.toFixed(2).replace('.', ',')}\n👤 *Para:* ${transactionObj.for_who}`);
+            await supabase.from("telegram_sessions").delete().eq("chat_id", chat_id.toString());
+        }
+
+        if (callbackQuery) {
+            const [action, value] = callbackQuery.data.split(":");
+            const { data: session } = await supabase.from("telegram_sessions").select("*").eq("chat_id", chat_id.toString()).single();
+            if (!session) return new Response("OK", { status: 200 });
+
+            const updatedData = { ...session.data };
+            if (action === "set_for_who") { updatedData.for_who = value; if (value !== "Casal") updatedData.paid_by = value; }
+            else if (action === "set_bank") updatedData.bank_id = value;
+            else if (action === "set_method") updatedData.payment_method_id = value;
+            else if (action === "set_installment") updatedData.is_installment = value === "true";
+            else if (action === "set_save_receipt") updatedData.save_receipt = value === "true";
+
+            await supabase.from("telegram_sessions").update({ data: updatedData }).eq("chat_id", chat_id.toString());
+            await answerCallback();
+            await askNextQuestion(updatedData);
+            return new Response("OK", { status: 200 });
+        }
+
+        const { data: activeSession } = await supabase.from("telegram_sessions").select("*").eq("chat_id", chat_id.toString()).single();
+        if (activeSession) {
+            const text = message.text || "";
+            const num = parseFloat(text.replace(',', '.'));
+            if (!isNaN(num)) {
+                const updatedData = { ...activeSession.data };
+                if (!updatedData.total_value) updatedData.total_value = num;
+                else if (updatedData.is_installment && (!updatedData.total_installments || updatedData.total_installments <= 1)) updatedData.total_installments = Math.round(num);
+                await supabase.from("telegram_sessions").update({ data: updatedData }).eq("chat_id", chat_id.toString());
+                await askNextQuestion(updatedData);
+                return new Response("OK", { status: 200 });
             }
         }
 
-        if (!geminiSuccess || !aiResponseText) {
-            console.error("FALHA TOTAL: Nenhum modelo do Gemini respondeu.", lastErrorText);
-            // Notifica o usuário no Telegram sobre a falha
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: message.chat.id,
-                    text: `⚠️ Erro na IA: não consegui processar. Tente novamente em 1 minuto.`
-                })
-            });
-            return new Response("OK", { status: 200, headers: corsHeaders });
+        let messageText = message.text || message.caption || "";
+        let base64Image = null;
+        if (message.photo && message.photo.length > 0) {
+            const fileId = message.photo[message.photo.length - 1].file_id;
+            const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+            const fileInfo = await fileRes.json();
+            if (fileInfo.ok) {
+                const imgRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${fileInfo.result.file_path}`);
+                base64Image = uint8ToBase64(new Uint8Array(await imgRes.arrayBuffer()));
+            }
         }
 
-        if (!aiResponseText) {
-            console.error("Nenhum texto retornado pela IA.");
-            return new Response("OK", { status: 200, headers: corsHeaders });
-        }
+        if (!messageText && !base64Image) return new Response("OK", { status: 200 });
+        await sendMessage("🤖 Processando com IA...");
 
-        const textResponse = aiResponseText;
+        const categoriesData = await supabase.from("categories").select("name");
+        const banksData = await supabase.from("banks").select("name");
+        const methodsData = await supabase.from("payment_methods").select("name");
 
-        const jsonMatch = textResponse?.match(/\{[\s\S]*\}/);
-        const cleanedJson = jsonMatch ? jsonMatch[0] : "{}";
-        const parsedTx = JSON.parse(cleanedJson);
+        const prompt = `Extraia dados desta mensagem/imagem. REGRAS OBSERVAÇÃO: Se nota fiscal, liste TODOS os itens. JSON: {
+            "date": "YYYY-MM-DD", "description": "local", "total_value": 0.00, "category": "uma de: [${categoriesData.data?.map(c=>c.name).join(", ")}]",
+            "observacao": "itens...", "for_who": "null ou nome", "bank_name": "null ou nome", "payment_method_name": "null ou nome", "is_installment": bool
+        }`;
 
-        console.log("IA Terminou! JSON gerado:", parsedTx);
+        const parts = [{ text: prompt }];
+        if (base64Image) parts.push({ inline_data: { mime_type: "image/jpeg", data: base64Image } });
+        if (messageText) parts[0].text += `\nTexto: ${messageText}`;
 
-        const bankId = banks?.find((b: Bank) => b.name === parsedTx.bank_name)?.id || null;
-        const paymentMethodId = paymentMethods?.find((pm: PaymentMethod) => pm.name === parsedTx.payment_method_name)?.id || null;
-        const total = Number(parsedTx.total_value) || 0;
-        const valuePerPerson = parsedTx.is_couple ? (total / 2) : total;
+        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ parts }] })
+        });
+        const gData = await gRes.json();
+        const gText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+        const parsed = JSON.parse(gText.match(/\{[\s\S]*\}/)?.[0] || "{}");
 
-        const transactionObj = {
-            user_id: userId,
-            account_id: accountId,
-            date: parsedTx.date || currentDate,
-            description: parsedTx.description || "Transação via Tlg",
-            observacao: parsedTx.observacao || null,
-            type: "expense",
-            total_value: total,
-            value_per_person: valuePerPerson,
-            category: parsedTx.category || null,
-            subcategory: parsedTx.subcategory || null,
-            is_couple: !!parsedTx.is_couple,
-            paid_by: parsedTx.paid_by || null,
-            for_who: parsedTx.for_who || null,
-            bank_id: bankId,
-            payment_method_id: paymentMethodId,
-            is_installment: !!parsedTx.is_installment,
-            total_installments: Number(parsedTx.total_installments) || 1,
-            installment_number: 1,
-            installment_value: !!parsedTx.is_installment ? (total / Math.max(1, Number(parsedTx.total_installments))) : total,
-            is_generated_installment: false,
-        };
+        const fBank = banks?.find(b => b.name.toLowerCase().includes(parsed.bank_name?.toLowerCase()));
+        const fMethod = paymentMethods?.find(pm => pm.name.toLowerCase().includes(parsed.payment_method_name?.toLowerCase()));
 
-        const { error: insertError } = await supabase
-            .from("transactions")
-            .insert(transactionObj);
+        const sessionData = { ...parsed, bank_id: fBank?.id, payment_method_id: fMethod?.id, base64Image };
+        await supabase.from("telegram_sessions").upsert({ chat_id: chat_id.toString(), user_id: userId, data: sessionData });
+        await askNextQuestion(sessionData);
+        return new Response("OK", { status: 200 });
 
-        if (insertError) {
-            console.error("Supabase fail insert:", insertError.message);
-            // Avisa o erro no Telegram se der problema no banco
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: message.chat.id,
-                    text: `❌ Erro ao salvar no banco: ${insertError.message}`
-                })
-            });
-        } else {
-            console.log("SUCESSO ABSOLUTO! O banco registrou:", transactionObj.description);
-
-            // Manda a confirmação linda para o usuário
-            const dataFormatada = new Date(transactionObj.date).toLocaleDateString('pt-BR');
-            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: message.chat.id,
-                    text: `✅ *Lançamento Realizado!*\n\n🛒 *Local:* ${transactionObj.description}\n💰 *Valor:* R$ ${transactionObj.total_value.toFixed(2).replace('.', ',')}\n📅 *Data:* ${dataFormatada}\n👤 *Pago por:* ${transactionObj.paid_by || 'Não identificado'}\n\n_Já está disponível no seu site!_`,
-                    parse_mode: "Markdown"
-                })
-            });
-        }
-
-        // Retorna silenciosamente "OK" ao Telegram
-        return new Response("OK", { status: 200, headers: corsHeaders });
-
-    } catch (error: any) {
-        console.error("Catastrophic Fallback:", error);
-        return new Response("OK", { status: 200, headers: corsHeaders });
-    }
+    } catch (e) { console.error(e); return new Response("OK", { status: 200 }); }
 });

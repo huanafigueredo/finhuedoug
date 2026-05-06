@@ -25,10 +25,8 @@ export function BankFilterBar({
   if (!banks || banks.length === 0) return null;
 
   return (
-    <div className={cn("w-full overflow-x-auto", className)}
-      style={{ WebkitOverflowScrolling: 'touch' }}
-    >
-      <div className="flex items-center gap-2 animate-fade-in pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
+    <div className={cn("w-full", className)}>
+      <div className="flex items-center gap-2 flex-wrap animate-fade-in">
         {banks.map((bank) => {
           const isSelected = selectedBanks.includes(bank.name);
           const bankColor = bank.color || "#8E9196";

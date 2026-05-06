@@ -260,7 +260,10 @@ export default function People() {
 
       const income = monthTransactions
         .filter((t) => t.type === "income" && t.for_who === personName)
-        .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
+        .reduce((sum, t) => sum + getTransactionMonthValue(t), 0)
+        + monthTransactions
+          .filter((t) => t.type === "income" && !t.for_who)
+          .reduce((sum, t) => sum + getTransactionMonthValue(t), 0) / 2;
 
       monthsData.push({
         name: format(monthDate, "MMM", { locale: ptBR }),

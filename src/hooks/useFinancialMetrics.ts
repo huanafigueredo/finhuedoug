@@ -137,13 +137,18 @@ export function useFinancialMetrics(
     const person2TotalExpenses = person2IndividualExpenses + person2CoupleShare;
 
     // Income per person
+    // Includes: income assigned to this person (for_who === person) OR unattributed income (no for_who) split 50/50
+    const unattributedIncome = filtered
+      .filter((t) => t.type === "income" && !t.for_who)
+      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
+
     const person1Income = filtered
       .filter((t) => t.type === "income" && t.for_who === person1)
-      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
+      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0) + (unattributedIncome / 2);
 
     const person2Income = filtered
       .filter((t) => t.type === "income" && t.for_who === person2)
-      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0);
+      .reduce((sum, t) => sum + getTransactionMonthValue(t), 0) + (unattributedIncome / 2);
 
     // Balance per person = income - expenses (including share of couple)
     const person1Balance = person1Income - person1TotalExpenses;

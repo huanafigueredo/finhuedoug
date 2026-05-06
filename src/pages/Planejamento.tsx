@@ -18,9 +18,6 @@ import { ptBR } from "date-fns/locale";
 export default function Planejamento() {
   const { data: transactions = [] } = useTransactions();
   const { data: budgets = [] } = useCategoryBudgets();
-  const [activeTab, setActiveTab] = useState("radar");
-  
-  // Sandbox State
   const [simTitle, setSimTitle] = useState("");
   const [simValue, setSimValue] = useState("");
   const [simInstallments, setSimInstallments] = useState("1");
@@ -34,103 +31,6 @@ export default function Planejamento() {
     startMonth: number;
   }
   const [simulations, setSimulations] = useState<Simulation[]>([]);
-
-  // 1. Radar de Assinaturas (Subscriptions Logic)
-  const { activeSubs, ghostSubs } = useMemo(() => {
-    const expenses = transactions.filter(t => t.type === 'expense' && !t.savings_deposit_id);
-    const last6Months = Array.from({ length: 6 }).map((_, i) => subMonths(new Date(), i));
-    
-    // Group by description (Fuzzy/Normalized matching)
-    const groups: Record<string, typeof transactions> = {};
-    expenses.forEach(t => {
-      const name = t.description.toLowerCase().trim()
-        .replace(/[0-9]/g, '')
-        .replace(/ - parcela.*/g, '')
-        .replace(/ltda/g, '')
-        .replace(/s\.?a\.?/g, '')
-        .trim();
-      
-      const words = name.split(/\s+/).filter(w => w.length > 2).slice(0, 2);
-      const key = words.join(' ') || name;
-      
-      if (key.length < 3) return;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(t);
-    });
-
-    const active: { name: string; value: number; isIncreasing: boolean; }[] = [];
-    const ghosts: { name: string; value: number; monthsSinceLast: number; }[] = [];
-
-    Object.entries(groups).forEach(([key, txs]) => {
-      const monthsPresent = new Set<number>();
-      let latestValue = 0;
-      let previousValue = 0;
-      let oldestValue = 0;
-      let latestDate = new Date(0);
-      let oldestDate = new Date();
-      
-      txs.forEach(t => {
-        const d = parseISO(t.date);
-        last6Months.forEach((m, idx) => {
-          if (isSameMonth(d, m)) {
-            monthsPresent.add(idx);
-            const val = Number(t.total_value) || 0;
-            if (d > latestDate) {
-              latestDate = d;
-              previousValue = latestValue;
-              latestValue = val;
-            }
-            if (d < oldestDate) {
-              oldestDate = d;
-              oldestValue = val;
-            }
-          }
-        });
-      });
-
-      const descCounts: Record<string, number> = {};
-      txs.forEach(t => descCounts[t.description] = (descCounts[t.description] || 0) + 1);
-      const originalName = Object.keys(descCounts).reduce((a, b) => descCounts[a] > descCounts[b] ? a : b);
-
-      if (monthsPresent.size >= 2) {
-        const isActiveNow = monthsPresent.has(0) || monthsPresent.has(1);
-        
-        // Calcular Inflação Silenciosa
-        let inflationPct = 0;
-        if (oldestValue > 0 && latestValue > oldestValue && monthsPresent.size > 2) {
-          inflationPct = ((latestValue - oldestValue) / oldestValue) * 100;
-        }
-
-        const subObj = {
-          id: crypto.randomUUID(),
-          name: originalName,
-          value: latestValue,
-          previousValue: previousValue,
-          hasIncreased: previousValue > 0 && latestValue > previousValue,
-          inflationPct: Math.round(inflationPct),
-          frequency: monthsPresent.size,
-          lastDate: latestDate,
-          expectedNextDate: new Date(new Date().getFullYear(), new Date().getMonth() + (monthsPresent.has(0) ? 1 : 0), latestDate.getDate())
-        };
-
-        if (isActiveNow) {
-          active.push(subObj);
-        } else {
-          // Present in the past (e.g. months 2, 3, 4) but not 0 or 1
-          if (monthsPresent.has(2) || monthsPresent.has(3)) {
-            ghosts.push(subObj);
-          }
-        }
-      }
-    });
-
-    return { 
-      activeSubs: active.sort((a, b) => b.value - a.value),
-      ghostSubs: ghosts.sort((a, b) => b.value - a.value)
-    };
-  }, [transactions]);
-
-  const totalSubscriptions = activeSubs.reduce((acc, s) => acc + s.value, 0);
 
   // 2. Simulador (Sandbox Logic)
   const handleAddSimulation = () => {
@@ -149,17 +49,6 @@ export default function Planejamento() {
     setIsIncome(false);
   };
 
-  const handleSimulateCancel = (subName: string, subValue: number) => {
-    setSimulations([...simulations, {
-      id: crypto.randomUUID(),
-      title: `Cancelar: ${subName}`,
-      value: subValue * 6, // simulate savings for 6 months
-      installments: 6,
-      isIncome: true, // canceling an expense acts like income/savings
-      startMonth: new Date().getMonth() + 1
-    }]);
-    setActiveTab("simulador");
-  };
 
   const removeSimulation = (id: string) => {
     setSimulations(simulations.filter(s => s.id !== id));
@@ -234,118 +123,12 @@ export default function Planejamento() {
               <Zap className="w-6 h-6 text-indigo-500" />
             </div>
             <div>
-              <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight">Laboratório</h1>
-              <p className="text-slate-500">Ferramentas avançadas de inteligência financeira</p>
+              <h1 className="text-3xl font-display font-bold text-slate-900 dark:text-white tracking-tight">Simulador "E se?"</h1>
+              <p className="text-slate-500">Projete o impacto de novos gastos ou economias no seu futuro financeiro</p>
             </div>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full animate-fade-up" style={{ animationDelay: "100ms" }}>
-            <TabsList className="grid w-full grid-cols-2 max-w-md bg-white dark:bg-slate-900 p-1 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
-              <TabsTrigger value="radar" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white transition-all">
-                <Repeat className="w-4 h-4 mr-2" /> Radar de Assinaturas
-              </TabsTrigger>
-              <TabsTrigger value="simulador" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white transition-all">
-                <LineChart className="w-4 h-4 mr-2" /> Simulador "E se?"
-              </TabsTrigger>
-            </TabsList>
-
-            {/* TAB 1: RADAR DE ASSINATURAS */}
-            <TabsContent value="radar" className="mt-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-1 bg-white dark:bg-slate-900 border-none shadow-xl shadow-slate-200/40 dark:shadow-black/20 rounded-[2rem] overflow-hidden">
-                  <CardHeader className="bg-indigo-50 dark:bg-indigo-950/30 pb-8">
-                    <CardTitle className="text-indigo-900 dark:text-indigo-300">Custo Fixo Invisível</CardTitle>
-                    <CardDescription className="text-indigo-700/70 dark:text-indigo-400/70">O que drena sua conta todo mês</CardDescription>
-                  </CardHeader>
-                  <CardContent className="-mt-4">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-                      <p className="text-4xl font-display font-light text-slate-900 dark:text-white">
-                        {formatCurrency(totalSubscriptions)}
-                      </p>
-                      <p className="text-sm text-slate-500 mt-2 font-medium">
-                        Identificamos {activeSubs.length} cobranças recorrentes.
-                      </p>
-                    </div>
-
-                    {ghostSubs.length > 0 && (
-                      <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Ghost className="w-4 h-4 text-emerald-600" />
-                          <h4 className="font-semibold text-emerald-800 dark:text-emerald-400 text-sm">Assinaturas Eliminadas</h4>
-                        </div>
-                        <p className="text-xs text-emerald-600/80 mb-3">Você deixou de pagar {ghostSubs.length} serviços recentemente.</p>
-                        {ghostSubs.map((g, i) => (
-                          <div key={i} className="flex justify-between text-xs font-medium text-emerald-700 dark:text-emerald-500 border-b border-emerald-200/50 dark:border-emerald-800/50 py-1 last:border-0">
-                            <span>{g.name}</span>
-                            <span>{formatCurrency(g.value)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="md:col-span-2 border-none shadow-xl shadow-slate-200/40 dark:shadow-black/20 rounded-[2rem]">
-                  <CardHeader>
-                    <CardTitle>Cobranças Detectadas</CardTitle>
-                    <CardDescription>Análise com detecção inteligente de inflação silenciosa.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {activeSubs.map((sub, i) => (
-                        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-slate-400 shrink-0">
-                              {sub.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-semibold text-slate-700 dark:text-slate-200">{sub.name}</p>
-                              <div className="flex items-center gap-2 text-xs text-slate-400">
-                                <span>Previsão: dia {format(sub.expectedNextDate, "dd")}</span>
-                                {sub.inflationPct > 0 && (
-                                  <span className="flex items-center gap-1 text-rose-500 font-bold bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-full">
-                                    <TrendingUp className="w-3 h-3" /> +{sub.inflationPct}% no ano
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                            <div className="text-left sm:text-right">
-                              <p className="font-display text-lg text-slate-900 dark:text-white">
-                                {formatCurrency(sub.value)}
-                              </p>
-                              {sub.hasIncreased && (
-                                <p className="text-[10px] text-rose-500 font-bold flex items-center justify-start sm:justify-end gap-1">
-                                  <AlertCircle className="w-3 h-3" /> Subiu este mês
-                                </p>
-                              )}
-                            </div>
-                            
-                            {/* SINERGY ACTION */}
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleSimulateCancel(sub.name, sub.value)}
-                              className="text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/50"
-                            >
-                              E se cancelar?
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      {activeSubs.length === 0 && (
-                        <p className="text-center text-slate-500 py-8">Nenhuma recorrência detectada.</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* TAB 2: SIMULADOR */}
-            <TabsContent value="simulador" className="mt-6">
+          <div className="mt-6 animate-fade-up" style={{ animationDelay: "100ms" }}>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="lg:col-span-1 border-none shadow-xl shadow-slate-200/40 dark:shadow-black/20 rounded-[2rem]">
                   <CardHeader className="flex flex-row items-start justify-between pb-2 space-y-0">
@@ -613,8 +396,7 @@ export default function Planejamento() {
                   </div>
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+          </div>
 
         </div>
       </div>

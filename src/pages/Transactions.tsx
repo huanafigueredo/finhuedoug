@@ -7,7 +7,7 @@ import { TransactionFormModal } from "@/components/TransactionFormModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { TransactionDetailsDialog, TransactionDetails } from "@/components/TransactionDetailsDialog";
 import { ImportarFaturaModal } from "@/components/ImportarFaturaModal";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X, CreditCard, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Loader2, Heart, FileDown, ChevronDown, ChevronUp, X, CreditCard, Trash2, TrendingUp, TrendingDown, Banknote, Zap, Users } from "lucide-react";
 import { exportTransactionsToPdf } from "@/lib/exportPdf";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,7 @@ import { usePaymentMethods } from "@/hooks/usePaymentMethods";
 import { useCategories } from "@/hooks/useCategories";
 import { useRecipients } from "@/hooks/useRecipients";
 import { shouldShowInMonth, getTransactionMonthValue, getInstallmentDetailsForMonth, calculateInstallmentForMonth } from "@/lib/transactionUtils";
-import { format, parseISO, differenceInMonths, addMonths } from "date-fns";
+import { format, parseISO, differenceInMonths, addMonths, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -132,6 +132,16 @@ export default function Transactions() {
     searchParams.get('year') || currentDate.getFullYear().toString()
   );
   const [showFilters, setShowFilters] = useState(false);
+  // Multi-month selection
+  const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+  // Date range mode
+  type DateRangeMode = "single" | "multi" | "range";
+  const [dateMode, setDateMode] = useState<DateRangeMode>("single");
+  const [dateRangeFrom, setDateRangeFrom] = useState<Date | undefined>(undefined);
+  const [dateRangeTo, setDateRangeTo] = useState<Date | undefined>(undefined);
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  // Quick payment filter chips
+  const quickPayments = ["Crédito", "Débito", "Pix"];
 
   // Sync filters with URL params
   useEffect(() => {
@@ -180,8 +190,10 @@ export default function Transactions() {
     if (metaFilter !== "Todos") count++;
     if (splitFilter !== "Todos") count++;
     if (dayFilter !== "Todos") count++;
+    if (selectedMonths.length > 0) count++;
+    if (dateMode === "range" && (dateRangeFrom || dateRangeTo)) count++;
     return count;
-  }, [personFilter, forWhoFilter, categoryFilter, selectedBanks, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter]);
+  }, [personFilter, forWhoFilter, categoryFilter, selectedBanks, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, selectedMonths, dateMode, dateRangeFrom, dateRangeTo]);
 
   // Clear all filters
   const clearFilters = () => {
@@ -196,7 +208,17 @@ export default function Transactions() {
     setMetaFilter("Todos");
     setSplitFilter("Todos");
     setDayFilter("Todos");
+    setSelectedMonths([]);
+    setDateRangeFrom(undefined);
+    setDateRangeTo(undefined);
+    setDateMode("single");
     setSearch("");
+  };
+
+  const toggleMonth = (m: string) => {
+    setSelectedMonths(prev =>
+      prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
+    );
   };
 
   // Transform and filter transactions with dynamic installment calculation
@@ -370,37 +392,46 @@ export default function Transactions() {
           if (splitFilter === "50/50" && isProportional) return false;
         }
 
+        // --- DATE RANGE MODE ---
+        if (dateMode === "range") {
+          if (dateRangeFrom && dateRangeTo) {
+            const inRange = isWithinInterval(startOfDay(t.rawDate), {
+              start: startOfDay(dateRangeFrom),
+              end: endOfDay(dateRangeTo),
+            });
+            if (!inRange) return false;
+          } else if (dateRangeFrom) {
+            if (startOfDay(t.rawDate) < startOfDay(dateRangeFrom)) return false;
+          } else if (dateRangeTo) {
+            if (startOfDay(t.rawDate) > endOfDay(dateRangeTo)) return false;
+          }
+          return true;
+        }
+
+        // --- MULTI-MONTH MODE ---
+        if (dateMode === "multi" && selectedMonths.length > 0) {
+          const targetMonth = (t.rawDate.getMonth() + 1).toString();
+          const targetYear = t.rawDate.getFullYear().toString();
+          if (!selectedMonths.includes(targetMonth)) return false;
+          if (yearFilter !== "Todos" && targetYear !== yearFilter) return false;
+          return true;
+        }
+
+        // --- SINGLE MONTH MODE (default) ---
         if (!t.isNewStyleInstallment) {
           if (dayFilter !== "Todos") {
             const day = t.rawDate.getDate().toString().padStart(2, "0");
             if (day !== dayFilter) return false;
           }
-
-          // Filtering by exact transaction date
           const targetMonth = t.rawDate.getMonth() + 1;
           const targetYear = t.rawDate.getFullYear();
-
-          // If filtering by month
           if (monthFilter !== "Todos") {
             if (targetMonth.toString() !== monthFilter) return false;
           }
-
-          // If filtering by year
           if (yearFilter !== "Todos") {
             if (targetYear.toString() !== yearFilter) return false;
           }
         } else {
-          // For installments (projected), logic is already handled in the mapping (it projects the correct date).
-          // We can check if we want to apply closing logic to installments too? 
-          // Usually installments are billed ON the due date of that month, so the projected date IS the billing date.
-          // But wait, the projected date is just +1 month. 
-          // If the ORIGINAL purchase was on a card, the installment dates might need shift?
-          // Simplification: Installment projection usually lands on the correct month. 
-          // If I buy on Jan 20 (closes Jan 15), 1st installment is Feb.
-          // The projection logic `addMonths` should take care of basic distribution.
-          // Let's assume projected installments align with the "invoice" month by definition of "installment 1, 2, 3".
-          // So checking dayFilter etc is fine.
-
           if (dayFilter !== "Todos") {
             const day = t.rawDate.getDate().toString().padStart(2, "0");
             if (day !== dayFilter) return false;
@@ -414,7 +445,7 @@ export default function Transactions() {
     // Ordena por data (mais recente primeiro)
     return result.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
 
-  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, selectedBanks, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction]);
+  }, [transactionsData, search, personFilter, forWhoFilter, categoryFilter, selectedBanks, paymentFilter, typeFilter, coupleFilter, installmentFilter, metaFilter, splitFilter, dayFilter, monthFilter, yearFilter, calculateSplitForTransaction, dateMode, dateRangeFrom, dateRangeTo, selectedMonths]);
 
   const years = ["Todos", "2030", "2029", "2028", "2027", "2026", "2025"];
 
@@ -765,32 +796,132 @@ export default function Transactions() {
 
             {/* Main filters row - Month/Year + Search */}
             <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex gap-2 flex-shrink-0">
-                <Select value={monthFilter} onValueChange={setMonthFilter}>
-                  <SelectTrigger className="w-[120px] sm:w-[130px] h-10">
-                    <SelectValue placeholder="Mês" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((m) => (
-                      <SelectItem key={m.value} value={m.value}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex gap-2 flex-shrink-0 items-center">
+                {/* Date mode toggle */}
+                <div className="flex rounded-lg border border-border overflow-hidden h-10 flex-shrink-0">
+                  {(["single", "multi", "range"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => { setDateMode(mode); setSelectedMonths([]); setDateRangeFrom(undefined); setDateRangeTo(undefined); }}
+                      className={cn(
+                        "px-2 text-xs font-medium transition-colors",
+                        dateMode === mode
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      {mode === "single" ? "Mês" : mode === "multi" ? "Meses" : "Período"}
+                    </button>
+                  ))}
+                </div>
 
-                <Select value={yearFilter} onValueChange={setYearFilter}>
-                  <SelectTrigger className="w-[90px] h-10">
-                    <SelectValue placeholder="Ano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map((y) => (
-                      <SelectItem key={y} value={y}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {dateMode === "single" && (
+                  <>
+                    <Select value={monthFilter} onValueChange={setMonthFilter}>
+                      <SelectTrigger className="w-[120px] sm:w-[130px] h-10">
+                        <SelectValue placeholder="Mês" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {months.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={yearFilter} onValueChange={setYearFilter}>
+                      <SelectTrigger className="w-[90px] h-10">
+                        <SelectValue placeholder="Ano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {years.map((y) => (
+                          <SelectItem key={y} value={y}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+
+                {dateMode === "multi" && (
+                  <>
+                    <div className="flex flex-wrap gap-1">
+                      {months.filter(m => m.value !== "Todos").map((m) => (
+                        <button
+                          key={m.value}
+                          onClick={() => toggleMonth(m.value)}
+                          className={cn(
+                            "px-2.5 py-1 rounded-full text-xs font-medium border transition-all",
+                            selectedMonths.includes(m.value)
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                          )}
+                        >
+                          {m.label.slice(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                    <Select value={yearFilter} onValueChange={setYearFilter}>
+                      <SelectTrigger className="w-[90px] h-10">
+                        <SelectValue placeholder="Ano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {years.map((y) => (
+                          <SelectItem key={y} value={y}>{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+
+                {dateMode === "range" && (
+                  <Popover open={dateRangeOpen} onOpenChange={setDateRangeOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("h-10 gap-2 text-sm", (!dateRangeFrom && !dateRangeTo) && "text-muted-foreground")}>
+                        <CalendarIcon className="h-4 w-4" />
+                        {dateRangeFrom && dateRangeTo
+                          ? `${format(dateRangeFrom, "dd/MM")} → ${format(dateRangeTo, "dd/MM/yy")}`
+                          : dateRangeFrom
+                            ? `De ${format(dateRangeFrom, "dd/MM/yy")}`
+                            : "Selecionar período"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-[calc(100vw-32px)] sm:w-auto max-w-[350px] sm:max-w-none p-0"
+                      align="center"
+                    >
+                      <div className="p-3 border-b border-border">
+                        <p className="text-xs text-muted-foreground">Clique em duas datas para definir o intervalo</p>
+                      </div>
+                      <Calendar
+                        mode="range"
+                        selected={{ from: dateRangeFrom, to: dateRangeTo }}
+                        onSelect={(range) => {
+                          setDateRangeFrom(range?.from);
+                          setDateRangeTo(range?.to);
+                          if (range?.from && range?.to) setDateRangeOpen(false);
+                        }}
+                        initialFocus
+                        locale={ptBR}
+                        numberOfMonths={isMobile ? 1 : 2}
+                        className={cn("p-2", isMobile && "p-1")}
+                        classNames={isMobile ? {
+                          months: "space-y-2",
+                          month: "space-y-2",
+                          table: "w-full border-collapse space-y-0",
+                          head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.7rem]",
+                          cell: "h-8 w-8 text-center text-sm p-0 relative",
+                          day: cn(buttonVariants({ variant: "ghost" }), "h-8 w-8 p-0 font-normal text-xs"),
+                        } : {}}
+                      />
+                      <div className="p-2 border-t border-border flex gap-2">
+                        <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => { setDateRangeFrom(undefined); setDateRangeTo(undefined); }}>
+                          Limpar
+                        </Button>
+                        <Button size="sm" className="flex-1 text-xs" onClick={() => setDateRangeOpen(false)}>
+                          Aplicar
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
 
               <div className="flex gap-2 flex-1">
@@ -838,15 +969,106 @@ export default function Transactions() {
             </div>
 
             {/* Quick Bank Filters Row */}
-            <BankFilterBar 
-              banks={banksData || []} 
+            <BankFilterBar
+              banks={banksData || []}
               selectedBanks={selectedBanks}
-              onToggleBank={(name) => setSelectedBanks(prev => 
+              onToggleBank={(name) => setSelectedBanks(prev =>
                 prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
               )}
               onClear={() => setSelectedBanks([])}
-              className="mb-4"
+              className="mb-0"
             />
+
+            {/* Quick Filter Groups — stacked on mobile, row on desktop */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-2.5 sm:items-center">
+
+              {/* PARA QUEM — primary color, avatar initials */}
+              <div className="flex items-center rounded-xl border border-border bg-muted/40 dark:bg-muted/20 p-1 gap-0.5 shadow-sm sm:shrink-0 w-full sm:w-auto justify-between sm:justify-start">
+
+                {[person1, person2, "Casal"].map((who) => (
+                  <button
+                    key={who}
+                    onClick={() => setForWhoFilter(forWhoFilter === who ? "Todos" : who)}
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 rounded-lg text-xs font-medium transition-all duration-200",
+                      forWhoFilter === who
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                    )}
+                  >
+                    {who === "Casal" ? (
+                      <Heart className={cn("w-3 h-3", forWhoFilter === who ? "fill-primary-foreground" : "")} />
+                    ) : (
+                      <span className={cn(
+                        "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0",
+                        forWhoFilter === who
+                          ? "bg-white/20 text-primary-foreground"
+                          : "bg-primary/15 text-primary"
+                      )}>
+                        {who.charAt(0)}
+                      </span>
+                    )}
+                    {who}
+                  </button>
+                ))}
+              </div>
+
+              {/* TIPO — green receita / rose despesa */}
+              <div className="flex items-center rounded-xl border border-border bg-muted/40 dark:bg-muted/20 p-1 gap-0.5 shadow-sm sm:shrink-0 w-full sm:w-auto justify-between sm:justify-start">
+
+                <button
+                  onClick={() => setTypeFilter(typeFilter === "Receita" ? "Todos" : "Receita")}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 rounded-lg text-xs font-medium transition-all duration-200",
+                    typeFilter === "Receita"
+                      ? "bg-emerald-500 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                  )}
+                >
+                  <TrendingUp className="w-3 h-3" />
+                  Receita
+                </button>
+                <button
+                  onClick={() => setTypeFilter(typeFilter === "Despesa" ? "Todos" : "Despesa")}
+                  className={cn(
+                    "flex items-center justify-center gap-1.5 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 rounded-lg text-xs font-medium transition-all duration-200",
+                    typeFilter === "Despesa"
+                      ? "bg-rose-500 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                  )}
+                >
+                  <TrendingDown className="w-3 h-3" />
+                  Despesa
+                </button>
+              </div>
+
+              {/* PAGAMENTO — violet, distinct icons per method */}
+              <div className="flex items-center rounded-xl border border-border bg-muted/40 dark:bg-muted/20 p-1 gap-0.5 shadow-sm sm:shrink-0 w-full sm:w-auto justify-between sm:justify-start">
+
+                {([
+                  { label: "Crédito", Icon: CreditCard },
+                  { label: "Débito", Icon: Banknote },
+                  { label: "Pix", Icon: Zap },
+                ] as const).map(({ label, Icon }) => (
+                  <button
+                    key={label}
+                    onClick={() => setPaymentFilter(paymentFilter === label ? "Todos" : label)}
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 flex-1 sm:flex-none px-2.5 py-1.5 sm:py-1 rounded-lg text-xs font-medium transition-all duration-200",
+                      paymentFilter === label
+                        ? "bg-violet-500 text-white shadow-sm"
+                        : "text-muted-foreground hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40"
+                    )}
+                  >
+                    <Icon className="w-3 h-3" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+            </div>
+
+
 
             {/* Collapsible Advanced Filters */}
             <Collapsible open={showFilters} onOpenChange={setShowFilters}>
@@ -883,9 +1105,9 @@ export default function Transactions() {
                             locale={ptBR}
                           />
                           <div className="p-2 border-t border-border">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="w-full text-xs h-8"
                               onClick={() => setDayFilter("Todos")}
                             >

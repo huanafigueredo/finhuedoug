@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, LogOut, Sparkles } from "lucide-react";
+import { Menu, X, LogOut, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,7 @@ const navItems = [
   { label: "Contas", path: "/contas" },
   { label: "Chat IA", path: "/chat-ia", icon: Sparkles },
   { label: "Pessoas", path: "/pessoas" },
-  { label: "Laboratório", path: "/planejamento", icon: Sparkles },
+  { label: "Simulador E se?", path: "/planejamento", icon: Zap },
   { label: "Configurações", path: "/config" },
 ];
 

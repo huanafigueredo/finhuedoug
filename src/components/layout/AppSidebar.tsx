@@ -41,7 +41,7 @@ const mainNavItems = [
 const financeNavItems = [
   { label: "Orçamentos", path: "/orcamentos", icon: Wallet },
   { label: "Metas de Economia", path: "/metas", icon: Target },
-  { label: "Laboratório", path: "/planejamento", icon: Zap },
+  { label: "Simulador E se?", path: "/planejamento", icon: Zap },
 ];
 
 const configNavItems = [
