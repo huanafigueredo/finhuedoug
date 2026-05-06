@@ -241,9 +241,32 @@ serve(async (req: Request) => {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contents: [{ parts }] })
         });
+
+        if (!gRes.ok) {
+            console.error("Gemini Error Status:", gRes.status);
+            await sendMessage("⚠️ O servidor da IA demorou muito para responder. Por favor, tente enviar novamente em alguns segundos.");
+            return new Response("OK", { status: 200 });
+        }
+
         const gData = await gRes.json();
         const gText = gData.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-        const parsed = JSON.parse(gText.match(/\{[\s\S]*\}/)?.[0] || "{}");
+        
+        // Captura o JSON de forma mais robusta
+        const jsonMatch = gText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            console.error("AI returned no JSON:", gText);
+            await sendMessage("⚠️ Não consegui extrair os dados da nota automaticamente. Pode tentar tirar outra foto?");
+            return new Response("OK", { status: 200 });
+        }
+
+        let parsed = {};
+        try {
+            parsed = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+            console.error("JSON Parse Fail:", e, gText);
+            await sendMessage("⚠️ Houve um erro ao processar os itens da nota. Tente novamente.");
+            return new Response("OK", { status: 200 });
+        }
 
         const fBank = banks?.find(b => b.name.toLowerCase().includes(parsed.bank_name?.toLowerCase()));
         const fMethod = paymentMethods?.find(pm => pm.name.toLowerCase().includes(parsed.payment_method_name?.toLowerCase()));
