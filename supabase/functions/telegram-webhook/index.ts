@@ -44,7 +44,7 @@ serve(async (req: Request) => {
         const message = body.message || body.channel_post || body.callback_query?.message;
         const callbackQuery = body.callback_query;
 
-        const apiKey = Deno.env.get("GEMINI_API_KEY");
+        const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
         botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
@@ -203,7 +203,12 @@ serve(async (req: Request) => {
                 "observacao": "itens...", "for_who": "null ou nome", "bank_name": "null ou nome", "payment_method_name": "null ou nome", "is_installment": bool
             }`;
 
-            const models = ["gemini-1.5-flash"];
+            const models = [
+                "gemini-1.5-flash-latest",
+                "gemini-1.5-flash-001", 
+                "gemini-1.5-pro-latest",
+                "gemini-1.5-pro-001"
+            ];
             let resultText = "";
             let lastError = "";
 
