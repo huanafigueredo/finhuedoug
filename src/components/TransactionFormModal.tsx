@@ -568,559 +568,265 @@ export function TransactionFormModal({
 
   const formContent = (
     <form id="transaction-form" onSubmit={handleSubmit} className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6">
-      <div className="space-y-4 sm:space-y-5 md:space-y-6">
-        {/* Type Toggle */}
-        <div className="flex items-center justify-center gap-2 sm:gap-4 pt-4">
-          <button
-            type="button"
-            onClick={() => {
-              if (type !== "expense") {
-                setType("expense");
-                setCategory("");
-                setCategoryId("");
-                setSubcategory("");
-              }
-            }}
-            className={cn(
-              "px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base transition-all duration-300",
-              type === "expense"
-                ? "bg-primary text-primary-foreground shadow-warm"
-                : "bg-secondary text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Despesa
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (type !== "income") {
-                setType("income");
-                setCategory("");
-                setCategoryId("");
-                setSubcategory("");
-              }
-            }}
-            className={cn(
-              "px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base transition-all duration-300",
-              type === "income"
-                ? "bg-success text-success-foreground shadow-soft"
-                : "bg-secondary text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Receita
-          </button>
-        </div>
+      {/* Type Toggle - Always on top and centered */}
+      <div className="flex items-center justify-center gap-2 sm:gap-4 py-6 border-b border-border/50 mb-6">
+        <button
+          type="button"
+          onClick={() => {
+            if (type !== "expense") {
+              setType("expense");
+              setCategory("");
+              setCategoryId("");
+              setSubcategory("");
+            }
+          }}
+          className={cn(
+            "px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300",
+            type === "expense"
+              ? "bg-primary text-primary-foreground shadow-lg scale-105"
+              : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+          )}
+        >
+          Despesa
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (type !== "income") {
+              setType("income");
+              setCategory("");
+              setCategoryId("");
+              setSubcategory("");
+            }
+          }}
+          className={cn(
+            "px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300",
+            type === "income"
+              ? "bg-success text-success-foreground shadow-lg scale-105"
+              : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+          )}
+        >
+          Receita
+        </button>
+      </div>
 
-        {/* Date & Description */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm">Data</Label>
-            <Popover modal={true}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal h-9 sm:h-10 text-sm",
-                    !date && "text-muted-foreground",
-                    fieldErrors.date && "border-destructive"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 z-[100] bg-popover" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(d) => {
-                    setDate(d);
-                    if (d) setFieldErrors(prev => ({ ...prev, date: undefined }));
-                  }}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="description" className="text-xs sm:text-sm">Descrição</Label>
-            <Input
-              id="description"
-              placeholder={type === "income" ? "Ex: Salário" : "Ex: Supermercado"}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="h-9 sm:h-10 text-sm"
-            />
-          </div>
-        </div>
-
-        {/* Observação */}
-        <div className="space-y-1.5 sm:space-y-2">
-          <Label htmlFor="observacao" className="text-xs sm:text-sm">Observação</Label>
-          <Textarea
-            id="observacao"
-            placeholder="Detalhes do gasto..."
-            value={observacao}
-            onChange={(e) => setObservacao(e.target.value)}
-            className="min-h-[60px] sm:min-h-[80px] resize-y text-sm"
-            maxLength={1500}
-          />
-          <p className="text-[10px] sm:text-xs text-muted-foreground text-right">
-            {observacao.length}/1500
-          </p>
-        </div>
-
-        {/* Value - For Income */}
-        {type === "income" && (
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="value" className="text-xs sm:text-sm">Valor Total <span className="text-destructive">*</span></Label>
-            <Input
-              id="value"
-              type="text"
-              inputMode="decimal"
-              placeholder="R$ 0,00"
-              value={value}
-              onChange={handleValueChange}
-              onFocus={handleValueFocus}
-              className={cn("text-xl sm:text-2xl font-semibold h-12 sm:h-14", fieldErrors.value && "border-destructive")}
-            />
-            {fieldErrors.value && <p className="text-xs sm:text-sm text-destructive">{fieldErrors.value}</p>}
-          </div>
-        )}
-
-        {/* Recurring Income Toggle */}
-        {type === "income" && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/50">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <CalendarIcon className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isRecurring ? "text-success" : "text-muted-foreground")} />
-                <div>
-                  <Label className="text-foreground text-xs sm:text-sm">Receita recorrente</Label>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground">
-                    Gerar nos próximos meses
-                  </p>
-                </div>
-              </div>
-              <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
-            </div>
-
-            {isRecurring && (
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 pl-3 sm:pl-4 border-l-2 border-success/30">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label className="text-xs sm:text-sm">Dia do mês</Label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={31}
-                    value={recurringDay}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value) || 1;
-                      setRecurringDay(Math.min(31, Math.max(1, val)));
-                    }}
-                    placeholder="1-31"
-                    className="h-9 sm:h-10 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label className="text-xs sm:text-sm">Duração</Label>
-                  <Select value={recurringDuration} onValueChange={setRecurringDuration}>
-                    <SelectTrigger className="h-9 sm:h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {recurringDurationOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Category & Subcategory */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm">Categoria</Label>
-            <Select 
-              value={category} 
-              onValueChange={(value) => {
-                const selectedCategory = categoriesData.find(c => c.name === value);
-                setCategory(value);
-                setCategoryId(selectedCategory?.id || "");
-                setSubcategory("");
-              }}
-              disabled={categoriesLoading}
-            >
-              <SelectTrigger className="h-9 sm:h-10 text-sm">
-                <SelectValue placeholder={categoriesLoading ? "..." : "Selecione"} />
-              </SelectTrigger>
-              <SelectContent>
-                {categoriesData.map((c) => (
-                  <SelectItem key={c.id} value={c.name}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm">Subcategoria</Label>
-            <Select 
-              value={subcategory} 
-              onValueChange={setSubcategory}
-              disabled={subcategoriesLoading || !categoryId}
-            >
-              <SelectTrigger className="h-9 sm:h-10 text-sm">
-                <SelectValue placeholder={!categoryId ? "Categoria" : "Selecione"} />
-              </SelectTrigger>
-              <SelectContent>
-                {subcategoriesData.map((s) => (
-                  <SelectItem key={s.id} value={s.name}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Who Paid & For Whom */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4">
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm">{type === "income" ? "Recebeu" : "Pagou"}</Label>
-            <Select value={paidBy} onValueChange={setPaidBy}>
-              <SelectTrigger className="h-9 sm:h-10 text-sm">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {persons.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    {p}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label className="text-xs sm:text-sm">{type === "income" ? "Origem" : "Para quem"}</Label>
-            <Select 
-              value={forWho} 
-              onValueChange={(value) => {
-                setForWho(value);
-                if (type === "expense") {
-                  if (value === "Casal") {
-                    setIsCouple(true);
-                  } else {
-                    setIsCouple(false);
-                  }
-                }
-              }} 
-              disabled={recipientsLoading}
-            >
-              <SelectTrigger className="h-9 sm:h-10 text-sm">
-                <SelectValue placeholder={recipientsLoading ? "..." : "Selecione"} />
-              </SelectTrigger>
-              <SelectContent>
-                {recipients.map((r) => (
-                  <SelectItem key={r.id} value={r.name}>
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Couple Toggle - Only for Expenses */}
-        {type === "expense" && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/50">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Heart className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isCouple ? "text-primary fill-primary" : "text-muted-foreground")} />
-                <div>
-                  <Label className="text-foreground text-xs sm:text-sm">Compra do Casal</Label>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground">
-                    Dividir entre os dois
-                  </p>
-                </div>
-              </div>
-              <Switch checked={isCouple} onCheckedChange={setIsCouple} />
-            </div>
-
-            {/* Valor por pessoa - Only when isCouple is true */}
-            {isCouple && numericValue > 0 && (
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label className="text-xs sm:text-sm">Divisão do valor</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2 rounded-lg bg-muted">
-                    <p className="text-xs text-muted-foreground">{person1} ({splitResult.person1Percentage}%)</p>
-                    <p className="text-sm sm:text-base font-semibold">{formatCurrency(splitResult.person1)}</p>
-                  </div>
-                  <div className="p-2 rounded-lg bg-muted">
-                    <p className="text-xs text-muted-foreground">{person2} ({splitResult.person2Percentage}%)</p>
-                    <p className="text-sm sm:text-base font-semibold">{formatCurrency(splitResult.person2)}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Value - For Expense */}
-        {type === "expense" && (
-          <div className="space-y-1.5 sm:space-y-2">
-            {/* Info banner when editing an existing installment */}
-            {isEditingInstallment && isEditMode && (
-              <div className="p-2 sm:p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 mb-2">
-                <p className="text-xs sm:text-sm text-amber-700 dark:text-amber-400">
-                  <strong>Editando parcela:</strong> Valor mensal.
-                  {originalTotalValueCents && (
-                    <span className="block mt-1">
-                      Total: <strong>{formatCentsToDisplay(originalTotalValueCents)}</strong>
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        {/* LEFT COLUMN: Main Details */}
+        <div className="md:col-span-7 space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
+              <Check className="w-4 h-4" /> Detalhes principais
+            </h3>
             
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2">
-              <Label htmlFor="value" className="text-xs sm:text-sm">
-                {isInstallment && valueMode === "installment" ? "Valor Parcela" : "Valor Total"} <span className="text-destructive">*</span>
+            {/* Value Field - Large and emphasized */}
+            <div className="space-y-2 p-4 rounded-2xl bg-primary/5 border border-primary/10">
+              <Label htmlFor="value" className="text-xs font-semibold text-primary">
+                {isInstallment && valueMode === "installment" ? "Valor da Parcela" : "Valor Total"}
               </Label>
-              {isInstallment && !isEditingInstallment && (
-                <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={() => setValueMode("total")}
-                    className={cn(
-                      "px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-sm font-medium rounded-md transition-all",
-                      valueMode === "total"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Total
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setValueMode("installment")}
-                    className={cn(
-                      "px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-sm font-medium rounded-md transition-all",
-                      valueMode === "installment"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Parcela
-                  </button>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xl font-bold text-muted-foreground">R$</span>
+                <Input
+                  id="value"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={value.replace("R$ ", "")}
+                  onChange={handleValueChange}
+                  onFocus={handleValueFocus}
+                  className={cn(
+                    "pl-12 text-3xl font-black h-16 border-none bg-transparent focus-visible:ring-0 shadow-none",
+                    fieldErrors.value && "text-destructive"
+                  )}
+                />
+              </div>
+              {fieldErrors.value && <p className="text-xs text-destructive font-medium">{fieldErrors.value}</p>}
+              
+              {isInstallment && valueMode === "installment" && numericValue > 0 && !isEditingInstallment && (
+                <p className="text-xs text-muted-foreground mt-2 px-1">
+                  Total da compra: <span className="font-bold text-foreground">{formatCurrency(totalValue)}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Date & Description */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Data</Label>
+                <Popover modal={true}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-11 rounded-xl",
+                        !date && "text-muted-foreground",
+                        fieldErrors.date && "border-destructive"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-primary" />
+                      {date ? format(date, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[100]" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={(d) => {
+                        setDate(d);
+                        if (d) setFieldErrors(prev => ({ ...prev, date: undefined }));
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-xs font-semibold">Descrição</Label>
+                <Input
+                  id="description"
+                  placeholder="Onde ou o quê?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="h-11 rounded-xl"
+                />
+              </div>
+            </div>
+
+            {/* Observation */}
+            <div className="space-y-2">
+              <Label htmlFor="observacao" className="text-xs font-semibold">Observação</Label>
+              <Textarea
+                id="observacao"
+                placeholder="Mais detalhes sobre este lançamento..."
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
+                className="min-h-[100px] rounded-xl resize-none"
+                maxLength={1500}
+              />
+              <p className="text-[10px] text-muted-foreground text-right">{observacao.length}/1500</p>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: Classification & Settings */}
+        <div className="md:col-span-5 space-y-6">
+          <div className="space-y-6 p-5 rounded-2xl bg-muted/40 border border-border/50">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
+              <CreditCard className="w-4 h-4" /> Classificação
+            </h3>
+
+            {/* Category Section */}
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Categoria</Label>
+                <Select 
+                  value={category} 
+                  onValueChange={(value) => {
+                    const selectedCategory = categoriesData.find(c => c.name === value);
+                    setCategory(value);
+                    setCategoryId(selectedCategory?.id || "");
+                    setSubcategory("");
+                  }}
+                  disabled={categoriesLoading}
+                >
+                  <SelectTrigger className="h-10 rounded-lg bg-background">
+                    <SelectValue placeholder="..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriesData.map((c) => (
+                      <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Subcategoria</Label>
+                <Select value={subcategory} onValueChange={setSubcategory} disabled={!categoryId}>
+                  <SelectTrigger className="h-10 rounded-lg bg-background">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subcategoriesData.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Ownership Section */}
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Pagou</Label>
+                <Select value={paidBy} onValueChange={setPaidBy}>
+                  <SelectTrigger className="h-10 rounded-lg bg-background">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {persons.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Para quem</Label>
+                <Select value={forWho} onValueChange={(val) => { setForWho(val); setIsCouple(val === "Casal"); }}>
+                  <SelectTrigger className="h-10 rounded-lg bg-background">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipients.map(r => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Couple & Installments Toggles */}
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              {type === "expense" && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-background border border-border/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Heart className={cn("w-4 h-4", isCouple ? "text-primary fill-primary" : "text-muted-foreground")} />
+                    <Label className="text-xs font-semibold cursor-pointer">Compra do Casal</Label>
+                  </div>
+                  <Switch checked={isCouple} onCheckedChange={setIsCouple} />
+                </div>
+              )}
+
+              {type === "expense" && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-background border border-border/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <CreditCard className={cn("w-4 h-4", isInstallment ? "text-primary" : "text-muted-foreground")} />
+                    <Label className="text-xs font-semibold cursor-pointer">Parcelado?</Label>
+                  </div>
+                  <Switch checked={isInstallment} onCheckedChange={val => { setIsInstallment(val); if (!val) setValueMode("total"); }} />
+                </div>
+              )}
+
+              {type === "income" && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-background border border-border/50 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <CalendarIcon className={cn("w-4 h-4", isRecurring ? "text-success" : "text-muted-foreground")} />
+                    <Label className="text-xs font-semibold cursor-pointer">Recorrente?</Label>
+                  </div>
+                  <Switch checked={isRecurring} onCheckedChange={setIsRecurring} />
                 </div>
               )}
             </div>
-            <Input
-              id="value"
-              type="text"
-              inputMode="decimal"
-              placeholder="R$ 0,00"
-              value={value}
-              onChange={handleValueChange}
-              onFocus={handleValueFocus}
-              className={cn("text-xl sm:text-2xl font-semibold h-12 sm:h-14", fieldErrors.value && "border-destructive")}
-            />
-            {fieldErrors.value && <p className="text-xs sm:text-sm text-destructive">{fieldErrors.value}</p>}
-            
-            {/* Show calculated total when in installment mode (not when editing existing) */}
-            {isInstallment && valueMode === "installment" && numericValue > 0 && !isEditingInstallment && (
-              <div className="p-2 sm:p-3 rounded-lg bg-secondary/50 border border-border">
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Total da compra</span>
-                  <span className="font-semibold text-foreground">{formatCurrency(totalValue)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Installment Section - Only for Expenses */}
-        {type === "expense" && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl bg-secondary/50">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <CreditCard className={cn("w-4 h-4 sm:w-5 sm:h-5 shrink-0", isInstallment ? "text-primary" : "text-muted-foreground")} />
-                <div>
-                  <Label className="text-foreground text-xs sm:text-sm">Parcelado?</Label>
-                  <p className="text-[10px] sm:text-sm text-muted-foreground">Dividir em parcelas</p>
-                </div>
-              </div>
-              <Switch 
-                checked={isInstallment} 
-                onCheckedChange={(checked) => {
-                  setIsInstallment(checked);
-                  if (!checked) setValueMode("total");
-                }} 
-              />
-            </div>
-
-            {isInstallment && (
-              <div className="space-y-3 sm:space-y-4">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label className="text-xs sm:text-sm">Nº Parcelas</Label>
-                  <Select
-                    value={totalInstallments.toString()}
-                    onValueChange={(v) => {
-                      const newTotal = parseInt(v);
-                      setTotalInstallments(newTotal);
-                      if (startFromInstallment >= newTotal) {
-                        setStartFromInstallment(1);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-9 sm:h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {installmentOptions.map((n) => (
-                        <SelectItem key={n} value={n.toString()}>
-                          {n}x de {numericValue > 0 
-                            ? valueMode === "installment" 
-                              ? formatCurrency(numericValue) 
-                              : formatCurrency(numericValue / n) 
-                            : "R$ 0,00"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Already Started Toggle */}
-                <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-background/50 border border-border">
-                  <div>
-                    <Label className="text-foreground text-xs sm:text-sm">Já iniciada?</Label>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      Lançar a partir de parcela específica
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={isAlreadyStarted} 
-                    onCheckedChange={(checked) => {
-                      setIsAlreadyStarted(checked);
-                      if (!checked) setStartFromInstallment(1);
-                    }} 
-                  />
-                </div>
-
-                {/* Start From Installment Field */}
-                {isAlreadyStarted && (
-                  <div className="space-y-1.5 sm:space-y-2 pl-3 sm:pl-4 border-l-2 border-primary/30">
-                    <Label className="text-xs sm:text-sm">Iniciar da parcela</Label>
-                    <Select
-                      value={String(startFromInstallment)}
-                      onValueChange={(v) => setStartFromInstallment(parseInt(v))}
-                    >
-                      <SelectTrigger className="w-24 sm:w-32 h-9 sm:h-10 text-sm">
-                        <SelectValue placeholder="Parcela" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: totalInstallments }, (_, i) => i + 1).map((num) => (
-                          <SelectItem key={num} value={String(num)}>
-                            {num}/{totalInstallments}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      {totalInstallments - startFromInstallment + 1} parcela{totalInstallments - startFromInstallment + 1 > 1 ? 's' : ''} a lançar ({startFromInstallment} até {totalInstallments})
-                    </p>
-                  </div>
-                )}
-
-                {preview && preview.length > 0 && (
-                  <div className="p-3 sm:p-4 rounded-xl bg-secondary/50 border border-border space-y-2 sm:space-y-3">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-foreground">
-                      <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      Preview das Parcelas
-                    </div>
-                    <div className="max-h-24 sm:max-h-32 overflow-y-auto space-y-1.5 sm:space-y-2">
-                      {preview.map((p) => (
-                        <div
-                          key={p.number}
-                          className="flex items-center justify-between text-[10px] sm:text-sm p-1.5 sm:p-2 rounded-lg bg-background/50"
-                        >
-                          <span className="text-muted-foreground">
-                            {p.number}/{totalInstallments} - {p.date}
-                          </span>
-                          <span className="font-medium text-foreground">
-                            {formatCurrency(p.value)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {isAlreadyStarted && startFromInstallment > 1 && (
-                      <div className="pt-2 border-t border-border space-y-1">
-                        <div className="flex items-center justify-between text-[10px] sm:text-sm">
-                          <span className="text-muted-foreground">Já pagas</span>
-                          <span className="font-medium text-muted-foreground">{startFromInstallment - 1}x {formatCurrency(installmentValue)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-[10px] sm:text-sm">
-                          <span className="text-muted-foreground">Valor pago</span>
-                          <span className="font-medium text-amber-600">{formatCurrency((startFromInstallment - 1) * installmentValue)}</span>
-                        </div>
-                      </div>
-                    )}
-                    {isCouple && (
-                      <div className="pt-2 border-t border-border">
-                        <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">Divisão (cada parcela)</div>
-                        <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-sm">
-                          <div>
-                            <span className="text-muted-foreground">{person1}:</span>{" "}
-                            <span className="font-medium text-primary">
-                              {formatCurrency(installmentValue * (splitResult.person1Percentage / 100))}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{person2}:</span>{" "}
-                            <span className="font-medium text-primary">
-                              {formatCurrency(installmentValue * (splitResult.person2Percentage / 100))}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Bank & Payment - Only for Expenses */}
-        {type === "expense" && (
-          <div className="space-y-3 sm:space-y-4">
-            <div className="grid grid-cols-2 gap-2 sm:gap-4">
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label className="text-xs sm:text-sm">Banco</Label>
-                <Select value={bank} onValueChange={setBank} disabled={banksLoading}>
-                  <SelectTrigger className="h-9 sm:h-10 text-sm">
-                    <SelectValue placeholder={banksLoading ? "..." : "Selecione"} />
+            {/* Bank & Payment Method */}
+            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border/50">
+               <div className="space-y-2">
+                <Label className="text-xs font-semibold">Banco</Label>
+                <Select value={type === "income" ? receivingBank : bank} onValueChange={type === "income" ? setReceivingBank : setBank}>
+                  <SelectTrigger className="h-10 rounded-lg bg-background">
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    {banks.map((b) => (
+                    {banks.map(b => (
                       <SelectItem key={b.id} value={b.name}>
                         <div className="flex items-center gap-2">
-                          {b.color && (
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: b.color }} />
-                          )}
+                          {b.color && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: b.color }} />}
                           {b.name}
                         </div>
                       </SelectItem>
@@ -1128,67 +834,89 @@ export function TransactionFormModal({
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label className="text-xs sm:text-sm">Pagamento</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
-                  <SelectTrigger className="h-9 sm:h-10 text-sm">
-                    <SelectValue placeholder={paymentMethodsLoading ? "..." : "Selecione"} />
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Meio</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger className="h-10 rounded-lg bg-background">
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    {paymentMethods.map((p) => (
-                      <SelectItem key={p.id} value={p.name}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
+                    {paymentMethods.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Income Specific Fields */}
-        {type === "income" && (
-          <div className="grid grid-cols-2 gap-2 sm:gap-4">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm">Banco</Label>
-              <Select value={receivingBank} onValueChange={setReceivingBank} disabled={banksLoading}>
-                <SelectTrigger className="h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder={banksLoading ? "..." : "Selecione"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {banks.map((b) => (
-                    <SelectItem key={b.id} value={b.name}>
-                      <div className="flex items-center gap-2">
-                        {b.color && (
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: b.color }} />
-                        )}
-                        {b.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Conditional Sections (Installments/Recurring) below the main cards if active */}
+          {isInstallment && type === "expense" && (
+            <div className="p-5 rounded-2xl bg-primary/5 border border-primary/10 space-y-4 animate-in fade-in slide-in-from-top-2">
+               <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-primary uppercase">Configurações de Parcelamento</Label>
+                  {!isEditingInstallment && (
+                    <div className="flex gap-1 bg-muted p-1 rounded-md">
+                      <button type="button" onClick={() => setValueMode("total")} className={cn("px-2 py-1 text-[10px] font-bold rounded", valueMode === "total" ? "bg-background shadow-sm" : "text-muted-foreground")}>TOTAL</button>
+                      <button type="button" onClick={() => setValueMode("installment")} className={cn("px-2 py-1 text-[10px] font-bold rounded", valueMode === "installment" ? "bg-background shadow-sm" : "text-muted-foreground")}>PARCELA</button>
+                    </div>
+                  )}
+               </div>
+               
+               <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Quantidade de Parcelas</Label>
+                    <Select value={totalInstallments.toString()} onValueChange={v => setTotalInstallments(parseInt(v))}>
+                      <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {installmentOptions.map(n => (
+                          <SelectItem key={n} value={n.toString()}>{n}x de {formatCurrency(totalValue / n)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Já iniciada?</span>
+                    <Switch checked={isAlreadyStarted} onCheckedChange={val => { setIsAlreadyStarted(val); if(!val) setStartFromInstallment(1); }} />
+                  </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm">Pagamento</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={paymentMethodsLoading}>
-                <SelectTrigger className="h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder={paymentMethodsLoading ? "..." : "Selecione"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethods.map((p) => (
-                    <SelectItem key={p.id} value={p.name}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  {isAlreadyStarted && (
+                    <div className="flex items-center gap-3 bg-background p-2 rounded-lg border border-border">
+                       <Label className="text-xs font-semibold">Parcela atual:</Label>
+                       <Select value={String(startFromInstallment)} onValueChange={v => setStartFromInstallment(parseInt(v))}>
+                          <SelectTrigger className="w-20 h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: totalInstallments }, (_, i) => i + 1).map(num => (
+                              <SelectItem key={num} value={String(num)}>{num}/{totalInstallments}</SelectItem>
+                            ))}
+                          </SelectContent>
+                       </Select>
+                    </div>
+                  )}
+               </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {isRecurring && type === "income" && (
+            <div className="p-5 rounded-2xl bg-success/5 border border-success/10 space-y-4 animate-in fade-in slide-in-from-top-2">
+               <Label className="text-xs font-bold text-success uppercase">Configurações de Recorrência</Label>
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Dia do mês</Label>
+                    <Input type="number" min={1} max={31} value={recurringDay} onChange={e => setRecurringDay(parseInt(e.target.value))} className="bg-background" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold">Duração</Label>
+                    <Select value={recurringDuration} onValueChange={setRecurringDuration}>
+                      <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {recurringDurationOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+               </div>
+            </div>
+          )}
+        </div>
       </div>
     </form>
   );
@@ -1196,14 +924,17 @@ export function TransactionFormModal({
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="px-4 pt-3 pb-1">
-            <DrawerTitle className="text-base font-bold">{modalTitle}</DrawerTitle>
+        <DrawerContent className="max-h-[96vh] rounded-t-[32px]">
+          <DrawerHeader className="px-6 pt-4 pb-2 text-center border-b border-border/50">
+            <div className="mx-auto w-12 h-1.5 rounded-full bg-muted mb-4" />
+            <DrawerTitle className="text-xl font-black">{modalTitle}</DrawerTitle>
           </DrawerHeader>
-          <ScrollArea className="flex-1 overflow-auto px-0 max-h-[calc(90vh-140px)]">
-            {formContent}
+          <ScrollArea className="flex-1 overflow-auto px-0">
+            <div className="pb-24">
+              {formContent}
+            </div>
           </ScrollArea>
-          <DrawerFooter className="pt-2 pb-4 px-4">
+          <DrawerFooter className="absolute bottom-0 left-0 right-0 pt-4 pb-8 px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
             {footerButtons}
           </DrawerFooter>
         </DrawerContent>
@@ -1213,14 +944,16 @@ export function TransactionFormModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[95vw] sm:w-auto max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="text-xl font-bold">{modalTitle}</DialogTitle>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl ring-1 ring-black/5">
+        <DialogHeader className="px-8 pt-8 pb-6 border-b border-border/50 bg-muted/20">
+          <DialogTitle className="text-3xl font-black tracking-tight">{modalTitle}</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="max-h-[calc(90vh-160px)]">
-          {formContent}
+        <ScrollArea className="max-h-[calc(92vh-180px)]">
+          <div className="py-2">
+            {formContent}
+          </div>
         </ScrollArea>
-        <DialogFooter className="px-6 py-4 border-t">
+        <DialogFooter className="px-8 py-6 border-t border-border/50 bg-muted/10">
           {footerButtons}
         </DialogFooter>
       </DialogContent>

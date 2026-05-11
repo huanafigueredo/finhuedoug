@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/shared/Badge";
@@ -25,6 +26,14 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { ComprovantesCard } from "@/components/comprovantes/ComprovantesCard";
 import { ItensCompraCard } from "@/components/comprovantes/ItensCompraCard";
@@ -167,6 +176,8 @@ export function TransactionDetailsDialog({
     }
   }, [open, isLastInstallment, transaction?.id, toast]);
 
+  const isMobile = useIsMobile();
+
   if (!transaction) return null;
 
   const formatCurrency = (value: number) => {
@@ -193,17 +204,14 @@ export function TransactionDetailsDialog({
       text += `💳 Parcela: ${transaction.installmentNumber}/${transaction.totalInstallments}\n`;
     }
     
-    // Add tags
     if (transaction.tags && transaction.tags.length > 0) {
       text += `🏷️ Tags: ${transaction.tags.join(', ')}\n`;
     }
     
-    // Add resumo curto
     if (transaction.resumo_curto) {
       text += `📋 Resumo: ${transaction.resumo_curto}\n`;
     }
     
-    // Add extracted items
     if (itensLancamento && itensLancamento.length > 0) {
       text += `\n🛒 Itens da compra:\n`;
       itensLancamento.forEach(item => {
@@ -232,74 +240,100 @@ export function TransactionDetailsDialog({
 
   const hasInstallment = transaction.isInstallment && transaction.installmentNumber && transaction.totalInstallments;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] p-0 overflow-hidden sm:w-full">
-        {/* Bloco A - Cabeçalho */}
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border">
-          <div className="flex items-start justify-between gap-2 sm:gap-4">
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-lg sm:text-xl font-bold text-foreground line-clamp-2">
-                Detalhes do lançamento
-              </DialogTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
-                {transaction.description}
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <Badge variant={transaction.type} />
-              {transaction.isCouple && (
-                <Heart className="w-4 h-4 text-primary fill-primary" />
-              )}
-            </div>
-          </div>
-        </DialogHeader>
+  const modalTitle = "Detalhes do lançamento";
 
-        <ScrollArea className="max-h-[calc(90vh-180px)] sm:max-h-[calc(90vh-200px)]">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
-            {/* Bloco B - Valores */}
-            <div className="p-3 sm:p-4 rounded-xl bg-secondary/50">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs sm:text-sm text-muted-foreground shrink-0">Valor total</span>
-                <span className={cn(
-                  "text-xl sm:text-2xl font-bold text-right",
-                  transaction.type === "income" ? "text-success" : "text-foreground"
-                )}>
-                  {formatCurrency(transaction.totalValue)}
-                </span>
-              </div>
-              {transaction.isCouple && (
-                <div className="mt-2 pt-2 border-t border-border">
-                  <span className="text-xs sm:text-sm text-muted-foreground block mb-1 flex items-center gap-2">
-                    Divisão
-                    {transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
-                        Proporcional
-                      </span>
-                    )}
-                  </span>
-                  {transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-xs text-muted-foreground">{transaction.person1Name} ({transaction.splitPercentages?.person1 || 50}%)</span>
-                        <span className="text-base sm:text-lg font-medium text-muted-foreground block">
-                          {formatCurrency(transaction.person1Share)}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-xs text-muted-foreground">{transaction.person2Name} ({transaction.splitPercentages?.person2 || 50}%)</span>
-                        <span className="text-base sm:text-lg font-medium text-muted-foreground block">
-                          {formatCurrency(transaction.person2Share)}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-base sm:text-lg font-medium text-muted-foreground text-right">
-                      {formatCurrency(transaction.valuePerPerson)}
-                    </span>
+  const footerButtons = (
+    <div className="flex items-center justify-between w-full gap-3">
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={handleCopyDetails}
+        className="flex-1 gap-2 rounded-xl h-11"
+      >
+        <Copy className="w-4 h-4" />
+        <span className="hidden sm:inline">Copiar detalhes</span>
+        <span className="sm:hidden">Copiar</span>
+      </Button>
+      <div className="flex items-center gap-2 flex-1">
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={() => onOpenChange(false)}
+          className="flex-1 h-11 rounded-xl"
+        >
+          Fechar
+        </Button>
+        <Button
+          size="lg"
+          onClick={handleEdit}
+          className="flex-1 gap-2 h-11 rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+        >
+          <Pencil className="w-4 h-4" />
+          Editar
+        </Button>
+      </div>
+    </div>
+  );
+
+  const dialogContent = (
+    <div className="px-6 py-6 md:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        {/* LEFT COLUMN: Main Info */}
+        <div className="md:col-span-7 space-y-8">
+          {/* Main Value Display */}
+          <div className={cn(
+            "p-8 rounded-3xl border border-border/50 relative overflow-hidden transition-all",
+            transaction.type === "income" ? "bg-success/5 border-success/10" : "bg-muted/20"
+          )}>
+            <div className="flex items-center justify-between mb-4 relative z-10">
+               <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
+                 {transaction.type === "income" ? "Valor recebido" : "Valor total"}
+               </span>
+               <Badge variant={transaction.type} className="h-6" />
+            </div>
+            <div className="flex items-baseline gap-2 relative z-10">
+              <span className="text-2xl font-bold text-muted-foreground">R$</span>
+              <span className={cn(
+                "text-5xl font-black tracking-tighter",
+                transaction.type === "income" ? "text-success" : "text-foreground"
+              )}>
+                {transaction.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            
+            {/* Background Decoration Icon */}
+            <div className="absolute right-[-20px] bottom-[-20px] opacity-[0.03] scale-[4]">
+               {transaction.type === "income" ? <PartyPopper size={48} /> : <FileText size={48} />}
+            </div>
+
+            {transaction.isCouple && (
+              <div className="mt-8 pt-6 border-t border-border/50 relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-primary fill-primary" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Divisão do Casal</span>
+                  </div>
+                  {transaction.splitPercentages && transaction.splitPercentages.person1 !== 50 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-primary text-primary-foreground">PROPORCIONAL</span>
                   )}
-                  
-                  {/* Split Editor */}
+                </div>
+                
+                {transaction.person1Share !== undefined && transaction.person2Share !== undefined ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 rounded-2xl bg-background/50 border border-border/50">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">{transaction.person1Name} ({transaction.splitPercentages?.person1 || 50}%)</p>
+                      <p className="text-xl font-black text-foreground">{formatCurrency(transaction.person1Share)}</p>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-background/50 border border-border/50">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase">{transaction.person2Name} ({transaction.splitPercentages?.person2 || 50}%)</p>
+                      <p className="text-xl font-black text-foreground">{formatCurrency(transaction.person2Share)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xl font-black">{formatCurrency(transaction.valuePerPerson)} <span className="text-xs font-medium text-muted-foreground">p/ pessoa</span></p>
+                )}
+                
+                <div className="mt-4">
                   <TransactionSplitEditor
                     currentPerson1Percentage={transaction.splitPercentages?.person1 || 50}
                     currentPerson2Percentage={transaction.splitPercentages?.person2 || 50}
@@ -307,103 +341,105 @@ export function TransactionDetailsDialog({
                     isLoading={updateSplitMutation.isPending}
                   />
                 </div>
-              )}
-            </div>
-
-            {/* Bloco B2 - Observações (movido para após valor) */}
-            <ObservacoesSection observacao={transaction.observacao} />
-
-            {/* Bloco C - Informações principais em grade */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-              <DetailItem 
-                icon={Calendar}
-                label="Data"
-                value={transaction.date}
-              />
-              <DetailItem 
-                icon={Tag}
-                label="Categoria"
-                value={transaction.category !== "-" ? transaction.category : undefined}
-              />
-              <DetailItem 
-                icon={User}
-                label="Pago por"
-                value={transaction.person !== "-" ? transaction.person : undefined}
-              />
-              <DetailItem 
-                icon={User}
-                label="Para quem"
-                value={transaction.forWho !== "-" ? transaction.forWho : undefined}
-              />
-            </div>
-
-            {/* Bloco D - Informações adicionais */}
-            {(transaction.subcategory && transaction.subcategory !== "-") && (
-              <div className="p-3 sm:p-4 rounded-xl bg-secondary/50">
-                <div className="flex items-center gap-2 mb-1">
-                  <Tag className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-xs sm:text-sm font-medium text-foreground">Subcategoria</span>
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">{transaction.subcategory}</p>
               </div>
             )}
-
-            {hasInstallment && (
-              <InstallmentSection 
-                transaction={transaction}
-                isLastInstallment={isLastInstallment}
-              />
-            )}
-
-            {/* Bloco D2 - Meta de Economia vinculada */}
-            {linkedGoal && (
-              <SavingsGoalSection goal={linkedGoal} />
-            )}
-
-            {/* Bloco E - Comprovantes */}
-            <ComprovantesCard lancamentoId={transaction.id} />
-
-            {/* Bloco F - Itens da compra */}
-            <ItensCompraCard 
-              lancamentoId={transaction.id}
-              tags={transaction.tags}
-              resumoCurto={transaction.resumo_curto}
-              statusExtracao={transaction.status_extracao}
-            />
           </div>
-        </ScrollArea>
 
-        {/* Actions */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-border flex items-center justify-between gap-2 sm:gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopyDetails}
-            className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2.5 sm:px-3"
-          >
-            <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden xs:inline">Copiar detalhes</span>
-            <span className="xs:hidden">Copiar</span>
-          </Button>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="text-xs sm:text-sm px-2.5 sm:px-3"
-            >
-              Fechar
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleEdit}
-              className="gap-1.5 sm:gap-2 text-xs sm:text-sm px-2.5 sm:px-3"
-            >
-              <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Editar
-            </Button>
+          {/* Observations */}
+          <ObservacoesSection observacao={transaction.observacao} />
+
+          {/* Itens da Compra */}
+          <ItensCompraCard 
+            lancamentoId={transaction.id}
+            tags={transaction.tags}
+            resumoCurto={transaction.resumo_curto}
+            statusExtracao={transaction.status_extracao}
+          />
+        </div>
+
+        {/* RIGHT COLUMN: Metadata & Sections */}
+        <div className="md:col-span-5 space-y-6">
+          <div className="space-y-6 p-6 rounded-3xl bg-muted/40 border border-border/50">
+            <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/50 flex items-center gap-2">
+              <Tag className="w-4 h-4" /> Informações do Registro
+            </h3>
+
+            <div className="grid grid-cols-1 gap-5">
+              <DetailItem icon={Calendar} label="Data do Lançamento" value={transaction.date} />
+              <DetailItem icon={Tag} label="Categoria Principal" value={transaction.category !== "-" ? transaction.category : "Sem categoria"} />
+              {(transaction.subcategory && transaction.subcategory !== "-") && (
+                <DetailItem icon={Tag} label="Subcategoria" value={transaction.subcategory} />
+              )}
+              <DetailItem icon={User} label="Quem efetuou o pagamento" value={transaction.person !== "-" ? transaction.person : "Não informado"} />
+              <DetailItem icon={Target} label="Destinado para" value={transaction.forWho !== "-" ? transaction.forWho : "Geral"} />
+              <DetailItem icon={CreditCard} label="Método & Instituição" value={`${transaction.paymentMethod} • ${transaction.bank}`} />
+            </div>
+          </div>
+
+          {hasInstallment && (
+            <InstallmentSection 
+              transaction={transaction}
+              isLastInstallment={isLastInstallment}
+            />
+          )}
+
+          {linkedGoal && (
+            <SavingsGoalSection goal={linkedGoal} />
+          )}
+
+          <div className="p-2">
+             <ComprovantesCard lancamentoId={transaction.id} />
           </div>
         </div>
+      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="max-h-[96vh] rounded-t-[32px]">
+          <DrawerHeader className="px-6 pt-4 pb-2 text-center border-b border-border/50">
+            <div className="mx-auto w-12 h-1.5 rounded-full bg-muted mb-4" />
+            <DrawerTitle className="text-xl font-black">{modalTitle}</DrawerTitle>
+            <p className="text-sm text-muted-foreground font-medium mt-1">{transaction.description}</p>
+          </DrawerHeader>
+          <ScrollArea className="flex-1 overflow-auto px-0">
+             <div className="pb-32">
+               {dialogContent}
+             </div>
+          </ScrollArea>
+          <DrawerFooter className="absolute bottom-0 left-0 right-0 pt-4 pb-8 px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
+            {footerButtons}
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] p-0 overflow-hidden rounded-[32px] border-none shadow-2xl ring-1 ring-black/5">
+        <DialogHeader className="px-8 pt-8 pb-6 border-b border-border/50 bg-muted/20">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <DialogTitle className="text-3xl font-black tracking-tight">{modalTitle}</DialogTitle>
+              <p className="text-lg text-muted-foreground font-medium">{transaction.description}</p>
+            </div>
+            {isLastInstallment && (
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-success/10 text-success border border-success/20 animate-bounce">
+                <PartyPopper className="w-5 h-5" />
+                <span className="text-sm font-black">QUITAÇÃO!</span>
+              </div>
+            )}
+          </div>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(92vh-180px)]">
+          {dialogContent}
+        </ScrollArea>
+        <DialogFooter className="px-8 py-6 border-t border-border/50 bg-muted/10">
+          {footerButtons}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -419,23 +455,14 @@ function DetailItem({
   value?: string;
 }) {
   return (
-    <div className="p-2.5 sm:p-3 rounded-lg bg-secondary/50">
-      <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
-        <Icon className={cn(
-          "w-3 h-3 sm:w-3.5 sm:h-3.5",
-          value ? "text-muted-foreground" : "text-muted-foreground/50"
-        )} />
-        <span className={cn(
-          "text-[10px] sm:text-xs",
-          value ? "text-muted-foreground" : "text-muted-foreground/50"
-        )}>{label}</span>
+    <div className="flex items-start gap-3 group">
+      <div className="p-2 rounded-xl bg-background border border-border/50 group-hover:border-primary/30 transition-colors">
+        <Icon className="w-4 h-4 text-primary" />
       </div>
-      <p className={cn(
-        "text-xs sm:text-sm truncate",
-        value ? "font-medium text-foreground" : "text-muted-foreground/50"
-      )}>
-        {value || "Não informado"}
-      </p>
+      <div className="space-y-0.5">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-semibold text-foreground">{value || "---"}</p>
+      </div>
     </div>
   );
 }
@@ -446,32 +473,32 @@ function ObservacoesSection({ observacao }: { observacao?: string | null }) {
   const isLong = hasContent && observacao.length > 200;
 
   return (
-    <div className="p-3 sm:p-4 rounded-xl bg-secondary/50">
-      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-        <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
-        <span className="text-xs sm:text-sm font-medium text-foreground">Observações</span>
+    <div className="p-6 rounded-3xl bg-muted/40 border border-border/50">
+      <div className="flex items-center gap-2 mb-4">
+        <FileText className="w-4 h-4 text-primary" />
+        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Observações</h3>
       </div>
       {hasContent ? (
-        <div>
+        <div className="space-y-2">
           <p className={cn(
-            "text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap break-words",
-            !expanded && isLong && "line-clamp-4"
+            "text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap",
+            !expanded && isLong && "line-clamp-6"
           )}>
             {observacao}
           </p>
           {isLong && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setExpanded(!expanded)}
-              className="text-[10px] sm:text-xs text-primary hover:underline mt-1"
+              className="h-7 text-xs font-bold text-primary hover:text-primary hover:bg-primary/10"
             >
-              {expanded ? "Ver menos" : "Ver mais"}
-            </button>
+              {expanded ? "Ver menos" : "Ver mais detalhes"}
+            </Button>
           )}
         </div>
       ) : (
-        <p className="text-xs sm:text-sm text-muted-foreground/60 italic">
-          Sem observações
-        </p>
+        <p className="text-sm text-muted-foreground/50 italic font-medium">Nenhuma observação registrada.</p>
       )}
     </div>
   );
@@ -491,7 +518,6 @@ function InstallmentSection({
     }).format(value);
   };
 
-  // Calculate end date based on first installment date
   const calculateEndDate = () => {
     if (!transaction.totalInstallments || !transaction.installmentNumber) {
       return null;
@@ -499,119 +525,68 @@ function InstallmentSection({
     
     try {
       let baseDate: Date;
-      
-      // If we have the first installment date (new style), use it
       if (transaction.firstInstallmentDate) {
         baseDate = transaction.firstInstallmentDate;
         const startInstallment = transaction.startInstallment || 1;
-        // Calculate months from start to end
         const monthsToEnd = transaction.totalInstallments - startInstallment;
         const endDate = addMonths(baseDate, monthsToEnd);
-        return format(endDate, "MMM/yyyy", { locale: ptBR });
+        return format(endDate, "MMMM 'de' yyyy", { locale: ptBR });
       }
       
-      // Fallback: parse the current transaction date
       const parts = transaction.date.split('/');
       if (parts.length !== 3) return null;
-      
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
-      
-      const currentDate = new Date(year, month, day);
-      
-      // Calculate how many months until the last installment
+      const currentDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
       const monthsToAdd = transaction.totalInstallments - transaction.installmentNumber;
       const endDate = addMonths(currentDate, monthsToAdd);
-      
-      return format(endDate, "MMM/yyyy", { locale: ptBR });
-    } catch {
-      return null;
-    }
+      return format(endDate, "MMMM 'de' yyyy", { locale: ptBR });
+    } catch { return null; }
   };
 
   const endDate = calculateEndDate();
   const installmentValue = transaction.installmentValue || (transaction.totalValue / (transaction.totalInstallments || 1));
+  const progress = (transaction.installmentNumber! / transaction.totalInstallments!) * 100;
 
   return (
     <div className={cn(
-      "p-3 sm:p-4 rounded-xl",
-      isLastInstallment ? "bg-success/10 border border-success/20" : "bg-secondary/50"
+      "p-6 rounded-3xl border transition-all",
+      isLastInstallment ? "bg-success/5 border-success/20" : "bg-muted/40 border-border/50"
     )}>
-      <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-        {isLastInstallment ? (
-          <PartyPopper className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-success" />
-        ) : (
-          <CreditCard className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-xl", isLastInstallment ? "bg-success/20" : "bg-primary/20")}>
+             {isLastInstallment ? <PartyPopper className="w-4 h-4 text-success" /> : <CreditCard className="w-4 h-4 text-primary" />}
+          </div>
+          <h3 className={cn("text-xs font-black uppercase tracking-widest", isLastInstallment ? "text-success" : "text-muted-foreground")}>
+            {isLastInstallment ? "Última Parcela!" : "Parcelamento"}
+          </h3>
+        </div>
+        <Badge variant={isLastInstallment ? "success" : "default"}>{transaction.installmentNumber} de {transaction.totalInstallments}</Badge>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+           <span className="text-xs font-bold text-muted-foreground uppercase">Valor Mensal</span>
+           <span className={cn("text-xl font-black", isLastInstallment ? "text-success" : "text-primary")}>{formatCurrency(installmentValue)}</span>
+        </div>
+        
+        <div className="space-y-2">
+           <div className="flex justify-between text-[10px] font-black text-muted-foreground uppercase">
+              <span>Progresso</span>
+              <span>{progress.toFixed(0)}%</span>
+           </div>
+           <div className="h-3 rounded-full bg-background border border-border/50 overflow-hidden">
+              <div 
+                className={cn("h-full transition-all duration-1000 ease-out", isLastInstallment ? "bg-success" : "bg-primary")}
+                style={{ width: `${progress}%` }}
+              />
+           </div>
+        </div>
+
+        {endDate && !isLastInstallment && (
+          <p className="text-xs text-center text-muted-foreground font-medium pt-2 border-t border-border/20">
+            Quitação prevista para <span className="text-foreground font-black capitalize">{endDate}</span>
+          </p>
         )}
-        <span className={cn(
-          "text-xs sm:text-sm font-medium",
-          isLastInstallment ? "text-success" : "text-foreground"
-        )}>
-          {isLastInstallment ? "🎉 Última Parcela!" : "Parcelamento"}
-        </span>
-      </div>
-
-      {/* Valor total da compra */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs sm:text-sm text-muted-foreground">Valor total da compra</span>
-        <span className="text-base sm:text-lg font-bold text-foreground">
-          {formatCurrency(transaction.totalValue)}
-        </span>
-      </div>
-
-      {/* Valor da parcela */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs sm:text-sm text-muted-foreground">Valor da parcela</span>
-        <span className={cn(
-          "text-base sm:text-lg font-bold",
-          isLastInstallment ? "text-success" : "text-primary"
-        )}>
-          {formatCurrency(installmentValue)}
-        </span>
-      </div>
-
-      {/* Parcela atual */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs sm:text-sm text-muted-foreground">Parcela atual</span>
-        <span className={cn(
-          "text-sm sm:text-base font-semibold",
-          isLastInstallment ? "text-success" : "text-foreground"
-        )}>
-          {transaction.installmentNumber} de {transaction.totalInstallments}
-        </span>
-      </div>
-      
-      {/* Termina em */}
-      {endDate && !isLastInstallment && (
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
-          <span className="text-xs sm:text-sm text-muted-foreground">Termina em</span>
-          <span className="text-xs sm:text-sm font-medium text-foreground capitalize">
-            {endDate}
-          </span>
-        </div>
-      )}
-      
-      <div className="mt-2">
-        <div className="h-1.5 sm:h-2 rounded-full bg-border overflow-hidden">
-          <div 
-            className={cn(
-              "h-full transition-all duration-300",
-              isLastInstallment ? "bg-success" : "bg-primary"
-            )}
-            style={{ 
-              width: `${(transaction.installmentNumber! / transaction.totalInstallments!) * 100}%` 
-            }}
-          />
-        </div>
-        <p className={cn(
-          "text-[10px] sm:text-xs mt-1",
-          isLastInstallment ? "text-success font-medium" : "text-muted-foreground"
-        )}>
-          {isLastInstallment 
-            ? "Parabéns! Você quitou este parcelamento!" 
-            : `${transaction.totalInstallments! - transaction.installmentNumber!} parcelas restantes`}
-        </p>
       </div>
     </div>
   );
@@ -634,41 +609,39 @@ function SavingsGoalSection({
     : 0;
 
   return (
-    <div className="p-3 sm:p-4 rounded-xl bg-info/10 border border-info/20">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2">
-          <Target className="w-4 h-4 text-info" />
-          <span className="text-xs sm:text-sm font-medium text-foreground">Meta de Economia</span>
+    <div className="p-6 rounded-3xl bg-blue-500/5 border border-blue-500/10 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-blue-500/20">
+            <Target className="w-4 h-4 text-blue-500" />
+          </div>
+          <h3 className="text-xs font-black uppercase tracking-widest text-blue-500">Meta de Economia</h3>
         </div>
         <Link to="/metas">
-          <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-info hover:text-info">
-            <span className="text-xs">Ver metas</span>
-            <ArrowUpRight className="w-3 h-3" />
+          <Button variant="ghost" size="sm" className="h-8 rounded-full text-[10px] font-black bg-blue-500/10 text-blue-500 hover:bg-blue-500/20">
+            METAS <ArrowUpRight className="ml-1 w-3 h-3" />
           </Button>
         </Link>
       </div>
 
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xl">{goal.icon || "🎯"}</span>
-        <span className="text-sm sm:text-base font-semibold text-foreground">{goal.title}</span>
-      </div>
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+           <span className="text-3xl bg-background w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm border border-border/30">{goal.icon || "🎯"}</span>
+           <div className="space-y-1">
+             <p className="text-sm font-black text-foreground">{goal.title}</p>
+             <p className="text-xs font-bold text-muted-foreground">{formatCurrency(goal.current_amount)} acumulados</p>
+           </div>
+        </div>
 
-      {/* Progresso */}
-      <div className="flex items-center justify-between text-xs sm:text-sm mb-1.5">
-        <span className="text-muted-foreground">Progresso</span>
-        <span className="font-medium text-foreground">{progress.toFixed(0)}%</span>
-      </div>
-
-      <div className="h-2 rounded-full bg-border overflow-hidden mb-2">
-        <div 
-          className="h-full bg-info transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{formatCurrency(goal.current_amount)}</span>
-        <span>de {formatCurrency(goal.target_amount)}</span>
+        <div className="space-y-2">
+           <div className="h-2.5 rounded-full bg-background border border-border/50 overflow-hidden">
+              <div className="h-full bg-blue-500 transition-all duration-1000" style={{ width: `${progress}%` }} />
+           </div>
+           <div className="flex justify-between text-[10px] font-black text-muted-foreground uppercase">
+              <span>{progress.toFixed(0)}% concluído</span>
+              <span>Alvo: {formatCurrency(goal.target_amount)}</span>
+           </div>
+        </div>
       </div>
     </div>
   );

@@ -125,6 +125,7 @@
 @layer base {
   * {
     @apply border-border;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
   }
 
   html, body {
@@ -133,13 +134,12 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    font-weight: 600;
+  h1, h2, h3, h4, h5, h6, span, p, div, label, input, select, button, textarea {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
   }
 }
 

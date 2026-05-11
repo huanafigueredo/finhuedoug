@@ -45,6 +45,7 @@ serve(async (req: Request) => {
         const callbackQuery = body.callback_query;
 
         const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
+        if (!apiKey) console.error("CHAVE NÃO ENCONTRADA NO AMBIENTE");
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
         botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") || "";
@@ -74,8 +75,20 @@ serve(async (req: Request) => {
             const accountId = profile?.account_id;
 
             async function askNextQuestion(sessionData: any) {
-                if (!sessionData.total_value) { await sendMessage("💳 Qual foi o valor total desta despesa? *(Ex: 150,50)*"); return; }
-                if (!sessionData.for_who) {
+                if (!sessionData.description || sessionData.description === "null") {
+                    await sendMessage("📝 Qual a descrição deste gasto? *(Ex: Supermercado, Aluguel, Cinema...)*");
+                    return;
+                }
+                if (!sessionData.total_value || sessionData.total_value === "null") {
+                    await sendMessage("💳 Qual foi o valor total desta despesa? *(Ex: 150,50)*");
+                    return;
+                }
+                if (!sessionData.category || sessionData.category === "null" || sessionData.category === "Outros") {
+                    const categoryButtons = categories?.map(c => [{ text: c.name, callback_data: `set_category:${c.name}` }]) || [];
+                    await sendMessage("📂 Em qual categoria esse gasto se encaixa?", { inline_keyboard: categoryButtons });
+                    return;
+                }
+                if (!sessionData.for_who || sessionData.for_who === "null") {
                     await sendMessage("👤 Para quem foi direcionado este gasto?", {
                         inline_keyboard: [[
                             { text: person1Name, callback_data: `set_for_who:${person1Name}` },
@@ -125,7 +138,7 @@ serve(async (req: Request) => {
                 const total = Number(data.total_value);
                 const valuePerPerson = data.for_who === "Casal" ? (total / 2) : total;
                 const transactionObj = {
-                    user_id: userId, account_id: accountId, date: data.date || new Date().toISOString().split("T")[0],
+                    user_id: userId, account_id: accountId, date: (data.date && data.date !== "null") ? data.date : new Date().toISOString().split("T")[0],
                     description: data.description || "Lançamento via Assistente", observacao: data.observacao || null,
                     type: "expense", total_value: total, value_per_person: valuePerPerson, category: data.category || "Outros",
                     is_couple: data.for_who === "Casal", paid_by: data.paid_by || (data.for_who !== "Casal" ? data.for_who : null),
@@ -155,6 +168,7 @@ serve(async (req: Request) => {
                 if (!s) return new Response("OK");
                 const updated = { ...s.data };
                 if (action === "set_for_who") { updated.for_who = value; if (value !== "Casal") updated.paid_by = value; }
+                else if (action === "set_category") updated.category = value;
                 else if (action === "set_bank") updated.bank_id = value;
                 else if (action === "set_method") updated.payment_method_id = value;
                 else if (action === "set_installment") updated.is_installment = value === "true";
@@ -166,19 +180,28 @@ serve(async (req: Request) => {
                 return new Response("OK");
             }
 
-            // --- MENSAGENS ---
+            // --- MENSAGENS (RESPOSTAS AOS QUESTIONAMENTOS) ---
             const { data: activeSession } = await supabase.from("telegram_sessions").select("*").eq("chat_id", chat_id.toString()).single();
             if (activeSession) {
                 const text = message.text || "";
-                const num = parseFloat(text.replace(',', '.'));
-                if (!isNaN(num)) {
-                    const updated = { ...activeSession.data };
-                    if (!updated.total_value) updated.total_value = num;
-                    else if (updated.is_installment && (!updated.total_installments || updated.total_installments <= 1)) updated.total_installments = Math.round(num);
-                    await supabase.from("telegram_sessions").update({ data: updated }).eq("chat_id", chat_id.toString());
-                    await askNextQuestion(updated);
-                    return new Response("OK");
+                const updated = { ...activeSession.data };
+                
+                // Lógica para preencher o próximo campo vazio com base no que foi perguntado
+                if (!updated.description || updated.description === "null") {
+                    updated.description = text;
+                } else if (!updated.total_value || updated.total_value === "null") {
+                    const num = parseFloat(text.replace(',', '.'));
+                    if (!isNaN(num)) updated.total_value = num;
+                    else { await sendMessage("⚠️ Por favor, envie apenas o valor numérico (ex: 45.90)"); return new Response("OK"); }
+                } else if (updated.is_installment && (!updated.total_installments || updated.total_installments <= 1)) {
+                    const num = parseInt(text);
+                    if (!isNaN(num)) updated.total_installments = num;
+                    else { await sendMessage("🔢 Por favor, envie apenas o número de parcelas (ex: 12)"); return new Response("OK"); }
                 }
+                
+                await supabase.from("telegram_sessions").update({ data: updated }).eq("chat_id", chat_id.toString());
+                await askNextQuestion(updated);
+                return new Response("OK");
             }
 
             let messageText = message.text || message.caption || "";
@@ -193,28 +216,28 @@ serve(async (req: Request) => {
             }
 
             if (!messageText && !base64Image) return new Response("OK");
-            
+
             // Feedback imediato e status de digitando
             await sendChatAction("typing");
             await sendMessage("✨ Recebi sua mensagem! Analisando os detalhes para você, só um instante...");
 
             const prompt = `Extraia dados financeiros desta mensagem/imagem. REGRAS OBSERVAÇÃO: Se nota fiscal, liste TODOS os itens. JSON: {
-                "date": "YYYY-MM-DD", "description": "local", "total_value": 0.00, "category": "uma de: [${categories?.map(c=>c.name).join(", ")}]",
+                "date": "YYYY-MM-DD", "description": "local", "total_value": 0.00, "category": "uma de: [${categories?.map(c => c.name).join(", ")}]",
                 "observacao": "itens...", "for_who": "null ou nome", "bank_name": "null ou nome", "payment_method_name": "null ou nome", "is_installment": bool
             }`;
 
             const models = [
-                "gemini-1.5-flash-latest",
-                "gemini-1.5-flash-001", 
-                "gemini-1.5-pro-latest",
-                "gemini-1.5-pro-001"
+                "gemini-2.5-flash",
+                "gemini-flash-latest",
+                "gemini-2.5-pro",
+                "gemini-pro-latest"
             ];
             let resultText = "";
             let lastError = "";
 
             for (const mName of models) {
                 try {
-                    const model = genAI.getGenerativeModel({ 
+                    const model = genAI.getGenerativeModel({
                         model: mName,
                         generationConfig: { responseMimeType: "application/json" }
                     });
@@ -226,15 +249,15 @@ serve(async (req: Request) => {
                     const response = await result.response;
                     resultText = response.text();
                     if (resultText) break;
-                } catch (e) { 
-                    console.error(`Erro no modelo ${mName}:`, e); 
+                } catch (e) {
+                    console.error(`Erro no modelo ${mName}:`, e);
                     lastError = e.message || String(e);
                 }
             }
 
-            if (!resultText) { 
-                await sendMessage(`⚠️ Poxa, não consegui ler os dados automaticamente dessa vez.\n\n*(Erro técnico: ${lastError})*\n\nPoderia tentar de novo ou enviar as informações em texto? 😅`); 
-                return new Response("OK"); 
+            if (!resultText) {
+                await sendMessage(`⚠️ Poxa, não consegui ler os dados automaticamente dessa vez.\n\n*(Erro técnico: ${lastError})*\n\nPoderia tentar de novo ou enviar as informações em texto? 😅`);
+                return new Response("OK");
             }
 
             const parsed = JSON.parse(resultText.match(/\{[\s\S]*\}/)?.[0] || "{}");
@@ -252,8 +275,8 @@ serve(async (req: Request) => {
             return new Response("OK");
         }
 
-    } catch (e) { 
-        console.error("Erro global no webhook:", e); 
-        return new Response("OK"); 
+    } catch (e) {
+        console.error("Erro global no webhook:", e);
+        return new Response("OK");
     }
 });

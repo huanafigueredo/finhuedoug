@@ -155,7 +155,7 @@ MOLDE EXATO PARA DEVOLVER:
 
         const transactionObj = {
             user_id: userId,
-            date: parsedTx.date || currentDate,
+            date: (parsedTx.date && parsedTx.date !== "null") ? parsedTx.date : currentDate,
             description: parsedTx.description || "Sem descricão via WA",
             observacao: parsedTx.observacao || null,
             type: "expense", // Mantendo expense por padrão
